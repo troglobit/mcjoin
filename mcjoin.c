@@ -24,7 +24,6 @@
 #include <libgen.h>
 #include <net/if.h>
 #include <netinet/in.h>
-//#include <otn/c.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -35,7 +34,7 @@
 
 /* Program meta data */
 const char *doc = "Multicast Join Group Test Program";
-const char *program_version = "1.3";
+const char *program_version = "1.4";
 const char *program_bug_address = "Joachim Nilsson <troglobit()gmail!com>";
 
 /* Mode flags */
@@ -44,6 +43,9 @@ int verbose = 0;
 
 /* getopt externals */
 extern int optind;
+
+/* socket globals */
+int sock = 0, count = 0;
 
 static int usage(char *name)
 {
@@ -59,10 +61,11 @@ static int usage(char *name)
                 " -n, --groups=N                     Total number of multicast groups, e.g. 50\n"
                 " -i, --interface=IFNAME             Interface to subscribe groups on.\n"
                 " -q, --quiet                        Quiet mode.\n"
+                " -r, --restart=N                    Do a join/leave every N seconds.\n"
                 " -v, --version                      Display program version.\n"
                 " -?, --help                         This help text.\n"
                 "-------------------------------------------------------------------------------\n"
-                "Copyright (C) 2004, 2008-2012  %s\n"
+                "Copyright (C) 2004, 2008-2014  %s\n"
                 "\n", doc, basename(name), program_bug_address);
 
         return 0;
@@ -70,7 +73,6 @@ static int usage(char *name)
 
 static int join_group(char *iface, char *group)
 {
-        static int sock = 0, count = 0;
         struct ip_mreqn mreqn;
 
 restart:
@@ -124,7 +126,7 @@ restart:
 
 int main(int argc, char *argv[])
 {
-        unsigned long int total = 0;
+        unsigned long int total = 0, restart = 0;
         int i, c, start_group;
         char iface[40], start[16], *group;
         struct in_addr start_in_addr;
@@ -136,6 +138,7 @@ int main(int argc, char *argv[])
                 {"groups", 1, 0, 'n'},
                 {"interface", 1, 0, 'i'},
                 {"quiet", 0, 0, 'q'},
+                {"restart", 1, 0, 'r'},
                 {"help", 0, 0, '?'},
                 {0, 0, 0, 0}
         };
@@ -176,6 +179,13 @@ int main(int argc, char *argv[])
                         quiet = 1;
                         break;
 
+                case 'r':	/* --restart */
+			restart = strtoul(optarg, NULL, 0);
+			DEBUG("RESTART: %lu\n", restart);
+			if (restart < 1)
+				restart = 1;
+			break;
+
                 case 'v':	/* --version */
                         printf("%s\n", program_version);
                         return 0;
@@ -192,42 +202,56 @@ int main(int argc, char *argv[])
         }
 
         /* At least one argument needed. */
-        if (argc < 2)
-                return usage(argv[0]);
+	if (argc < 2)
+		return usage(argv[0]);
 
-        if (!total) {
-                for (i = optind; i < argc; i++) {
-                        start_in_addr.s_addr = 0;
-                        if (inet_aton(argv[i], &start_in_addr) == 0) {
-                                fprintf(stderr,
-                                        "Group %s is not a valid IPv4 address: %s\n",
-                                        argv[i], strerror(errno));
-                                return 1;
-                        }
-                        start_group = ntohl(start_in_addr.s_addr);
-                        start_in_addr.s_addr = htonl(start_group);
-                        group = inet_ntoa(start_in_addr);
-                        DEBUG("Trying to join %#x (%s)\n", start_in_addr.s_addr,
-                              group);
-                        if (join_group(iface, group)) {
-                                /* Bailing out. */
-                                DEBUG("Bailing out...\n");
-                                return 1;
-                        }
-                }
-        } else {
-                for (i = 0; i < total; i++) {
-                        start_in_addr.s_addr = htonl(start_group + i);
-                        group = inet_ntoa(start_in_addr);
-                        DEBUG("Trying to join %#x (%s)\n", start_in_addr.s_addr,
-                              group);
-                        if (join_group(iface, group)) {
-                                /* Bailing out. */
-                                DEBUG("Bailing out...\n");
-                                return 1;
-                        }
-                }
-        }
+	while (1) {
+		if (!total) {
+			for (i = optind; i < argc; i++) {
+				start_in_addr.s_addr = 0;
+				if (inet_aton(argv[i], &start_in_addr) == 0) {
+					fprintf(stderr,
+						"Group %s is not a valid IPv4 address: %s\n",
+						argv[i], strerror(errno));
+					return 1;
+				}
+				start_group = ntohl(start_in_addr.s_addr);
+				start_in_addr.s_addr = htonl(start_group);
+				group = inet_ntoa(start_in_addr);
+				DEBUG("Trying to join %#x (%s)\n", start_in_addr.s_addr, group);
+				if (join_group(iface, group)) {
+					/* Bailing out. */
+					DEBUG("Bailing out...\n");
+					return 1;
+				}
+			}
+		} else {
+			for (i = 0; i < total; i++) {
+				start_in_addr.s_addr = htonl(start_group + i);
+				group = inet_ntoa(start_in_addr);
+				DEBUG("Trying to join %#x (%s)\n", start_in_addr.s_addr,
+				      group);
+				if (join_group(iface, group)) {
+					/* Bailing out. */
+					DEBUG("Bailing out...\n");
+					return 1;
+				}
+			}
+		}
+
+		if (!restart)
+			break;
+
+		sleep(1);
+
+		if (sock) {
+			close(sock);
+			sock = 0;
+			count = 0;
+		}
+
+		sleep(restart - 1);
+	}
 
         pause();		/* Awaiting signal before exiting. */
 
@@ -238,6 +262,7 @@ int main(int argc, char *argv[])
  * Local Variables:
  *  compile-command: "make mcjoin"
  *  version-control: t
+ *  indent-tabs-mode: nil
  *  c-file-style: "bsd"
  * End:
  */
