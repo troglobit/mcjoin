@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
         strncpy(iface, "eth0", sizeof(iface));
 
         while ((c =
-                getopt_long(argc, argv, "f:n:i:qvVh?", long_options,
+                getopt_long(argc, argv, "f:n:i:r:qvVh?", long_options,
                             NULL)) != EOF) {
                 switch (c) {
                 case 'f':
