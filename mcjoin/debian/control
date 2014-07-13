@@ -1,0 +1,15 @@
+Source: mcjoin
+Section: net
+Priority: extra
+Maintainer: Joachim Nilsson <troglobit@gmail.com>
+Build-Depends: debhelper (>= 7.0.0)
+Standards-Version: 3.9.3
+Homepage: https://github.com/troglobit/toolbox/mcjoin
+
+Package: mcjoin
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Provides: 
+Conflicts: 
+Description: IPv4 multicast join test tool.
+
