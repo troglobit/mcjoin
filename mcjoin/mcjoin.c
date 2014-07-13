@@ -30,11 +30,11 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#define DEBUG(fmt, ...) {if (verbose) { printf (fmt, ## __VA_ARGS__);}}
+#define DEBUG(fmt, ...) {if (verbose) { printf(fmt, ## __VA_ARGS__);}}
 
 /* Program meta data */
 const char *doc = "Multicast Join Group Test Program";
-const char *program_version = "1.4";
+const char *program_version = "1.5";
 const char *program_bug_address = "Joachim Nilsson <troglobit()gmail!com>";
 
 /* Mode flags */
@@ -62,6 +62,7 @@ static int usage(char *name)
                 " -i, --interface=IFNAME             Interface to subscribe groups on.\n"
                 " -q, --quiet                        Quiet mode.\n"
                 " -r, --restart=N                    Do a join/leave every N seconds.\n"
+                " -V, --verbose                      Verbose output (debug).\n"
                 " -v, --version                      Display program version.\n"
                 " -?, --help                         This help text.\n"
                 "-------------------------------------------------------------------------------\n"
@@ -77,10 +78,9 @@ static int join_group(char *iface, char *group)
 
 restart:
         if (!sock) {
-                sock = socket(PF_INET, SOCK_DGRAM, 0);
+                sock = socket(AF_INET, SOCK_DGRAM, 0);
                 if (sock < 0) {
-                        fprintf(stderr, "%s: Failed opening socket(): %s\n",
-                                __FUNCTION__, strerror(errno));
+                        fprintf(stderr, "%s: Failed opening socket(): %m\n", __func__);
                         return 1;
                 }
         } else {
@@ -97,24 +97,19 @@ restart:
         memset(&mreqn, 0, sizeof(mreqn));
         mreqn.imr_ifindex = if_nametoindex(iface);
         if (!mreqn.imr_ifindex) {
-                fprintf(stderr, "%s: \"%s\" invalid interface\n", __FUNCTION__,
-                        iface);
+                fprintf(stderr, "%s: \"%s\" invalid interface\n", __func__, iface);
                 return 1;
         }
         DEBUG("Added iface %s, idx %d\n", iface, mreqn.imr_ifindex);
 
         if (inet_pton(AF_INET, group, &mreqn.imr_multiaddr) <= 0) {
-                fprintf(stderr, "%s: \"%s\" invalid group address\n",
-                        __FUNCTION__, group);
+                fprintf(stderr, "%s: \"%s\" invalid group address\n", __func__, group);
                 return 1;
         }
         DEBUG("GROUP %#x (%s)\n", mreqn.imr_multiaddr.s_addr, group);
 
-        /* if (setsockopt (sock, SOL_IP, IP_ADD_MEMBERSHIP, &mreqn, sizeof (mreqn)) < 0) */
-        if (setsockopt
-            (sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreqn, sizeof(mreqn)) < 0) {
-                fprintf(stderr, "%s: IP_ADD_MEMBERSHIP: %s\n", __FUNCTION__,
-                        strerror(errno));
+        if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreqn, sizeof(mreqn)) < 0) {
+                fprintf(stderr, "%s: IP_ADD_MEMBERSHIP: %m\n", __func__);
                 return 1;
         }
 
@@ -126,7 +121,7 @@ restart:
 
 int main(int argc, char *argv[])
 {
-        unsigned long int total = 0, restart = 0;
+        int total = 0, restart = 0;
         int i, c, start_group;
         char iface[40], start[16], *group;
         struct in_addr start_in_addr;
@@ -166,8 +161,8 @@ int main(int argc, char *argv[])
                         break;
 
                 case 'n':	/* number-of-groups */
-                        total = strtoul(optarg, NULL, 0);
-                        DEBUG("GROUPS: %lu\n", total);
+                        total = atoi(optarg);
+                        DEBUG("GROUPS: %d\n", total);
                         break;
 
                 case 'i':
@@ -180,8 +175,8 @@ int main(int argc, char *argv[])
                         break;
 
                 case 'r':	/* --restart */
-			restart = strtoul(optarg, NULL, 0);
-			DEBUG("RESTART: %lu\n", restart);
+			restart = atoi(optarg);
+			DEBUG("RESTART: %d\n", restart);
 			if (restart < 1)
 				restart = 1;
 			break;
@@ -210,14 +205,13 @@ int main(int argc, char *argv[])
 			for (i = optind; i < argc; i++) {
 				start_in_addr.s_addr = 0;
 				if (inet_aton(argv[i], &start_in_addr) == 0) {
-					fprintf(stderr,
-						"Group %s is not a valid IPv4 address: %s\n",
-						argv[i], strerror(errno));
+					fprintf(stderr, "Invalid IPv4 group %s: %m\n", argv[i]);
 					return 1;
 				}
 				start_group = ntohl(start_in_addr.s_addr);
 				start_in_addr.s_addr = htonl(start_group);
 				group = inet_ntoa(start_in_addr);
+
 				DEBUG("Trying to join %#x (%s)\n", start_in_addr.s_addr, group);
 				if (join_group(iface, group)) {
 					/* Bailing out. */
@@ -229,8 +223,8 @@ int main(int argc, char *argv[])
 			for (i = 0; i < total; i++) {
 				start_in_addr.s_addr = htonl(start_group + i);
 				group = inet_ntoa(start_in_addr);
-				DEBUG("Trying to join %#x (%s)\n", start_in_addr.s_addr,
-				      group);
+
+				DEBUG("Trying to join %#x (%s)\n", start_in_addr.s_addr, group);
 				if (join_group(iface, group)) {
 					/* Bailing out. */
 					DEBUG("Bailing out...\n");
@@ -242,15 +236,14 @@ int main(int argc, char *argv[])
 		if (!restart)
 			break;
 
-		sleep(1);
+                /* If --restart=N is selected, sleep N sec before closing socket and rejoining */
+		sleep(restart);
 
 		if (sock) {
 			close(sock);
 			sock = 0;
 			count = 0;
 		}
-
-		sleep(restart - 1);
 	}
 
         pause();		/* Awaiting signal before exiting. */
