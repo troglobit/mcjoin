@@ -2,4 +2,6 @@
 
 set -e
 
+rm -f /usr/local/bin/mcjoin
+
 #DEBHELPER#

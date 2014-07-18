@@ -1,3 +1,11 @@
+mcjoin (1.5-2) unstable; urgency=low
+
+  * Take care to setup symlink in /usr/local/bin/mcjoin as well,
+  and remove it in both preinst and postrm.  This to handle systems with a
+  locally built older version.
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Fri, 18 Jul 2014 09:22:26 +0200
+
 mcjoin (1.5-1) unstable; urgency=low
 
   * Initial release.
