@@ -1,7 +1,7 @@
 /* Join a multicast group (for testing)
  *
  * Copyright (C) 2004       David Stevens <dlstevens()us!ibm!com>
- * Copyright (C) 2008-2014  Joachim Nilsson <troglobit()gmail!com>
+ * Copyright (C) 2008-2016  Joachim Nilsson <troglobit()gmail!com>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -30,16 +30,16 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#define DEBUG(fmt, ...) {if (verbose) { printf(fmt, ## __VA_ARGS__);}}
+#define DEBUG(fmt, ...) {if (debug) { printf(fmt, ## __VA_ARGS__);}}
 
 /* Program meta data */
-const char *doc = "Multicast Join Group Test Program";
-const char *program_version = "1.5";
+extern char *__progname;
+const char *program_version = "1.6-beta1";
 const char *program_bug_address = "Joachim Nilsson <troglobit()gmail!com>";
 
 /* Mode flags */
 int quiet = 0;
-int verbose = 0;
+int debug = 0;
 
 /* getopt externals */
 extern int optind;
@@ -47,29 +47,24 @@ extern int optind;
 /* socket globals */
 int sock = 0, count = 0;
 
-static int usage(char *name)
+static int usage(int code)
 {
         fprintf(stderr,
-                "%s\n"
-                "-------------------------------------------------------------------------------\n"
-                "Usage: %s [OPTIONS] [-i IFNAME] [-f FIRST-MC-GROUP] [-n TOTAL-GROUPS]\n"
-                "                                    [GROUP0 .. GROUPN]\n"
-                "Mandatory arguments to long options are mandatory for short options too.\n"
+                "\nUsage: %s [qvVh] [-i IFNAME] [-f FIRST] [-n NUM] [GROUP0 .. GROUPN]\n"
                 "\n"
                 "Options:\n"
+                " -d, --debug                        Debyg output\n"
                 " -f, --first-group=1.2.3.3          First Mulitcast group, e.g. 225.0.0.1\n"
                 " -n, --groups=N                     Total number of multicast groups, e.g. 50\n"
-                " -i, --interface=IFNAME             Interface to subscribe groups on.\n"
-                " -q, --quiet                        Quiet mode.\n"
-                " -r, --restart=N                    Do a join/leave every N seconds.\n"
-                " -V, --verbose                      Verbose output (debug).\n"
-                " -v, --version                      Display program version.\n"
-                " -?, --help                         This help text.\n"
-                "-------------------------------------------------------------------------------\n"
-                "Copyright (C) 2004, 2008-2014  %s\n"
-                "\n", doc, basename(name), program_bug_address);
+                " -i, --interface=IFNAME             Interface to subscribe groups on\n"
+                " -q, --quiet                        Quiet mode\n"
+                " -r, --restart=N                    Do a join/leave every N seconds\n"
+                " -v, --version                      Display program version\n"
+                " -h, --help                         This help text\n"
+                "\nMandatory arguments to long options are mandatory for short options too\n"
+                "Bug report address: %-40s\n\n", __progname, program_bug_address);
 
-        return 0;
+        return code;
 }
 
 static int join_group(char *iface, char *group)
@@ -126,8 +121,7 @@ int main(int argc, char *argv[])
         char iface[40], start[16], *group;
         struct in_addr start_in_addr;
         struct option long_options[] = {
-                /* {"verbose", 0, 0, 'V'}, */
-                {"verbose", 0, 0, 'V'},
+                {"debug", 0, 0, 'd'},
                 {"version", 0, 0, 'v'},
                 {"first-group", 1, 0, 'f'},
                 {"groups", 1, 0, 'n'},
@@ -144,9 +138,12 @@ int main(int argc, char *argv[])
         strncpy(iface, "eth0", sizeof(iface));
 
         while ((c =
-                getopt_long(argc, argv, "f:n:i:r:qvVh?", long_options,
-                            NULL)) != EOF) {
+                getopt_long(argc, argv, "df:n:i:r:qvh?", long_options, NULL)) != EOF) {
                 switch (c) {
+                case 'd':	/* --debug */
+                        debug = 1;
+                        break;
+
                 case 'f':
                         start_in_addr.s_addr = 0;
                         if (inet_aton(optarg, &start_in_addr) == 0) {
@@ -185,20 +182,16 @@ int main(int argc, char *argv[])
                         printf("%s\n", program_version);
                         return 0;
 
-                case 'V':	/* --verbose */
-                        verbose = 1;
-                        break;
-
                 case 'h':
                 case '?':
                 default:
-                        return usage(argv[0]);
+                        return usage(0);
                 }
         }
 
         /* At least one argument needed. */
 	if (argc < 2)
-		return usage(argv[0]);
+		return usage(1);
 
 	while (1) {
 		if (!total) {
