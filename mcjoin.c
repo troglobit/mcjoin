@@ -28,6 +28,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#define DEFAULT_IFNAME "eth0"
+
 #define DEBUG(fmt, ...) {if (debug) { printf(fmt, ## __VA_ARGS__);}}
 
 /* Program meta data */
@@ -48,19 +50,20 @@ int sock = 0, count = 0;
 static int usage(int code)
 {
 	fprintf(stderr,
-		"\nUsage: %s [qvVh] [-i IFNAME] [-f FIRST] [-n NUM] [GROUP0 .. GROUPN]\n"
+		"\nUsage: %s [dqvh] [-i IFNAME] [-f FIRST] [-n NUM] [GROUP0 .. GROUPN]\n"
 		"\n"
 		"Options:\n"
-		" -d, --debug                        Debyg output\n"
-		" -f, --first-group=1.2.3.3          First Mulitcast group, e.g. 225.0.0.1\n"
-		" -n, --groups=N                     Total number of multicast groups, e.g. 50\n"
-		" -i, --interface=IFNAME             Interface to subscribe groups on\n"
-		" -q, --quiet                        Quiet mode\n"
-		" -r, --restart=N                    Do a join/leave every N seconds\n"
-		" -v, --version                      Display program version\n"
-		" -h, --help                         This help text\n"
-		"\nMandatory arguments to long options are mandatory for short options too\n"
-		"Bug report address: %-40s\n\n", __progname, program_bug_address);
+		"  -d           Debyg output\n"
+		"  -f GROUP     First Mulitcast group, e.g. 225.1.2.3\n"
+		"  -n N         Total number of multicast groups, e.g. 50\n"
+		"  -i IFNAME    Interface to use for multicast groups, default %s\n"
+		"  -q           Quiet mode\n"
+		"  -r N         Do a join/leave every N seconds\n"
+		"  -v           Display program version\n"
+		"  -h           This help text\n"
+		"\n"
+		"Mandatory arguments to long options are mandatory for short options too\n"
+		"Bug report address: %-40s\n\n", __progname, DEFAULT_IFNAME, program_bug_address);
 
 	return code;
 }
@@ -119,24 +122,12 @@ int main(int argc, char *argv[])
 	char iface[40], start[16], *group;
 	struct in_addr start_in_addr;
 
-	struct option long_options[] = {
-		{"debug", 0, 0, 'd'},
-		{"version", 0, 0, 'v'},
-		{"first-group", 1, 0, 'f'},
-		{"groups", 1, 0, 'n'},
-		{"interface", 1, 0, 'i'},
-		{"quiet", 0, 0, 'q'},
-		{"restart", 1, 0, 'r'},
-		{"help", 0, 0, '?'},
-		{0, 0, 0, 0}
-	};
-
 	/* Default interface
 	 * XXX - Should be the first, after lo, in the list at /proc/net/dev, or
 	 * XXX - Iterate over /sys/class/net/.../link_mode */
-	strncpy(iface, "eth0", sizeof(iface));
+	strncpy(iface, DEFAULT_IFNAME, sizeof(iface));
 
-	while ((c = getopt_long(argc, argv, "df:n:i:r:qvh?", long_options, NULL)) != EOF) {
+	while ((c = getopt(argc, argv, "df:n:i:r:qvh?")) != EOF) {
 		switch (c) {
 		case 'd':	/* --debug */
 			debug = 1;
