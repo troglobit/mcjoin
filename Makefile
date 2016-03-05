@@ -1,5 +1,5 @@
 # Very simple -*-Makefile-*- for .deb generation
-CFLAGS = -W -Wall -Wextra
+CFLAGS = -W -Wall -Wextra -g
 
 all: mcjoin
 
