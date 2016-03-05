@@ -1,4 +1,4 @@
-/* Join a multicast group (for testing)
+/* Join a multicast group and/or generate UDP test data
  *
  * Copyright (C) 2004       David Stevens <dlstevens()us!ibm!com>
  * Copyright (C) 2008-2016  Joachim Nilsson <troglobit()gmail!com>
@@ -14,8 +14,6 @@
  * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
- *
- * Build on any Linux/BSD with "make mcjoin"
  */
 
 #include <arpa/inet.h>
@@ -49,147 +47,145 @@ int sock = 0, count = 0;
 
 static int usage(int code)
 {
-        fprintf(stderr,
-                "\nUsage: %s [qvVh] [-i IFNAME] [-f FIRST] [-n NUM] [GROUP0 .. GROUPN]\n"
-                "\n"
-                "Options:\n"
-                " -d, --debug                        Debyg output\n"
-                " -f, --first-group=1.2.3.3          First Mulitcast group, e.g. 225.0.0.1\n"
-                " -n, --groups=N                     Total number of multicast groups, e.g. 50\n"
-                " -i, --interface=IFNAME             Interface to subscribe groups on\n"
-                " -q, --quiet                        Quiet mode\n"
-                " -r, --restart=N                    Do a join/leave every N seconds\n"
-                " -v, --version                      Display program version\n"
-                " -h, --help                         This help text\n"
-                "\nMandatory arguments to long options are mandatory for short options too\n"
-                "Bug report address: %-40s\n\n", __progname, program_bug_address);
+	fprintf(stderr,
+		"\nUsage: %s [qvVh] [-i IFNAME] [-f FIRST] [-n NUM] [GROUP0 .. GROUPN]\n"
+		"\n"
+		"Options:\n"
+		" -d, --debug                        Debyg output\n"
+		" -f, --first-group=1.2.3.3          First Mulitcast group, e.g. 225.0.0.1\n"
+		" -n, --groups=N                     Total number of multicast groups, e.g. 50\n"
+		" -i, --interface=IFNAME             Interface to subscribe groups on\n"
+		" -q, --quiet                        Quiet mode\n"
+		" -r, --restart=N                    Do a join/leave every N seconds\n"
+		" -v, --version                      Display program version\n"
+		" -h, --help                         This help text\n"
+		"\nMandatory arguments to long options are mandatory for short options too\n"
+		"Bug report address: %-40s\n\n", __progname, program_bug_address);
 
-        return code;
+	return code;
 }
 
 static int join_group(char *iface, char *group)
 {
-        struct ip_mreqn mreqn;
+	struct ip_mreqn mreqn;
 
-restart:
-        if (!sock) {
-                sock = socket(AF_INET, SOCK_DGRAM, 0);
-                if (sock < 0) {
-                        fprintf(stderr, "%s: Failed opening socket(): %m\n", __func__);
-                        return 1;
-                }
-        } else {
-                /* Only IP_MAX_MEMBERSHIPS (20) number of groups allowed per socket. 
-                 * http://lists.freebsd.org/pipermail/freebsd-net/2003-October/001726.html
-                 */
-                if (++count >= IP_MAX_MEMBERSHIPS) {
-                        count = 0;
-                        sock = 0;	/* XXX: No good, losing socket... */
-                        goto restart;
-                }
-        }
+ restart:
+	if (!sock) {
+		sock = socket(AF_INET, SOCK_DGRAM, 0);
+		if (sock < 0) {
+			fprintf(stderr, "%s: Failed opening socket(): %m\n", __func__);
+			return 1;
+		}
+	} else {
+		/* Only IP_MAX_MEMBERSHIPS (20) number of groups allowed per socket. 
+		 * http://lists.freebsd.org/pipermail/freebsd-net/2003-October/001726.html
+		 */
+		if (++count >= IP_MAX_MEMBERSHIPS) {
+			count = 0;
+			sock = 0;	/* XXX: No good, losing socket... */
+			goto restart;
+		}
+	}
 
-        memset(&mreqn, 0, sizeof(mreqn));
-        mreqn.imr_ifindex = if_nametoindex(iface);
-        if (!mreqn.imr_ifindex) {
-                fprintf(stderr, "%s: \"%s\" invalid interface\n", __func__, iface);
-                return 1;
-        }
-        DEBUG("Added iface %s, idx %d\n", iface, mreqn.imr_ifindex);
+	memset(&mreqn, 0, sizeof(mreqn));
+	mreqn.imr_ifindex = if_nametoindex(iface);
+	if (!mreqn.imr_ifindex) {
+		fprintf(stderr, "%s: \"%s\" invalid interface\n", __func__, iface);
+		return 1;
+	}
+	DEBUG("Added iface %s, idx %d\n", iface, mreqn.imr_ifindex);
 
-        if (inet_pton(AF_INET, group, &mreqn.imr_multiaddr) <= 0) {
-                fprintf(stderr, "%s: \"%s\" invalid group address\n", __func__, group);
-                return 1;
-        }
-        DEBUG("GROUP %#x (%s)\n", mreqn.imr_multiaddr.s_addr, group);
+	if (inet_pton(AF_INET, group, &mreqn.imr_multiaddr) <= 0) {
+		fprintf(stderr, "%s: \"%s\" invalid group address\n", __func__, group);
+		return 1;
+	}
+	DEBUG("GROUP %#x (%s)\n", mreqn.imr_multiaddr.s_addr, group);
 
-        if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreqn, sizeof(mreqn)) < 0) {
-                fprintf(stderr, "%s: IP_ADD_MEMBERSHIP: %m\n", __func__);
-                return 1;
-        }
+	if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreqn, sizeof(mreqn)) < 0) {
+		fprintf(stderr, "%s: IP_ADD_MEMBERSHIP: %m\n", __func__);
+		return 1;
+	}
 
-        printf("joined group %s on %s ...\n", group, iface);
-        fflush(stdout);
+	printf("joined group %s on %s ...\n", group, iface);
+	fflush(stdout);
 
-        return 0;
+	return 0;
 }
 
 int main(int argc, char *argv[])
 {
-        int total = 0, restart = 0;
-        int i, c, start_group;
-        char iface[40], start[16], *group;
-        struct in_addr start_in_addr;
-        struct option long_options[] = {
-                {"debug", 0, 0, 'd'},
-                {"version", 0, 0, 'v'},
-                {"first-group", 1, 0, 'f'},
-                {"groups", 1, 0, 'n'},
-                {"interface", 1, 0, 'i'},
-                {"quiet", 0, 0, 'q'},
-                {"restart", 1, 0, 'r'},
-                {"help", 0, 0, '?'},
-                {0, 0, 0, 0}
-        };
+	int total = 0, restart = 0;
+	int i, c, start_group;
+	char iface[40], start[16], *group;
+	struct in_addr start_in_addr;
 
-        /* Default interface
-         * XXX - Should be the first, after lo, in the list at /proc/net/dev, or
-         * XXX - Iterate over /sys/class/net/.../link_mode */
-        strncpy(iface, "eth0", sizeof(iface));
+	struct option long_options[] = {
+		{"debug", 0, 0, 'd'},
+		{"version", 0, 0, 'v'},
+		{"first-group", 1, 0, 'f'},
+		{"groups", 1, 0, 'n'},
+		{"interface", 1, 0, 'i'},
+		{"quiet", 0, 0, 'q'},
+		{"restart", 1, 0, 'r'},
+		{"help", 0, 0, '?'},
+		{0, 0, 0, 0}
+	};
 
-        while ((c =
-                getopt_long(argc, argv, "df:n:i:r:qvh?", long_options, NULL)) != EOF) {
-                switch (c) {
-                case 'd':	/* --debug */
-                        debug = 1;
-                        break;
+	/* Default interface
+	 * XXX - Should be the first, after lo, in the list at /proc/net/dev, or
+	 * XXX - Iterate over /sys/class/net/.../link_mode */
+	strncpy(iface, "eth0", sizeof(iface));
 
-                case 'f':
-                        start_in_addr.s_addr = 0;
-                        if (inet_aton(optarg, &start_in_addr) == 0) {
-                                perror
-                                        ("Not a valid IP-address for first Multicast group.\n");
-                                return 1;
-                        }
-                        strncpy(start, optarg, sizeof(start));
-                        start_group = ntohl(start_in_addr.s_addr);
-                        DEBUG("MCSTART: %s, %#x (HOST:%#x)\n", start,
-                              start_in_addr.s_addr, start_group);
-                        break;
+	while ((c = getopt_long(argc, argv, "df:n:i:r:qvh?", long_options, NULL)) != EOF) {
+		switch (c) {
+		case 'd':	/* --debug */
+			debug = 1;
+			break;
 
-                case 'n':	/* number-of-groups */
-                        total = atoi(optarg);
-                        DEBUG("GROUPS: %d\n", total);
-                        break;
+		case 'f':
+			start_in_addr.s_addr = 0;
+			if (inet_aton(optarg, &start_in_addr) == 0) {
+				perror("Not a valid IP-address for first Multicast group.\n");
+				return 1;
+			}
+			strncpy(start, optarg, sizeof(start));
+			start_group = ntohl(start_in_addr.s_addr);
+			DEBUG("MCSTART: %s, %#x (HOST:%#x)\n", start, start_in_addr.s_addr, start_group);
+			break;
 
-                case 'i':
-                        strncpy(iface, optarg, sizeof(iface));
-                        DEBUG("IFACE: %s\n", iface);
-                        break;
+		case 'n':	/* number-of-groups */
+			total = atoi(optarg);
+			DEBUG("GROUPS: %d\n", total);
+			break;
 
-                case 'q':	/* --quiet */
-                        quiet = 1;
-                        break;
+		case 'i':
+			strncpy(iface, optarg, sizeof(iface));
+			DEBUG("IFACE: %s\n", iface);
+			break;
 
-                case 'r':	/* --restart */
+		case 'q':	/* --quiet */
+			quiet = 1;
+			break;
+
+		case 'r':	/* --restart */
 			restart = atoi(optarg);
 			DEBUG("RESTART: %d\n", restart);
 			if (restart < 1)
 				restart = 1;
 			break;
 
-                case 'v':	/* --version */
-                        printf("%s\n", program_version);
-                        return 0;
+		case 'v':	/* --version */
+			printf("%s\n", program_version);
+			return 0;
 
-                case 'h':
-                case '?':
-                default:
-                        return usage(0);
-                }
-        }
+		case 'h':
+		case '?':
+		default:
+			return usage(0);
+		}
+	}
 
-        /* At least one argument needed. */
+	/* At least one argument needed. */
 	if (argc < 2)
 		return usage(1);
 
@@ -229,7 +225,7 @@ int main(int argc, char *argv[])
 		if (!restart)
 			break;
 
-                /* If --restart=N is selected, sleep N sec before closing socket and rejoining */
+		/* If --restart=N is selected, sleep N sec before closing socket and rejoining */
 		sleep(restart);
 
 		if (sock) {
@@ -239,16 +235,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-        pause();		/* Awaiting signal before exiting. */
+	pause();		/* Awaiting signal before exiting. */
 
-        return 0;
+	return 0;
 }
-
-/**
- * Local Variables:
- *  compile-command: "make mcjoin"
- *  version-control: t
- *  indent-tabs-mode: nil
- *  c-file-style: "bsd"
- * End:
- */
