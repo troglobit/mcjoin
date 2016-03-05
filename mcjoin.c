@@ -20,6 +20,7 @@
 #include <errno.h>
 #include <getopt.h>
 #include <libgen.h>
+#include <poll.h>
 #include <net/if.h>
 #include <netinet/in.h>
 #include <stdio.h>
@@ -30,6 +31,7 @@
 
 #define DEFAULT_IFNAME "eth0"
 #define DEFAULT_GROUP  "225.1.2.3"
+#define DEFAULT_PORT   1234
 
 #define DEBUG(fmt, ...) { if (debug)  printf(fmt, ## __VA_ARGS__); fflush(stdout); }
 #define ERROR(fmt, ...) { fprintf(stderr, "%s:" fmt, __func__, ## __VA_ARGS__); fflush(stdout); }
@@ -43,6 +45,7 @@ const char *program_bug_address = "Joachim Nilsson <troglobit()gmail!com>";
 /* Mode flags */
 int quiet = 0;
 int debug = 0;
+int running = 1;
 
 /* getopt externals */
 extern int optind;
@@ -56,9 +59,25 @@ static int join_group(char *iface, char *group)
 
  restart:
 	if (!sock) {
+		int val = 1;
+		struct sockaddr_in sin;
+
 		sock = socket(AF_INET, SOCK_DGRAM, 0);
 		if (sock < 0) {
 			ERROR("Failed opening socket(): %m\n");
+			return 1;
+		}
+
+		setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char *)&val, sizeof(val));
+
+		sin.sin_family = AF_INET;
+		sin.sin_addr.s_addr = htonl(INADDR_ANY);
+		sin.sin_port = htons(DEFAULT_PORT);
+		if (bind(sock, (struct sockaddr *)&sin, sizeof(sin))) {
+			ERROR("Faild binding to socket: %m\n");
+			close(sock);
+			sock = 0;
+
 			return 1;
 		}
 	} else {
@@ -193,29 +212,35 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	while (1) {
+	while (running) {
 		for (i = 0; i < total; i++) {
-			group = groups[i];
-
-			DEBUG("Attempting to join %s\n", group);
-			if (join_group(iface, group))
+			if (join_group(iface, groups[i]))
 				return 1;
 		}
 
-		if (!restart)
-			break;
+		while (running) {
+			int ret;
+			char buf[100];
+			struct pollfd pfd = {
+				.fd     = sock,
+				.events = POLLIN,
+			};
 
-		/* If --restart=N is selected, sleep N sec before closing socket and rejoining */
-		sleep(restart);
+			ret = poll(&pfd, 1, restart ? restart * 1000 : -1);
+			if (ret <= 0) {
+				if (!restart)
+					continue;
 
-		if (sock) {
-			close(sock);
-			sock = 0;
-			count = 0;
+				close(sock);
+				sock = 0;
+				count = 0;
+				break;
+			}
+
+			recv(sock, buf, sizeof(buf), 0);
+			PRINT(".");
 		}
 	}
-
-	pause();		/* Awaiting signal before exiting. */
 
 	return 0;
 }
