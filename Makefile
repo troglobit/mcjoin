@@ -1,7 +1,5 @@
 # Very simple -*-Makefile-*- for .deb generation
-
-CC       = @gcc
-CPPFLAGS = -W -Wall
+CFLAGS = -W -Wall -Wextra
 
 all: mcjoin
 
