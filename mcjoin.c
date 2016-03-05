@@ -32,6 +32,7 @@
 #define DEFAULT_GROUP  "225.1.2.3"
 
 #define DEBUG(fmt, ...) { if (debug)  printf(fmt, ## __VA_ARGS__); fflush(stdout); }
+#define ERROR(fmt, ...) { fprintf(stderr, "%s:" fmt, __func__, ## __VA_ARGS__); fflush(stdout); }
 #define PRINT(fmt, ...) { if (!quiet) printf(fmt, ## __VA_ARGS__); fflush(stdout); }
 
 /* Program meta data */
@@ -49,25 +50,6 @@ extern int optind;
 /* socket globals */
 int sock = 0, count = 0;
 
-static int usage(int code)
-{
-	fprintf(stderr,
-		"\nUsage: %s [dhqv] [-i IFNAME] [GROUP0 .. GROUPN | GROUP+NUM]\n"
-		"\n"
-		"Options:\n"
-		"  -d           Debyg output\n"
-		"  -h           This help text\n"
-		"  -i IFNAME    Interface to use for multicast groups, default %s\n"
-		"  -q           Quiet mode\n"
-		"  -r N         Do a join/leave every N seconds\n"
-		"  -v           Display program version\n"
-		"\n"
-		"Mandatory arguments to long options are mandatory for short options too\n"
-		"Bug report address: %-40s\n\n", __progname, DEFAULT_IFNAME, program_bug_address);
-
-	return code;
-}
-
 static int join_group(char *iface, char *group)
 {
 	struct ip_mreqn mreqn;
@@ -76,7 +58,7 @@ static int join_group(char *iface, char *group)
 	if (!sock) {
 		sock = socket(AF_INET, SOCK_DGRAM, 0);
 		if (sock < 0) {
-			fprintf(stderr, "%s: Failed opening socket(): %m\n", __func__);
+			ERROR("Failed opening socket(): %m\n");
 			return 1;
 		}
 	} else {
@@ -93,25 +75,43 @@ static int join_group(char *iface, char *group)
 	memset(&mreqn, 0, sizeof(mreqn));
 	mreqn.imr_ifindex = if_nametoindex(iface);
 	if (!mreqn.imr_ifindex) {
-		fprintf(stderr, "%s: \"%s\" invalid interface\n", __func__, iface);
+		ERROR("invalid interface: %s\n", iface);
 		return 1;
 	}
 	DEBUG("Added iface %s, idx %d\n", iface, mreqn.imr_ifindex);
 
 	if (inet_pton(AF_INET, group, &mreqn.imr_multiaddr) <= 0) {
-		fprintf(stderr, "%s: \"%s\" invalid group address\n", __func__, group);
+		ERROR("invalid group address: %s\n", group);
 		return 1;
 	}
 	DEBUG("GROUP %#x (%s)\n", ntohl(mreqn.imr_multiaddr.s_addr), group);
 
 	if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreqn, sizeof(mreqn)) < 0) {
-		fprintf(stderr, "%s: IP_ADD_MEMBERSHIP: %m\n", __func__);
+		ERROR("IP_ADD_MEMBERSHIP: %m\n");
 		return 1;
 	}
 
 	PRINT("joined group %s on %s ...\n", group, iface);
 
 	return 0;
+}
+
+static int usage(int code)
+{
+	printf("\nUsage: %s [dhqv] [-i IFNAME] [GROUP0 .. GROUPN | GROUP+NUM]\n"
+	       "\n"
+	       "Options:\n"
+	       "  -d           Debyg output\n"
+	       "  -h           This help text\n"
+	       "  -i IFNAME    Interface to use for multicast groups, default %s\n"
+	       "  -q           Quiet mode\n"
+	       "  -r N         Do a join/leave every N seconds\n"
+	       "  -v           Display program version\n"
+	       "\n"
+	       "Mandatory arguments to long options are mandatory for short options too\n"
+	       "Bug report address: %-40s\n\n", __progname, DEFAULT_IFNAME, program_bug_address);
+
+	return code;
 }
 
 int main(int argc, char *argv[])
@@ -197,7 +197,7 @@ int main(int argc, char *argv[])
 		for (i = 0; i < total; i++) {
 			group = groups[i];
 
-			DEBUG("Trying to join %s\n", group);
+			DEBUG("Attempting to join %s\n", group);
 			if (join_group(iface, group))
 				return 1;
 		}
