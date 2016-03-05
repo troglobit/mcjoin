@@ -30,7 +30,8 @@
 
 #define DEFAULT_IFNAME "eth0"
 
-#define DEBUG(fmt, ...) {if (debug) { printf(fmt, ## __VA_ARGS__);}}
+#define DEBUG(fmt, ...) { if (debug)  printf(fmt, ## __VA_ARGS__); fflush(stdout); }
+#define PRINT(fmt, ...) { if (!quiet) printf(fmt, ## __VA_ARGS__); fflush(stdout); }
 
 /* Program meta data */
 extern char *__progname;
@@ -109,8 +110,7 @@ static int join_group(char *iface, char *group)
 		return 1;
 	}
 
-	printf("joined group %s on %s ...\n", group, iface);
-	fflush(stdout);
+	PRINT("joined group %s on %s ...\n", group, iface);
 
 	return 0;
 }
