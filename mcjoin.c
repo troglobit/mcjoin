@@ -45,12 +45,12 @@ const char *program_bug_address = "Joachim Nilsson <troglobit()gmail!com>";
 /* Mode flags */
 int quiet = 0;
 int debug = 0;
-int running = 1;
 
 /* getopt externals */
 extern int optind;
 
 /* socket globals */
+int port = DEFAULT_PORT;
 int sock = 0, count = 0;
 
 static int join_group(char *iface, char *group)
@@ -72,7 +72,7 @@ static int join_group(char *iface, char *group)
 
 		sin.sin_family = AF_INET;
 		sin.sin_addr.s_addr = htonl(INADDR_ANY);
-		sin.sin_port = htons(DEFAULT_PORT);
+		sin.sin_port = htons(port);
 		if (bind(sock, (struct sockaddr *)&sin, sizeof(sin))) {
 			ERROR("Faild binding to socket: %m\n");
 			close(sock);
@@ -123,12 +123,13 @@ static int usage(int code)
 	       "  -d           Debyg output\n"
 	       "  -h           This help text\n"
 	       "  -i IFNAME    Interface to use for multicast groups, default %s\n"
+	       "  -p PORT      UDP port number to listen to, default: %d\n"
 	       "  -q           Quiet mode\n"
 	       "  -r N         Do a join/leave every N seconds\n"
 	       "  -v           Display program version\n"
 	       "\n"
 	       "Mandatory arguments to long options are mandatory for short options too\n"
-	       "Bug report address: %-40s\n\n", __progname, DEFAULT_IFNAME, program_bug_address);
+	       "Bug report address: %-40s\n\n", __progname, DEFAULT_IFNAME, DEFAULT_PORT, program_bug_address);
 
 	return code;
 }
@@ -145,7 +146,7 @@ int main(int argc, char *argv[])
 	 * XXX - Iterate over /sys/class/net/.../link_mode */
 	strncpy(iface, DEFAULT_IFNAME, sizeof(iface));
 
-	while ((c = getopt(argc, argv, "di:r:qvh")) != EOF) {
+	while ((c = getopt(argc, argv, "di:p:r:qvh")) != EOF) {
 		switch (c) {
 		case 'd':
 			debug = 1;
@@ -161,6 +162,12 @@ int main(int argc, char *argv[])
 
 		case 'q':
 			quiet = 1;
+			break;
+
+		case 'p':
+			port = atoi(optarg);
+			if (port < 1024 && geteuid())
+				ERROR("Must be root to use priviliged ports (< 1024)\n");
 			break;
 
 		case 'r':
@@ -212,13 +219,13 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	while (running) {
+	while (1) {
 		for (i = 0; i < total; i++) {
 			if (join_group(iface, groups[i]))
 				return 1;
 		}
 
-		while (running) {
+		while (1) {
 			int ret;
 			char buf[100];
 			struct pollfd pfd = {
