@@ -1,7 +1,15 @@
 m c j o i n
 ===========
 
-A tiny multicast testing tool
+tiny multicast testing tool
+
+max 250 groups can be joined at the moment, limitation hard coded in
+`mcjoin`.  By default the group `225.1.2.3` and the UDP port `1234` is
+used, but you might want to use the `MCAST_TEST_NET` from RFC5771,
+`233.252.0.0/24`, or the `ompoing(8)` test group `232.43.211.234`
+defined in <http://tools.ietf.org/html/draft-ietf-mboned-ssmping-08> and
+the UDP port `4321`.
+
 
 ```shell
 sender$ mcjoin -s
@@ -15,6 +23,7 @@ joined group 225.1.2.3 on eth0 ...
 .......................................^C
 receiver$
 ```
+
 
 usage
 -----
@@ -43,3 +52,32 @@ Bug report address: Joachim Nilsson <troglobit()gmail!com>
 
 $
 ```
+
+
+caveat
+------
+
+usually there is a limit of 20 group joins per socket in UNIX, this is
+the `IP_MAX_MEMBERSHIPTS` define.  on Linux this can be tweaked using a
+`/proc` setting:
+
+    echo 40 > /proc/sys/net/ipv4/igmp_max_memberships
+
+mcjoin has a different approach, it opens a unique socket per each group
+to join and for each socket disables the odd `IP_MULTICAST_ALL` socket
+option, which is enabled by default.  Citing the Linux `ip(7)` man page,
+emphasis added:
+
+> **IP_MULTICAST_ALL** *(since Linux 2.6.31)*
+>
+> This option can be used to modify the delivery policy of multicast
+> messages to sockets bound to the wildcard INADDR_ANY address.  The
+> argument is a boolean integer (defaults to 1).  If set to 1, the
+> socket will **receive messages from all the groups that have been
+> joined globally on the whole system**.  Otherwise, it will deliver
+> messages only from the groups that have been explicitly joined (for
+> example via the IP_ADD_MEMBERSHIP option) on this particular socket.
+
+hence, by default all multicast applications in UNIX will receive all
+multicast frames from all groups joined by all other applications on
+the same system ...
