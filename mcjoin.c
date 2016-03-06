@@ -324,7 +324,6 @@ static int usage(int code)
 	       "  -t TTL       TTL to use when sending multicast packets, default: 1\n"
 	       "  -v           Display program version\n"
 	       "\n"
-	       "Mandatory arguments to long options are mandatory for short options too\n"
 	       "Bug report address: %-40s\n"
 	       "Project homepage: %s\n\n", __progname, DEFAULT_IFNAME, DEFAULT_PORT, PACKAGE_BUGREPORT, PACKAGE_URL);
 
