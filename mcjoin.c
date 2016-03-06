@@ -31,6 +31,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#define BUFSZ          100
 #define MAX_NUM_GROUPS 100
 #define DEFAULT_IFNAME "eth0"
 #define DEFAULT_GROUP  "225.1.2.3"
@@ -56,41 +57,45 @@ int restart = 0;
 /* getopt externals */
 extern int optind;
 
-/* socket globals */
-char iface[IFNAMSIZ];
+/* shared socket settings */
 int port = DEFAULT_PORT;
-int sock = 0, count = 0;
+
+/* sender socket */
+int ssock = 0;
+unsigned char ttl = 1;
 int ton = 0;
 struct sockaddr_in to[MAX_NUM_GROUPS];
+
+/* receiver socket */
+char iface[IFNAMSIZ];
+int rsock = 0, count = 0;
+
 
 static int join_group(char *iface, char *group)
 {
 	struct ip_mreqn mreqn;
 
  restart:
-	if (!sock) {
+	if (!rsock) {
 		int val = 1;
-		char loop = 0;
 		struct sockaddr_in sin;
 
-		sock = socket(AF_INET, SOCK_DGRAM, 0);
-		if (sock < 0) {
+		rsock = socket(AF_INET, SOCK_DGRAM, 0);
+		if (rsock < 0) {
 			ERROR("Failed opening socket(): %m\n");
 			return 1;
 		}
 
-		if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char *)&val, sizeof(val)))
+		if (setsockopt(rsock, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val)))
 			ERROR("Failed enabling SO_REUSEADDR: %m\n");
-		if (setsockopt(sock, IPPROTO_IP, IP_MULTICAST_LOOP, (char *)&loop, sizeof(loop)))
-			ERROR("Failed disabling IP_MULTICAST_LOOP: %m\n");
 
 		sin.sin_family = AF_INET;
 		sin.sin_addr.s_addr = htonl(INADDR_ANY);
 		sin.sin_port = htons(port);
-		if (bind(sock, (struct sockaddr *)&sin, sizeof(sin))) {
+		if (bind(rsock, (struct sockaddr *)&sin, sizeof(sin))) {
 			ERROR("Faild binding to socket: %m\n");
-			close(sock);
-			sock = 0;
+			close(rsock);
+			rsock = 0;
 
 			return 1;
 		}
@@ -100,7 +105,7 @@ static int join_group(char *iface, char *group)
 		 */
 		if (++count >= IP_MAX_MEMBERSHIPS) {
 			count = 0;
-			sock = 0;	/* XXX: No good, losing socket... */
+			rsock = 0;	/* XXX: No good, losing socket... */
 			goto restart;
 		}
 	}
@@ -119,7 +124,7 @@ static int join_group(char *iface, char *group)
 	}
 	DEBUG("GROUP %#x (%s)\n", ntohl(mreqn.imr_multiaddr.s_addr), group);
 
-	if (setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreqn, sizeof(mreqn)) < 0) {
+	if (setsockopt(rsock, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreqn, sizeof(mreqn)) < 0) {
 		ERROR("IP_ADD_MEMBERSHIP: %m\n");
 		return 1;
 	}
@@ -132,20 +137,23 @@ static int join_group(char *iface, char *group)
 void send_mcast(int signo __attribute__((unused)))
 {
 	int i;
-	char buf[50] = { 0 };
+	char buf[BUFSZ] = { 0 };
 	static int counter = 1;
 
-	if (!sock) {
-		sock = socket(AF_INET, SOCK_DGRAM, 0);
-		if (sock < 0) {
+	if (!ssock) {
+		ssock = socket(AF_INET, SOCK_DGRAM, 0);
+		if (ssock < 0) {
 			ERROR("Failed opening socket(): %m\n");
 			return;
 		}
+
+		if (setsockopt(ssock, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl)))
+			ERROR("Failed setting IP_MULTICAST_TTL: %m\n");
 	}
 
-	snprintf(buf, sizeof(buf), "All your base are belong to us ... count: %d", counter++);
+	snprintf(buf, sizeof(buf), "%u All your base are belong to us ... count: %d", getpid(), counter++);
 	for (i = 0; i < ton; i++)
-		sendto(sock, buf, sizeof(buf), 0, (struct sockaddr *)&to[i], sizeof(to[0]));
+		sendto(ssock, buf, sizeof(buf), 0, (struct sockaddr *)&to[i], sizeof(to[0]));
 }
 
 int loop(int total, char *groups[])
@@ -178,9 +186,9 @@ int loop(int total, char *groups[])
 
 		while (1) {
 			int ret;
-			char buf[100];
+			char buf[BUFSZ];
 			struct pollfd pfd = {
-				.fd     = sock,
+				.fd     = rsock,
 				.events = POLLIN,
 			};
 
@@ -189,14 +197,17 @@ int loop(int total, char *groups[])
 				if (ret < 0 || !restart)
 					continue;
 
-				close(sock);
-				sock = 0;
+				close(rsock);
+				rsock = 0;
 				count = 0;
 				break;
 			}
 
-			recv(sock, buf, sizeof(buf), 0);
-			PRINT(".");
+			recv(rsock, buf, sizeof(buf), 0);
+			ret = atoi(buf);
+			DEBUG("OUR PID %d GOT PID: %d BUF: %s\n", getpid(), ret, buf);
+			if (ret != getpid())
+				PRINT(".");
 		}
 	}
 
@@ -219,6 +230,7 @@ static int usage(int code)
 	       "  -q           Quiet mode\n"
 	       "  -r N         Do a join/leave every N seconds\n"
 	       "  -s           Act as sender, sends packets to select groups\n"
+	       "  -t TTL       TTL to use when sending multicast packets, default 1\n"
 	       "  -v           Display program version\n"
 	       "\n"
 	       "Mandatory arguments to long options are mandatory for short options too\n"
@@ -238,7 +250,7 @@ int main(int argc, char *argv[])
 	 * XXX - Iterate over /sys/class/net/.../link_mode */
 	strncpy(iface, DEFAULT_IFNAME, sizeof(iface));
 
-	while ((c = getopt(argc, argv, "di:jp:qr:svh")) != EOF) {
+	while ((c = getopt(argc, argv, "di:jp:qr:st:vh")) != EOF) {
 		switch (c) {
 		case 'd':
 			debug = 1;
@@ -276,6 +288,10 @@ int main(int argc, char *argv[])
 		case 's':
 			sender = 1;
 			join--;
+			break;
+
+		case 't':
+			ttl = atoi(optarg);
 			break;
 
 		case 'v':
