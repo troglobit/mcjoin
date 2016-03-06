@@ -1,14 +1,12 @@
-m c j o i n
-===========
+m c j o i n - tiny multicast testing tool
+=========================================
+[![Travis Status][]][Travis]
 
-tiny multicast testing tool
-
-max 250 groups can be joined at the moment, limitation hard coded in
-`mcjoin`.  By default the group `225.1.2.3` and the UDP port `1234` is
-used, but you might want to use the `MCAST_TEST_NET` from RFC5771,
-`233.252.0.0/24`, or the `ompoing(8)` test group `232.43.211.234`
-defined in <http://tools.ietf.org/html/draft-ietf-mboned-ssmping-08> and
-the UDP port `4321`.
+By default the group `225.1.2.3` and the UDP port `1234` is used, you
+might want to use the `MCAST_TEST_NET` from RFC5771, `233.252.0.0/24`,
+or the `ompoing(8)` test group `232.43.211.234` defined in IETF draft
+<http://tools.ietf.org/html/draft-ietf-mboned-ssmping-08> and UDP port
+`4321`.  At the moment max 250 groups can be joined.
 
 
 ```shell
@@ -20,7 +18,8 @@ sender$
 ```shell
 receiver$ mcjoin
 joined group 225.1.2.3 on eth0 ...
-.......................................^C
+..................................................................^C
+Received total: 66 packets
 receiver$
 ```
 
@@ -81,3 +80,6 @@ emphasis added:
 hence, by default all multicast applications in UNIX will receive all
 multicast frames from all groups joined by all other applications on
 the same system ...
+
+[Travis]:          https://travis-ci.org/troglobit/smcroute
+[Travis Status]:   https://travis-ci.org/troglobit/smcroute.png?branch=master
