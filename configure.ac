@@ -1,4 +1,4 @@
-AC_INIT(mcjoin, 2.0-beta3, https://github.com/troglobit/mcjoin/issues,, https://github.com/troglobit/mcjoin/)
+AC_INIT(mcjoin, 2.0, https://github.com/troglobit/mcjoin/issues,, https://github.com/troglobit/mcjoin/)
 AM_INIT_AUTOMAKE([1.11 foreign no-dist-gzip dist-xz])
 
 AC_CONFIG_SRCDIR([mcjoin.c])

@@ -4,8 +4,8 @@ ChangeLog
 All notable changes to the project are documented in this file.
 
 
-[v2.0][UNRELEASED] - 2016-03-XX
--------------------------------
+[v2.0][] - 2016-03-07
+---------------------
 
 Massive refactor to add support for acting as both sender and receiver
 of multicast packets.  This release makes mcjoin a standalone tool for
@@ -40,7 +40,7 @@ OnTime AS and later at Westermo.  Based on the work by David Stevens
 and developed further by Joachim Nilsson, on his spare time.
 
 
-[UNRELEASED]: https://github.com/troglobit/mcjoin/compare/v1.5...HEAD
+[UNRELEASED]: https://github.com/troglobit/mcjoin/compare/v2.0...HEAD
 [v2.0]:       https://github.com/troglobit/mcjoin/compare/1.5...2.0
 [v1.5]:       https://github.com/troglobit/mcjoin/compare/1.4...1.5
 [v1.4]:       https://github.com/troglobit/mcjoin/compare/1.3...1.4
