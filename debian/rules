@@ -1,45 +1,8 @@
 #!/usr/bin/make -f
-# Sample debian/rules that uses debhelper. GNU copyright 1997 by Joey Hess.
-.PHONY: build clean binary-indep binary-arch binary install
 
-# Uncomment this to turn on verbose mode.
-#export DH_VERBOSE=1
+%:
+	dh $@
 
-build:
-	dh_testdir
-	dh_auto_configure
-	dh_auto_build
-
-clean:
-	dh_testdir
-	dh_testroot
-	dh_clean
-
-install: build
-	dh_testdir
-	dh_testroot
-	dh_prep
-	dh_installdirs
+override_dh_auto_install:
 	dh_auto_install
-
-binary-indep: build install
-	dh_installdocs
-	dh_installman
-	dh_installchangelogs
-
-binary-arch: build install
-	dh_strip
-	rm -f debian/mcjoin/usr/share/doc/mcjoin/LICENSE
-	rm -f debian/mcjoin/usr/share/doc/mcjoin/ChangeLog.md
-	dh_compress
-	dh_fixperms
-	dh_installdeb
-	dh_shlibdeps
-	dh_gencontrol
-	dh_md5sums
-	dh_builddeb
-
-source diff:
-	@echo >&2 'source and diff are obsolete - use dpkg-source -b'; false
-
-binary: binary-indep binary-arch
+	find debian/ -name LICENSE -delete
