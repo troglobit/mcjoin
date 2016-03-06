@@ -1,0 +1,84 @@
+.\" To process this file use: groff -man -Tascii netcalc.1
+.Dd 6 March, 2016
+.Dt MCJOIN 1
+.Os
+.Sh NAME
+.Nm mcjoin
+.Nd IPv4 tool for verifying multicast connectivity
+.Sh SYNOPSIS
+.Nm
+.Op Fl dhjqsv
+.Op Fl c Ar COUNT
+.Op Fl i Ar IFNAME
+.Op Fl p Ar PORT
+.Op Fl r Ar SEC
+.Op Fl t Ar TTL
+.Op Ar GROUP0 .. GROUPN | GROUP+NUM
+.Sh DESCRIPTION
+.Nm
+can be used to join IPv4 multicast groups, display progress as multicast
+packets are received, and also send multicast packets on select groups.
+.Pp
+.Nm
+can help verify intended IGMP snooping functionality in layer-2 bridges
+(switches), as well as verify forwarding of multicast in static or
+dynamic multicast routing setups.
+.Sh OPTIONS
+.Bl -tag -width Ds
+.It Fl c Ar COUNT
+Stop after sending/receiving COUNT number of packets
+.It Fl d
+Debug output
+.It Fl h
+Print a summary of the options and exit
+.It Fl i Ar IFNAME
+Interface to use for sending/receiving multicast, default: eth0
+.It Fl j
+Join groups, default unless acting as sender
+.It Fl p Ar PORT
+UDP port number to listen to, default: 1234
+.It Fl q
+Quiet mode
+.It Fl s
+Act as sender, sends packets to select groups, default: no
+.It Fl r Ar SEC
+Do leave/join repeatedly every SEC seconds
+.It Fl t Ar TTL
+TTL to use when sending multicast packets, default: 1
+.It Fl v
+Show version information
+.El
+.Sh USAGE
+To verify multicast connectivity, the simplest way is to run
+.Nm
+on one system, without arguments, and on the other with the command
+option
+.Ar -s .
+In this setup one system joins the group
+.Ar 225.1.2.3
+waiting for packets to arrive, and the other end starts sending packets
+to the same group.  To verify routing of multicast, make sure to add the
+.Ar -t TTL
+option to the sender since the default TTL is 1 and every router
+(simplified) decrements the TTL.
+.Pp
+For a more advanced example, say you want to verify that your topology
+can forward 20 consecutive groups in the MCAST_TEST_NET, as defined in
+RFC5771.  Simply add the following as a standalone argument to both the
+receiver and the sender:
+.Ar 233.252.0.1+20
+.Pp
+For non-consecutive groups, simply add them in any order you want, up to
+250 groups are supported:
+.Ar 225.1.2.3 226.3.2.1+12 225.3.2.42 232.43.211.234
+.Sh SEE ALSO
+.Xr omping(1) ,
+.Xr ping(1) ,
+.Xr mgen(1)
+.Sh BUGS
+Use the project's GitHub page to file bug reports, feature requests or
+patches (preferably as GitHub pull requests), or questions at
+.Aq https://github.com/troglobit/mcjoin
+.Sh AUTHORS
+Originally written by David Stevens, currently maintained by Joachim
+Nilsson at GitHub.
