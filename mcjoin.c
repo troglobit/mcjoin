@@ -37,19 +37,19 @@
 #define DEFAULT_PORT   1234
 
 #define DEBUG(fmt, ...) { if (debug)  printf(fmt, ## __VA_ARGS__); fflush(stdout); }
-#define ERROR(fmt, ...) { fprintf(stderr, "%s:" fmt, __func__, ## __VA_ARGS__); fflush(stdout); }
+#define ERROR(fmt, ...) { fprintf(stderr, "%s:" fmt, __func__, ## __VA_ARGS__);    }
 #define PRINT(fmt, ...) { if (!quiet) printf(fmt, ## __VA_ARGS__); fflush(stdout); }
 
 /* Program meta data */
 extern char *__progname;
-const char *program_version = "1.6-beta1";
+const char *program_version = "1.6-beta2";
 const char *program_bug_address = "Joachim Nilsson <troglobit()gmail!com>";
 
 /* Mode flags */
 int quiet = 0;
 int debug = 0;
 int sender = 0;
-int period = 1000000;
+int period = 1000000;		/* 1 sec in micro seconds*/
 int restart = 0;
 
 /* getopt externals */
