@@ -179,15 +179,14 @@ static int show_stats(void)
 
 		if (group_num > 1) {
 			for (i = 0; i < group_num; i++) {
-				PRINT("Group %s received %zu packets\n", groups[i].group, groups[i].count);
+				PRINT("\nGroup %s received %zu packets", groups[i].group, groups[i].count);
 				total_count += groups[i].count;
 			}
-			PRINT("\n");
 		} else {
 			total_count = groups[0].count;
 		}
 
-		PRINT("Received total: %zu packets\n", total_count);
+		PRINT("\nReceived total: %zu packets\n", total_count);
 	}
 
 	return 0;
