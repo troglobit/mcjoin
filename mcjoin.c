@@ -53,6 +53,7 @@ int debug = 0;
 int sender = 0;
 int period = 1000000;		/* 1 sec in micro seconds*/
 int restart = 0;
+int running = 1;
 
 /* getopt externals */
 extern int optind;
@@ -135,7 +136,7 @@ static int join_group(char *iface, char *group)
 	return 0;
 }
 
-void send_mcast(int signo __attribute__((unused)))
+static void send_mcast(int signo __attribute__((unused)))
 {
 	int i;
 	char buf[BUFSZ] = { 0 };
@@ -158,7 +159,7 @@ void send_mcast(int signo __attribute__((unused)))
 		sendto(ssock, buf, sizeof(buf), 0, (struct sockaddr *)&to[i], sizeof(to[0]));
 }
 
-int loop(int total, char *groups[])
+static int loop(int total, char *groups[])
 {
 	int i;
 
@@ -180,13 +181,13 @@ int loop(int total, char *groups[])
 		setitimer(ITIMER_REAL, &times, NULL);
 	}
 
-	while (join) {
+	while (join && running) {
 		for (i = 0; i < total; i++) {
 			if (join_group(iface, groups[i]))
 				return 1;
 		}
 
-		while (1) {
+		while (running) {
 			int ret;
 			char buf[BUFSZ];
 			struct pollfd pfd = {
@@ -219,7 +220,7 @@ int loop(int total, char *groups[])
 		}
 	}
 
-	while (1) {
+	while (running) {
 		poll(NULL, 0, -1);
 		if (count > 0) {
 			count--;
@@ -228,7 +229,15 @@ int loop(int total, char *groups[])
 		}
 	}
 
+	DEBUG("Leaving main loop\n");
+
 	return 0;
+}
+
+static void exit_loop(int signo)
+{
+	DEBUG("We got signal! (signo: %d)\n", signo);
+	running = 0;
 }
 
 static int usage(int code)
@@ -355,6 +364,13 @@ int main(int argc, char *argv[])
 			group = inet_ntoa(addr);
 		}
 	}
+
+	/*
+	 * Shared signal handlers between sender and receiver
+	 */
+	signal(SIGINT, exit_loop);
+	signal(SIGHUP, exit_loop);
+	signal(SIGTERM, exit_loop);
 
 	return loop(total, groups);
 }
