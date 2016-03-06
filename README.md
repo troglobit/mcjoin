@@ -3,8 +3,8 @@ m c j o i n - tiny multicast testing tool
 [![Travis Status][]][Travis]
 
 By default the group `225.1.2.3` and the UDP port `1234` is used, you
-might want to use the `MCAST_TEST_NET` from RFC5771, `233.252.0.0/24`,
-or the `ompoing(8)` test group `232.43.211.234` defined in IETF draft
+may want to use the `MCAST_TEST_NET` from RFC5771, `233.252.0.0/24`, or
+the `ompoing(8)` test group `232.43.211.234`, defined in this IETF draft
 <http://tools.ietf.org/html/draft-ietf-mboned-ssmping-08> and UDP port
 `4321`.  At the moment max 250 groups can be joined.
 
@@ -47,7 +47,8 @@ Options:
   -v           Display program version
 
 Mandatory arguments to long options are mandatory for short options too
-Bug report address: Joachim Nilsson <troglobit()gmail!com>
+Bug report address: https://github.com/troglobit/mcjoin/issues
+Project homepage: https://github.com/troglobit/mcjoin/
 
 $
 ```
@@ -81,5 +82,5 @@ hence, by default all multicast applications in UNIX will receive all
 multicast frames from all groups joined by all other applications on
 the same system ...
 
-[Travis]:          https://travis-ci.org/troglobit/smcroute
-[Travis Status]:   https://travis-ci.org/troglobit/smcroute.png?branch=master
+[Travis]:          https://travis-ci.org/troglobit/mcjoin
+[Travis Status]:   https://travis-ci.org/troglobit/mcjoin.png?branch=master
