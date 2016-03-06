@@ -4,12 +4,18 @@ Priority: extra
 Maintainer: Joachim Nilsson <troglobit@gmail.com>
 Build-Depends: debhelper (>= 7.0.0)
 Standards-Version: 3.9.3
-Homepage: https://github.com/troglobit/toolbox/mcjoin
+Homepage: https://github.com/troglobit/mcjoin
 
 Package: mcjoin
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Provides: 
-Conflicts: 
-Description: IPv4 multicast join test tool.
-
+Provides:
+Conflicts:
+Description: IPv4 tool for verifying multicast connectivity.
+ mcjoin can be used to join IPv4 multicast groups, display
+ progress as multicast packets are received, and also send
+ multicast packets on select groups.
+ .
+ mcjoin can help verify intended IGMP snooping functionality
+ in layer-2 bridges/switches, as well as test forwarding of
+ multicast in static or dynamic multicast routing setups.

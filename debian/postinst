@@ -2,6 +2,6 @@
 
 set -e
 
-ln -s /usr/sbin/mcjoin /usr/local/bin/mcjoin
+ln -s /usr/bin/mcjoin /usr/local/bin/mcjoin
 
 #DEBHELPER#
