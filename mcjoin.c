@@ -21,14 +21,17 @@
 #include <getopt.h>
 #include <libgen.h>
 #include <poll.h>
+#include <signal.h>
 #include <net/if.h>
 #include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <unistd.h>
 
+#define MAX_NUM_GROUPS 100
 #define DEFAULT_IFNAME "eth0"
 #define DEFAULT_GROUP  "225.1.2.3"
 #define DEFAULT_PORT   1234
@@ -45,13 +48,19 @@ const char *program_bug_address = "Joachim Nilsson <troglobit()gmail!com>";
 /* Mode flags */
 int quiet = 0;
 int debug = 0;
+int sender = 0;
+int period = 1000000;
+int restart = 0;
 
 /* getopt externals */
 extern int optind;
 
 /* socket globals */
+char iface[IFNAMSIZ];
 int port = DEFAULT_PORT;
 int sock = 0, count = 0;
+int ton = 0;
+struct sockaddr_in to[MAX_NUM_GROUPS];
 
 static int join_group(char *iface, char *group)
 {
@@ -81,7 +90,7 @@ static int join_group(char *iface, char *group)
 			return 1;
 		}
 	} else {
-		/* Only IP_MAX_MEMBERSHIPS (20) number of groups allowed per socket. 
+		/* Only IP_MAX_MEMBERSHIPS (20) number of groups allowed per socket.
 		 * http://lists.freebsd.org/pipermail/freebsd-net/2003-October/001726.html
 		 */
 		if (++count >= IP_MAX_MEMBERSHIPS) {
@@ -115,6 +124,83 @@ static int join_group(char *iface, char *group)
 	return 0;
 }
 
+void send_mcast(int signo __attribute__((unused)))
+{
+	int i;
+	char buf[50] = { 0 };
+	static int counter = 1;
+
+	if (!sock) {
+		sock = socket(AF_INET, SOCK_DGRAM, 0);
+		if (sock < 0) {
+			ERROR("Failed opening socket(): %m\n");
+			return;
+		}
+	}
+
+	snprintf(buf, sizeof(buf), "All your base are belong to us ... count: %d", counter++);
+	for (i = 0; i < ton; i++)
+		sendto(sock, buf, sizeof(buf), 0, (struct sockaddr *)&to[i], sizeof(to[0]));
+}
+
+int loop(int total, char *groups[])
+{
+	int i;
+
+	if (sender) {
+		struct itimerval times;
+
+		for (i = 0; i < total; i++) {
+			to[i].sin_family      = AF_INET;
+			to[i].sin_addr.s_addr = inet_addr(groups[i]);
+			to[i].sin_port        = htons(port);
+		}
+		ton = total;
+		signal(SIGALRM, send_mcast);
+
+		times.it_value.tv_sec     = 1;	/* wait a bit for system to "stabilize"  */
+		times.it_value.tv_usec    = 0;	/* tv_sec or tv_usec cannot be both zero */
+		times.it_interval.tv_sec  = (time_t)(period / 1000000);
+		times.it_interval.tv_usec =   (long)(period % 1000000);
+		setitimer(ITIMER_REAL, &times, NULL);
+
+		while (1)
+			poll(NULL, 0, -1);
+	}
+
+	while (1) {
+		for (i = 0; i < total; i++) {
+			if (join_group(iface, groups[i]))
+				return 1;
+		}
+
+		while (1) {
+			int ret;
+			char buf[100];
+			struct pollfd pfd = {
+				.fd     = sock,
+				.events = POLLIN,
+			};
+
+			ret = poll(&pfd, 1, restart ? restart * 1000 : -1);
+			if (ret <= 0) {
+				if (!restart)
+					continue;
+
+				close(sock);
+				sock = 0;
+				count = 0;
+				break;
+			}
+
+			recv(sock, buf, sizeof(buf), 0);
+			PRINT(".");
+		}
+	}
+
+	return 0;
+}
+
 static int usage(int code)
 {
 	printf("\nUsage: %s [dhqv] [-i IFNAME] [GROUP0 .. GROUPN | GROUP+NUM]\n"
@@ -126,6 +212,7 @@ static int usage(int code)
 	       "  -p PORT      UDP port number to listen to, default: %d\n"
 	       "  -q           Quiet mode\n"
 	       "  -r N         Do a join/leave every N seconds\n"
+	       "  -s           Act as sender, sends packets to select groups\n"
 	       "  -v           Display program version\n"
 	       "\n"
 	       "Mandatory arguments to long options are mandatory for short options too\n"
@@ -136,9 +223,8 @@ static int usage(int code)
 
 int main(int argc, char *argv[])
 {
-	int total = 0, restart = 0;
-	int i, c;
-	char iface[IFNAMSIZ], *group, *groups[100];
+	int i, c, total = 0;
+	char *group, *groups[100];
 	struct in_addr addr;
 
 	/* Default interface
@@ -146,7 +232,7 @@ int main(int argc, char *argv[])
 	 * XXX - Iterate over /sys/class/net/.../link_mode */
 	strncpy(iface, DEFAULT_IFNAME, sizeof(iface));
 
-	while ((c = getopt(argc, argv, "di:p:r:qvh")) != EOF) {
+	while ((c = getopt(argc, argv, "di:p:qr:svh")) != EOF) {
 		switch (c) {
 		case 'd':
 			debug = 1;
@@ -175,6 +261,10 @@ int main(int argc, char *argv[])
 			DEBUG("RESTART: %d\n", restart);
 			if (restart < 1)
 				restart = 1;
+			break;
+
+		case 's':
+			sender = 1;
 			break;
 
 		case 'v':
@@ -219,35 +309,5 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	while (1) {
-		for (i = 0; i < total; i++) {
-			if (join_group(iface, groups[i]))
-				return 1;
-		}
-
-		while (1) {
-			int ret;
-			char buf[100];
-			struct pollfd pfd = {
-				.fd     = sock,
-				.events = POLLIN,
-			};
-
-			ret = poll(&pfd, 1, restart ? restart * 1000 : -1);
-			if (ret <= 0) {
-				if (!restart)
-					continue;
-
-				close(sock);
-				sock = 0;
-				count = 0;
-				break;
-			}
-
-			recv(sock, buf, sizeof(buf), 0);
-			PRINT(".");
-		}
-	}
-
-	return 0;
+	return loop(total, groups);
 }
