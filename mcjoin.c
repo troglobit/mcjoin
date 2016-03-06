@@ -75,76 +75,72 @@ char iface[IFNAMSIZ];
 int num_joins = 0;
 
 
+static int alloc_socket(int port)
+{
+	int sd, val;
+	struct sockaddr_in sin;
+
+	sd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	if (sd < 0) {
+		ERROR("Failed opening socket(): %m\n");
+		return -1;
+	}
+
+	val = 1;
+	if (setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val)))
+		ERROR("Failed enabling SO_REUSEADDR: %m\n");
+
+	val = 0;
+	if (setsockopt(sd, IPPROTO_IP, IP_MULTICAST_ALL, &val, sizeof(val)))
+		ERROR("Failed disabling IP_MULTICAST_ALL: %m\n");
+
+	sin.sin_family      = AF_INET;
+	sin.sin_addr.s_addr = htonl(INADDR_ANY);
+	sin.sin_port        = htons(port);
+	if (bind(sd, (struct sockaddr *)&sin, sizeof(sin))) {
+		ERROR("Faild binding to socket: %m\n");
+		close(sd);
+		return -1;
+	}
+
+	return sd;
+}
+
 static int join_group(int id)
 {
+	int sd = alloc_socket(port); /* Index port with id if IP_MULTICAST_ALL fails */
 	struct ip_mreqn mreqn;
 	struct gr *gr = &groups[id];
 
- restart:
-	if (gr->sd == 0) {
-		int val = 1;
-		unsigned char loop = 0;
-		struct sockaddr_in sin;
-
-		DEBUG("Opening socket for group %s ...\n", gr->group);
-		gr->sd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-		if (gr->sd < 0) {
-			ERROR("Failed opening socket(): %m\n");
-			return 1;
-		}
-
-		if (setsockopt(gr->sd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val)))
-			ERROR("Failed enabling SO_REUSEADDR: %m\n");
-
-		if (setsockopt(gr->sd, IPPROTO_IP, IP_MULTICAST_LOOP, &loop, sizeof(loop)))
-			ERROR("Failed disabling IP_MULTICAST_LOOP: %m\n");
-
-		sin.sin_family = AF_INET;
-		sin.sin_addr.s_addr = htonl(INADDR_ANY);
-		sin.sin_port = htons(port + id);
-		if (bind(gr->sd, (struct sockaddr *)&sin, sizeof(sin))) {
-			ERROR("Faild binding to socket: %m\n");
-			close(gr->sd);
-			gr->sd = 0;
-
-			return 1;
-		}
-	} else {
-		DEBUG("Socket %d already open for group %s ...\n", gr->sd, gr->group);
-
-		/*
-		 * Only IP_MAX_MEMBERSHIPS (20) number of groups allowed per socket.
-		 * http://lists.freebsd.org/pipermail/freebsd-net/2003-October/001726.html
-		 */
-		if (++num_joins >= IP_MAX_MEMBERSHIPS) {
-			num_joins = 0;
-			gr->sd = 0;	/* XXX: No good, losing socket... */
-			goto restart;
-		}
-	}
+	if (sd < 0)
+		return 1;
 
 	memset(&mreqn, 0, sizeof(mreqn));
 	mreqn.imr_ifindex = if_nametoindex(iface);
 	if (!mreqn.imr_ifindex) {
 		ERROR("invalid interface: %s\n", iface);
-		return 1;
+		goto error;
 	}
 	DEBUG("Added iface %s, idx %d\n", iface, mreqn.imr_ifindex);
 
 	if (inet_pton(AF_INET, gr->group, &mreqn.imr_multiaddr) <= 0) {
 		ERROR("invalid group address: %s\n", gr->group);
-		return 1;
+		goto error;
 	}
 	DEBUG("GROUP %#x (%s)\n", ntohl(mreqn.imr_multiaddr.s_addr), gr->group);
 
-	if (setsockopt(gr->sd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreqn, sizeof(mreqn)) < 0) {
+	if (setsockopt(sd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreqn, sizeof(mreqn)) < 0) {
 		ERROR("IP_ADD_MEMBERSHIP: %m\n");
-		return 1;
+		goto error;
 	}
 
 	PRINT("joined group %s on %s ...\n", gr->group, iface);
-
+	gr->sd = sd;
 	return 0;
+
+error:
+	close(sd);
+	return 1;
 }
 
 static void send_mcast(int signo)
@@ -210,7 +206,7 @@ static int loop(void)
 
 			sin->sin_family      = AF_INET;
 			sin->sin_addr.s_addr = inet_addr(group);
-			sin->sin_port        = htons(port + i);
+			sin->sin_port        = htons(port); /* Index port with i if IP_MULTICAST_ALL fails */
 		}
 		signal(SIGALRM, send_mcast);
 
