@@ -16,6 +16,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include "config.h"
+
 #include <arpa/inet.h>
 #include <errno.h>
 #include <getopt.h>
@@ -51,8 +53,6 @@ struct gr {
 
 /* Program meta data */
 extern char *__progname;
-const char *program_version = "2.0-beta2";
-const char *program_bug_address = "Joachim Nilsson <troglobit()gmail!com>";
 
 /* Mode flags */
 int join = 1;
@@ -326,7 +326,8 @@ static int usage(int code)
 	       "  -v           Display program version\n"
 	       "\n"
 	       "Mandatory arguments to long options are mandatory for short options too\n"
-	       "Bug report address: %-40s\n\n", __progname, DEFAULT_IFNAME, DEFAULT_PORT, program_bug_address);
+	       "Bug report address: %-40s\n"
+	       "Project homepage: %s\n\n", __progname, DEFAULT_IFNAME, DEFAULT_PORT, PACKAGE_BUGREPORT, PACKAGE_URL);
 
 	return code;
 }
@@ -393,7 +394,7 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'v':
-			printf("%s\n", program_version);
+			printf("%s\n", PACKAGE_VERSION);
 			return 0;
 
 		default:
