@@ -43,7 +43,7 @@
 
 /* Program meta data */
 extern char *__progname;
-const char *program_version = "1.6-beta2";
+const char *program_version = "2.0-beta2";
 const char *program_bug_address = "Joachim Nilsson <troglobit()gmail!com>";
 
 /* Mode flags */
