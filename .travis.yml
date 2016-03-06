@@ -1,0 +1,25 @@
+# Travis CI integration
+# Defaults to GNU GCC and autotools: ./configure && make && make test
+language: c
+
+# Use docker for quicker builds, it now allows https://docs.travis-ci.com/user/apt/
+sudo: false
+
+addons:
+  apt:
+    packages:
+      - tree
+
+# We don't store generated files (configure and Makefile) in GIT,
+# so we must customize the default build script to run ./autogen.sh
+script:
+  - ./autogen.sh
+  - ./configure --prefix=
+  - make clean
+  - make -j5
+  - make
+  - DESTDIR=~/tmp make install-strip
+  - tree ~/tmp
+  - ldd ~/tmp/bin/mcjoin
+  - size ~/tmp/bin/mcjoin
+  - ~/tmp/bin/mcjoin -h
