@@ -46,6 +46,7 @@ const char *program_version = "1.6-beta2";
 const char *program_bug_address = "Joachim Nilsson <troglobit()gmail!com>";
 
 /* Mode flags */
+int join = 1;
 int quiet = 0;
 int debug = 0;
 int sender = 0;
@@ -69,6 +70,7 @@ static int join_group(char *iface, char *group)
  restart:
 	if (!sock) {
 		int val = 1;
+		char loop = 0;
 		struct sockaddr_in sin;
 
 		sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -77,7 +79,10 @@ static int join_group(char *iface, char *group)
 			return 1;
 		}
 
-		setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char *)&val, sizeof(val));
+		if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char *)&val, sizeof(val)))
+			ERROR("Failed enabling SO_REUSEADDR: %m\n");
+		if (setsockopt(sock, IPPROTO_IP, IP_MULTICAST_LOOP, (char *)&loop, sizeof(loop)))
+			ERROR("Failed disabling IP_MULTICAST_LOOP: %m\n");
 
 		sin.sin_family = AF_INET;
 		sin.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -163,12 +168,9 @@ int loop(int total, char *groups[])
 		times.it_interval.tv_sec  = (time_t)(period / 1000000);
 		times.it_interval.tv_usec =   (long)(period % 1000000);
 		setitimer(ITIMER_REAL, &times, NULL);
-
-		while (1)
-			poll(NULL, 0, -1);
 	}
 
-	while (1) {
+	while (join) {
 		for (i = 0; i < total; i++) {
 			if (join_group(iface, groups[i]))
 				return 1;
@@ -184,7 +186,7 @@ int loop(int total, char *groups[])
 
 			ret = poll(&pfd, 1, restart ? restart * 1000 : -1);
 			if (ret <= 0) {
-				if (!restart)
+				if (ret < 0 || !restart)
 					continue;
 
 				close(sock);
@@ -198,6 +200,9 @@ int loop(int total, char *groups[])
 		}
 	}
 
+	while (1)
+		poll(NULL, 0, -1);
+
 	return 0;
 }
 
@@ -209,6 +214,7 @@ static int usage(int code)
 	       "  -d           Debyg output\n"
 	       "  -h           This help text\n"
 	       "  -i IFNAME    Interface to use for multicast groups, default %s\n"
+	       "  -j           Join groups, default unless acting as sender\n"
 	       "  -p PORT      UDP port number to listen to, default: %d\n"
 	       "  -q           Quiet mode\n"
 	       "  -r N         Do a join/leave every N seconds\n"
@@ -232,7 +238,7 @@ int main(int argc, char *argv[])
 	 * XXX - Iterate over /sys/class/net/.../link_mode */
 	strncpy(iface, DEFAULT_IFNAME, sizeof(iface));
 
-	while ((c = getopt(argc, argv, "di:p:qr:svh")) != EOF) {
+	while ((c = getopt(argc, argv, "di:jp:qr:svh")) != EOF) {
 		switch (c) {
 		case 'd':
 			debug = 1;
@@ -244,6 +250,10 @@ int main(int argc, char *argv[])
 		case 'i':
 			strncpy(iface, optarg, sizeof(iface));
 			DEBUG("IFACE: %s\n", iface);
+			break;
+
+		case 'j':
+			join++;
 			break;
 
 		case 'q':
@@ -265,6 +275,7 @@ int main(int argc, char *argv[])
 
 		case 's':
 			sender = 1;
+			join--;
 			break;
 
 		case 'v':
