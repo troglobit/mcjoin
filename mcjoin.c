@@ -58,6 +58,7 @@ int restart = 0;
 extern int optind;
 
 /* shared socket settings */
+int count = -1;
 int port = DEFAULT_PORT;
 
 /* sender socket */
@@ -68,7 +69,7 @@ struct sockaddr_in to[MAX_NUM_GROUPS];
 
 /* receiver socket */
 char iface[IFNAMSIZ];
-int rsock = 0, count = 0;
+int rsock = 0, num_joins = 0;
 
 
 static int join_group(char *iface, char *group)
@@ -103,8 +104,8 @@ static int join_group(char *iface, char *group)
 		/* Only IP_MAX_MEMBERSHIPS (20) number of groups allowed per socket.
 		 * http://lists.freebsd.org/pipermail/freebsd-net/2003-October/001726.html
 		 */
-		if (++count >= IP_MAX_MEMBERSHIPS) {
-			count = 0;
+		if (++num_joins >= IP_MAX_MEMBERSHIPS) {
+			num_joins = 0;
 			rsock = 0;	/* XXX: No good, losing socket... */
 			goto restart;
 		}
@@ -152,6 +153,7 @@ void send_mcast(int signo __attribute__((unused)))
 	}
 
 	snprintf(buf, sizeof(buf), "%u All your base are belong to us ... count: %d", getpid(), counter++);
+	DEBUG("Sending packet: %s\n", buf);
 	for (i = 0; i < ton; i++)
 		sendto(ssock, buf, sizeof(buf), 0, (struct sockaddr *)&to[i], sizeof(to[0]));
 }
@@ -199,38 +201,52 @@ int loop(int total, char *groups[])
 
 				close(rsock);
 				rsock = 0;
-				count = 0;
+				num_joins = 0;
 				break;
 			}
 
 			recv(rsock, buf, sizeof(buf), 0);
 			ret = atoi(buf);
 			DEBUG("OUR PID %d GOT PID: %d BUF: %s\n", getpid(), ret, buf);
-			if (ret != getpid())
+			if (ret != getpid()) {
 				PRINT(".");
+				if (count > 0) {
+					count--;
+					if (!count)
+						return 0;
+				}
+			}
 		}
 	}
 
-	while (1)
+	while (1) {
 		poll(NULL, 0, -1);
+		if (count > 0) {
+			count--;
+			if (!count)
+				return 0;
+		}
+	}
 
 	return 0;
 }
 
 static int usage(int code)
 {
-	printf("\nUsage: %s [dhqv] [-i IFNAME] [GROUP0 .. GROUPN | GROUP+NUM]\n"
+	printf("\nUsage: %s [dhjqsv] [-c COUNT] [-i IFACE] [-p PORT] [-r SEC] [-t TTL]\n"
+	       "              [GROUP0 .. GROUPN | GROUP+NUM]\n"
 	       "\n"
 	       "Options:\n"
-	       "  -d           Debyg output\n"
+	       "  -c COUNT     Stop after sending/receiving COUNT number of packets\n"
+	       "  -d           Debug output\n"
 	       "  -h           This help text\n"
-	       "  -i IFNAME    Interface to use for multicast groups, default %s\n"
+	       "  -i IFACE     Interface to use for sending/receiving multicast, default: %s\n"
 	       "  -j           Join groups, default unless acting as sender\n"
 	       "  -p PORT      UDP port number to listen to, default: %d\n"
 	       "  -q           Quiet mode\n"
-	       "  -r N         Do a join/leave every N seconds\n"
-	       "  -s           Act as sender, sends packets to select groups\n"
-	       "  -t TTL       TTL to use when sending multicast packets, default 1\n"
+	       "  -r SEC       Do a join/leave every SEC seconds (backwards compat. option)\n"
+	       "  -s           Act as sender, sends packets to select groups, default: no\n"
+	       "  -t TTL       TTL to use when sending multicast packets, default: 1\n"
 	       "  -v           Display program version\n"
 	       "\n"
 	       "Mandatory arguments to long options are mandatory for short options too\n"
@@ -250,8 +266,12 @@ int main(int argc, char *argv[])
 	 * XXX - Iterate over /sys/class/net/.../link_mode */
 	strncpy(iface, DEFAULT_IFNAME, sizeof(iface));
 
-	while ((c = getopt(argc, argv, "di:jp:qr:st:vh")) != EOF) {
+	while ((c = getopt(argc, argv, "c:di:jp:qr:st:vh")) != EOF) {
 		switch (c) {
+		case 'c':
+			count = atoi(optarg);
+			break;
+
 		case 'd':
 			debug = 1;
 			break;
