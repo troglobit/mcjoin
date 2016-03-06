@@ -61,6 +61,7 @@ extern int optind;
 /* shared socket settings */
 int count = -1;
 int port = DEFAULT_PORT;
+size_t total_count = 0;
 
 /* sender socket */
 int ssock = 0;
@@ -159,6 +160,14 @@ static void send_mcast(int signo __attribute__((unused)))
 		sendto(ssock, buf, sizeof(buf), 0, (struct sockaddr *)&to[i], sizeof(to[0]));
 }
 
+static int show_stats(void)
+{
+	if (join)
+		PRINT("Received total: %zu packets\n", total_count);
+
+	return 0;
+}
+
 static int loop(int total, char *groups[])
 {
 	int i;
@@ -211,6 +220,7 @@ static int loop(int total, char *groups[])
 			DEBUG("OUR PID %d GOT PID: %d BUF: %s\n", getpid(), ret, buf);
 			if (ret != getpid()) {
 				PRINT(".");
+				total_count++;
 				if (count > 0) {
 					count--;
 					if (!count)
@@ -231,7 +241,7 @@ static int loop(int total, char *groups[])
 
 	DEBUG("Leaving main loop\n");
 
-	return 0;
+	return show_stats();
 }
 
 static void exit_loop(int signo)
