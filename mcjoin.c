@@ -31,15 +31,23 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-#define BUFSZ          100
-#define MAX_NUM_GROUPS 100
-#define DEFAULT_IFNAME "eth0"
-#define DEFAULT_GROUP  "225.1.2.3"
-#define DEFAULT_PORT   1234
+#define BUFSZ           100
+#define MAX_NUM_GROUPS  250
+#define DEFAULT_IFNAME  "eth0"
+#define DEFAULT_GROUP   "225.1.2.3"
+#define DEFAULT_PORT    1234
 
 #define DEBUG(fmt, ...) { if (debug)  printf(fmt, ## __VA_ARGS__); fflush(stdout); }
 #define ERROR(fmt, ...) { fprintf(stderr, "%s:" fmt, __func__, ## __VA_ARGS__);    }
 #define PRINT(fmt, ...) { if (!quiet) printf(fmt, ## __VA_ARGS__); fflush(stdout); }
+
+/* Group info */
+struct gr {
+	int                 sd;
+	size_t              count;
+	char               *group;
+	struct sockaddr_in  to;
+};
 
 /* Program meta data */
 extern char *__progname;
@@ -51,64 +59,66 @@ int join = 1;
 int quiet = 0;
 int debug = 0;
 int sender = 0;
-int period = 1000000;		/* 1 sec in micro seconds*/
-int restart = 0;
 int running = 1;
 
-/* getopt externals */
-extern int optind;
-
-/* shared socket settings */
-int count = -1;
+/* Global data */
+int period = 1000000;		/* 1 sec in micro seconds*/
+int restart = 0;
+size_t count = 0;
 int port = DEFAULT_PORT;
-size_t total_count = 0;
-
-/* sender socket */
-int ssock = 0;
 unsigned char ttl = 1;
-int ton = 0;
-struct sockaddr_in to[MAX_NUM_GROUPS];
 
-/* receiver socket */
+size_t group_num = 0;
+struct gr groups[MAX_NUM_GROUPS];
+
 char iface[IFNAMSIZ];
-int rsock = 0, num_joins = 0;
+int num_joins = 0;
 
 
-static int join_group(char *iface, char *group)
+static int join_group(int id)
 {
 	struct ip_mreqn mreqn;
+	struct gr *gr = &groups[id];
 
  restart:
-	if (!rsock) {
+	if (gr->sd == 0) {
 		int val = 1;
+		unsigned char loop = 0;
 		struct sockaddr_in sin;
 
-		rsock = socket(AF_INET, SOCK_DGRAM, 0);
-		if (rsock < 0) {
+		DEBUG("Opening socket for group %s ...\n", gr->group);
+		gr->sd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+		if (gr->sd < 0) {
 			ERROR("Failed opening socket(): %m\n");
 			return 1;
 		}
 
-		if (setsockopt(rsock, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val)))
+		if (setsockopt(gr->sd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val)))
 			ERROR("Failed enabling SO_REUSEADDR: %m\n");
+
+		if (setsockopt(gr->sd, IPPROTO_IP, IP_MULTICAST_LOOP, &loop, sizeof(loop)))
+			ERROR("Failed disabling IP_MULTICAST_LOOP: %m\n");
 
 		sin.sin_family = AF_INET;
 		sin.sin_addr.s_addr = htonl(INADDR_ANY);
-		sin.sin_port = htons(port);
-		if (bind(rsock, (struct sockaddr *)&sin, sizeof(sin))) {
+		sin.sin_port = htons(port + id);
+		if (bind(gr->sd, (struct sockaddr *)&sin, sizeof(sin))) {
 			ERROR("Faild binding to socket: %m\n");
-			close(rsock);
-			rsock = 0;
+			close(gr->sd);
+			gr->sd = 0;
 
 			return 1;
 		}
 	} else {
-		/* Only IP_MAX_MEMBERSHIPS (20) number of groups allowed per socket.
+		DEBUG("Socket %d already open for group %s ...\n", gr->sd, gr->group);
+
+		/*
+		 * Only IP_MAX_MEMBERSHIPS (20) number of groups allowed per socket.
 		 * http://lists.freebsd.org/pipermail/freebsd-net/2003-October/001726.html
 		 */
 		if (++num_joins >= IP_MAX_MEMBERSHIPS) {
 			num_joins = 0;
-			rsock = 0;	/* XXX: No good, losing socket... */
+			gr->sd = 0;	/* XXX: No good, losing socket... */
 			goto restart;
 		}
 	}
@@ -121,27 +131,28 @@ static int join_group(char *iface, char *group)
 	}
 	DEBUG("Added iface %s, idx %d\n", iface, mreqn.imr_ifindex);
 
-	if (inet_pton(AF_INET, group, &mreqn.imr_multiaddr) <= 0) {
-		ERROR("invalid group address: %s\n", group);
+	if (inet_pton(AF_INET, gr->group, &mreqn.imr_multiaddr) <= 0) {
+		ERROR("invalid group address: %s\n", gr->group);
 		return 1;
 	}
-	DEBUG("GROUP %#x (%s)\n", ntohl(mreqn.imr_multiaddr.s_addr), group);
+	DEBUG("GROUP %#x (%s)\n", ntohl(mreqn.imr_multiaddr.s_addr), gr->group);
 
-	if (setsockopt(rsock, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreqn, sizeof(mreqn)) < 0) {
+	if (setsockopt(gr->sd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreqn, sizeof(mreqn)) < 0) {
 		ERROR("IP_ADD_MEMBERSHIP: %m\n");
 		return 1;
 	}
 
-	PRINT("joined group %s on %s ...\n", group, iface);
+	PRINT("joined group %s on %s ...\n", gr->group, iface);
 
 	return 0;
 }
 
-static void send_mcast(int signo __attribute__((unused)))
+static void send_mcast(int signo)
 {
-	int i;
+	size_t i;
 	char buf[BUFSZ] = { 0 };
-	static int counter = 1;
+	static int ssock = 0;
+	static unsigned int counter = 1;
 
 	if (!ssock) {
 		ssock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -154,33 +165,53 @@ static void send_mcast(int signo __attribute__((unused)))
 			ERROR("Failed setting IP_MULTICAST_TTL: %m\n");
 	}
 
-	snprintf(buf, sizeof(buf), "%u All your base are belong to us ... count: %d", getpid(), counter++);
-	DEBUG("Sending packet: %s\n", buf);
-	for (i = 0; i < ton; i++)
-		sendto(ssock, buf, sizeof(buf), 0, (struct sockaddr *)&to[i], sizeof(to[0]));
+	for (i = 0; i < group_num; i++) {
+		socklen_t len = sizeof(groups[i].to);
+		struct sockaddr *dest = (struct sockaddr *)&groups[i].to;
+
+		snprintf(buf, sizeof(buf), "Sender PID %u, MC group %s ... count: %u", getpid(), groups[i].group, counter++);
+		DEBUG("Sending packet on signal %d, msg: %s\n", signo, buf);
+//		DEBUG("Sending packet to group %s\n", groups[i].group);
+		sendto(ssock, buf, sizeof(buf), 0, dest, len);
+	}
 }
 
 static int show_stats(void)
 {
-	if (join)
+	if (join) {
+		size_t i, total_count = 0;
+
+		if (group_num > 1) {
+			for (i = 0; i < group_num; i++) {
+				PRINT("Group %s received %zu packets\n", groups[i].group, groups[i].count);
+				total_count += groups[i].count;
+			}
+			PRINT("\n");
+		} else {
+			total_count = groups[0].count;
+		}
+
 		PRINT("Received total: %zu packets\n", total_count);
+	}
 
 	return 0;
 }
 
-static int loop(int total, char *groups[])
+static int loop(void)
 {
-	int i;
+	size_t i;
 
 	if (sender) {
 		struct itimerval times;
 
-		for (i = 0; i < total; i++) {
-			to[i].sin_family      = AF_INET;
-			to[i].sin_addr.s_addr = inet_addr(groups[i]);
-			to[i].sin_port        = htons(port);
+		for (i = 0; i < group_num; i++) {
+			char *group = groups[i].group;
+			struct sockaddr_in *sin = &groups[i].to;
+
+			sin->sin_family      = AF_INET;
+			sin->sin_addr.s_addr = inet_addr(group);
+			sin->sin_port        = htons(port + i);
 		}
-		ton = total;
 		signal(SIGALRM, send_mcast);
 
 		times.it_value.tv_sec     = 1;	/* wait a bit for system to "stabilize"  */
@@ -191,42 +222,72 @@ static int loop(int total, char *groups[])
 	}
 
 	while (join && running) {
-		for (i = 0; i < total; i++) {
-			if (join_group(iface, groups[i]))
+		for (i = 0; i < group_num; i++) {
+			if (join_group(i))
 				return 1;
 		}
 
 		while (running) {
 			int ret;
 			char buf[BUFSZ];
-			struct pollfd pfd = {
-				.fd     = rsock,
-				.events = POLLIN,
-			};
+			struct pollfd pfd[MAX_NUM_GROUPS];
 
-			ret = poll(&pfd, 1, restart ? restart * 1000 : -1);
+			/* One group per socket */
+			for (i = 0; i < group_num; i++) {
+				pfd[i].fd = groups[i].sd;
+				pfd[i].events = POLLIN;
+				pfd[i].revents = 0;
+			}
+
+			ret = poll(pfd, group_num, restart ? restart * 1000 : -1);
 			if (ret <= 0) {
 				if (ret < 0 || !restart)
 					continue;
 
-				close(rsock);
-				rsock = 0;
-				num_joins = 0;
+				for (i = 0; i < group_num; i++) {
+					close(groups[i].sd);
+					groups[i].sd = 0;
+					num_joins = 0;
+				}
 				break;
 			}
 
-			recv(rsock, buf, sizeof(buf), 0);
-			ret = atoi(buf);
-			DEBUG("OUR PID %d GOT PID: %d BUF: %s\n", getpid(), ret, buf);
-			if (ret != getpid()) {
-				PRINT(".");
-				total_count++;
-				if (count > 0) {
-					count--;
-					if (!count)
-						return 0;
+			for (i = 0; i < group_num; i++) {
+				if (pfd[i].revents) {
+					int pid;
+					ssize_t bytes;
+
+					bytes = recv(pfd[i].fd, buf, sizeof(buf), MSG_DONTWAIT);
+					if (bytes > 0) {
+						buf[bytes] = 0;
+						groups[i].count++;
+
+						pid = atoi(buf);
+						DEBUG("Count %zu, Our PID %d Got PID: %d, group %s msg: %s\n",
+						      groups[i].count, getpid(), pid, groups[i].group, buf);
+						if (pid != getpid())
+							PRINT(".");
+					}
+
+					pfd[i].revents = 0;
 				}
 			}
+
+			if (count > 0) {
+				size_t total = count * group_num;
+
+				for (i = 0; i < group_num; i++) {
+					if (groups[i].count >= count)
+						total--;
+				}
+
+				if (!total) {
+					running = 0;
+					break;
+				}
+			}
+
+			DEBUG("\n");
 		}
 	}
 
@@ -276,19 +337,21 @@ static int usage(int code)
 
 int main(int argc, char *argv[])
 {
-	int i, c, total = 0;
-	char *group, *groups[100];
-	struct in_addr addr;
+	int i, c;
+	extern int optind;
 
 	/* Default interface
 	 * XXX - Should be the first, after lo, in the list at /proc/net/dev, or
 	 * XXX - Iterate over /sys/class/net/.../link_mode */
 	strncpy(iface, DEFAULT_IFNAME, sizeof(iface));
 
+	for (i = 0; i < MAX_NUM_GROUPS; i++)
+		memset(&groups[i], 0, sizeof(groups[0]));
+
 	while ((c = getopt(argc, argv, "c:di:jp:qr:st:vh")) != EOF) {
 		switch (c) {
 		case 'c':
-			count = atoi(optarg);
+			count = (size_t)atoi(optarg);
 			break;
 
 		case 'd':
@@ -343,7 +406,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (optind == argc)
-		groups[total++] = DEFAULT_GROUP;
+		groups[group_num++].group = strdup(DEFAULT_GROUP);
 
 	/*
 	 * mcjoin group+num
@@ -351,7 +414,8 @@ int main(int argc, char *argv[])
 	 */
 	for (i = optind; i < argc; i++) {
 		int j, num = 1;
-		char *pos;
+		char *pos, *group;
+		struct in_addr addr;
 
 		group = argv[i];
 		pos = strchr(group, '+');
@@ -367,7 +431,7 @@ int main(int argc, char *argv[])
 			}
 
 			DEBUG("Adding group %s (0x%04x) to list ...\n", group, ntohl(addr.s_addr));
-			groups[total++] = strdup(group);
+			groups[group_num++].group = strdup(group);
 
 			/* Next group ... if any */
 			addr.s_addr = htonl(ntohl(addr.s_addr) + 1);
@@ -382,5 +446,5 @@ int main(int argc, char *argv[])
 	signal(SIGHUP, exit_loop);
 	signal(SIGTERM, exit_loop);
 
-	return loop(total, groups);
+	return loop();
 }
