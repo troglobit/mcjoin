@@ -90,6 +90,9 @@ static int alloc_socket(int port)
 	if (setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val)))
 		ERROR("Failed enabling SO_REUSEADDR: %m\n");
 
+	if (setsockopt(sd, SOL_IP, IP_PKTINFO, &val, sizeof(val)))
+		ERROR("Failed enabling IP_PKTINFO: %m\n");
+
 	val = 0;
 	if (setsockopt(sd, IPPROTO_IP, IP_MULTICAST_ALL, &val, sizeof(val)))
 		ERROR("Failed disabling IP_MULTICAST_ALL: %m\n");
@@ -167,9 +170,75 @@ static void send_mcast(int signo)
 
 		snprintf(buf, sizeof(buf), "Sender PID %u, MC group %s ... count: %u", getpid(), groups[i].group, counter++);
 		DEBUG("Sending packet on signal %d, msg: %s\n", signo, buf);
-//		DEBUG("Sending packet to group %s\n", groups[i].group);
 		sendto(ssock, buf, sizeof(buf), 0, dest, len);
 	}
+}
+
+struct in_pktinfo *find_pktinfo(struct msghdr *msgh)
+{
+	struct cmsghdr *cmsg;
+
+	for (cmsg = CMSG_FIRSTHDR(msgh); cmsg; cmsg = CMSG_NXTHDR(msgh, cmsg)) {
+		if (cmsg->cmsg_level != SOL_IP || cmsg->cmsg_type != IP_PKTINFO)
+			continue;
+
+		return (struct in_pktinfo *)CMSG_DATA(cmsg);
+	}
+
+	return NULL;
+}
+
+/*
+ * rcvmsg() wrapper which uses out-of-band info to verify expected
+ * destination address (multicast group)
+ */
+static ssize_t recv_mcast(int id)
+{
+	ssize_t bytes;
+	char buf[BUFSZ];
+	char cmbuf[0x100];
+	struct msghdr msgh;
+	struct in_pktinfo *ipi;
+	struct sockaddr_storage src;
+	struct iovec iov[1] = {
+		{ .iov_base  = buf, .iov_len   = sizeof(buf) },
+	};
+
+	memset(&msgh, 0, sizeof(msgh));
+	msgh.msg_name       = &src;
+	msgh.msg_namelen    = sizeof(src);
+	msgh.msg_iov        = iov;
+	msgh.msg_iovlen     = 1;
+	msgh.msg_control    = cmbuf;
+	msgh.msg_controllen = sizeof(cmbuf);
+
+	bytes = recvmsg(groups[id].sd, &msgh, MSG_DONTWAIT);
+	if (bytes < 0)
+		return -1;
+
+	ipi = find_pktinfo(&msgh);
+	if (ipi) {
+		int pid;
+		char *dst;
+
+		dst = inet_ntoa(ipi->ipi_addr);
+		buf[bytes] = 0;
+		pid = atoi(buf);
+
+		DEBUG("Count %zu, Our PID %d Got PID: %d, dst %s group %s msg: %s\n", groups[id].count, getpid(), pid, dst, groups[id].group, buf);
+		if (pid != getpid()) {
+			if (strcmp(dst, groups[id].group)) {
+				ERROR("Packet for group %s received on wrong socket, expected group %s.\n", dst, groups[id].group);
+				return -1;
+			}
+
+			groups[id].count++;
+			PRINT(".");
+			return 0;
+		}
+	}
+
+	return -1;
 }
 
 static int show_stats(void)
@@ -199,14 +268,6 @@ static int loop(void)
 	if (sender) {
 		struct itimerval times;
 
-		for (i = 0; i < group_num; i++) {
-			char *group = groups[i].group;
-			struct sockaddr_in *sin = &groups[i].to;
-
-			sin->sin_family      = AF_INET;
-			sin->sin_addr.s_addr = inet_addr(group);
-			sin->sin_port        = htons(port); /* Index port with i if IP_MULTICAST_ALL fails */
-		}
 		signal(SIGALRM, send_mcast);
 
 		times.it_value.tv_sec     = 1;	/* wait a bit for system to "stabilize"  */
@@ -224,7 +285,6 @@ static int loop(void)
 
 		while (running) {
 			int ret;
-			char buf[BUFSZ];
 			struct pollfd pfd[MAX_NUM_GROUPS];
 
 			/* One group per socket */
@@ -249,21 +309,7 @@ static int loop(void)
 
 			for (i = 0; i < group_num; i++) {
 				if (pfd[i].revents) {
-					int pid;
-					ssize_t bytes;
-
-					bytes = recv(pfd[i].fd, buf, sizeof(buf), MSG_DONTWAIT);
-					if (bytes > 0) {
-						buf[bytes] = 0;
-						groups[i].count++;
-
-						pid = atoi(buf);
-						DEBUG("Count %zu, Our PID %d Got PID: %d, group %s msg: %s\n",
-						      groups[i].count, getpid(), pid, groups[i].group, buf);
-						if (pid != getpid())
-							PRINT(".");
-					}
-
+					recv_mcast(i);
 					pfd[i].revents = 0;
 				}
 			}
@@ -432,6 +478,15 @@ int main(int argc, char *argv[])
 			addr.s_addr = htonl(ntohl(addr.s_addr) + 1);
 			group = inet_ntoa(addr);
 		}
+	}
+
+	for (i = 0; i < (int)group_num; i++) {
+		char *group = groups[i].group;
+		struct sockaddr_in *sin = &groups[i].to;
+
+		sin->sin_family      = AF_INET;
+		sin->sin_addr.s_addr = inet_addr(group);
+		sin->sin_port        = htons(port); /* Index port with i if IP_MULTICAST_ALL fails */
 	}
 
 	/*
