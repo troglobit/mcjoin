@@ -1,7 +1,14 @@
+mcjoin (2.1-1) wily; urgency=medium
+
+  * New upstream release, adding support for packet validation: check
+    expected multicast group against packet destination address.
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Tue, 08 Mar 2016 09:53:02 +0100
+
 mcjoin (2.0-1) wily; urgency=low
 
-  * New upstream relase. Adds support for actings as sender as well as
-    to, not only join, but also receive multicast packets.
+  * New upstream release. Adds support for acting as sender as well as to,
+    not only join, but also receive multicast packets.
   * Please note that `--long-options` are no more and that some options have
     been removed altogether.  For instance `-f FIRST` and `-n NUM` options
     have been changed to command arguments on the form `GROUP+NUM`, which
