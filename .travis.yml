@@ -22,7 +22,6 @@ script:
   - ./configure --prefix=
   - make clean
   - make -j5
-  - make
   - DESTDIR=~/tmp make install-strip
   - tree ~/tmp
   - ldd ~/tmp/bin/mcjoin
