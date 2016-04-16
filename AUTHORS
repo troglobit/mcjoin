@@ -1,0 +1,6 @@
+mcjoin was created by David Stevens <dlstevens()us!ibm!com> in 2004.
+For details, see this LKML post https://lkml.org/lkml/2004/8/5/143
+
+In 2008 Joachim Nilsson <troglobit()gmail!com> picked it up for use in
+OnTime AS, and later Westermo R&D.  Since then the small example code
+has grown into quite a useful sender/receiver application.
