@@ -88,5 +88,11 @@ hence, by default all multicast applications in UNIX will receive all
 multicast frames from all groups joined by all other applications on
 the same system ...
 
+... which IMO is a weird default since multicast by default is opt-in,
+not opt-out, which is what POSIX makes it.  OK, may it's not mandated by
+POSIX, and (unregulated) multicast is akin to broadcast, but still!  I
+bet most developer's don't know about this.
+
+
 [Travis]:          https://travis-ci.org/troglobit/mcjoin
 [Travis Status]:   https://travis-ci.org/troglobit/mcjoin.png?branch=master
