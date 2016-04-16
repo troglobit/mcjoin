@@ -2,12 +2,19 @@ m c j o i n - tiny multicast testing tool
 =========================================
 [![Travis Status][]][Travis]
 
+`mcjoin` is a very simple and easy-to-use tool to test IPv4 multicast.
+Simply start a multicast generator (server) on one end and one or more
+data sinks (clients).
+
 By default the group `225.1.2.3` and the UDP port `1234` is used, you
 may want to use the `MCAST_TEST_NET` from RFC5771, `233.252.0.0/24`, or
 the `ompoing(8)` test group `232.43.211.234`, defined in this IETF draft
 <http://tools.ietf.org/html/draft-ietf-mboned-ssmping-08> and UDP port
 `4321`.  At the moment max 250 groups can be joined.
 
+
+example
+-------
 
 ```shell
 sender$ mcjoin -s
