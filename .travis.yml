@@ -10,6 +10,12 @@ compiler:
   - gcc
   - clang
 
+env:
+  global:
+   # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
+   #   via the "travis encrypt" command using the project repo's public key
+   - secure: "MvcjsKSUPikcLKIYuLgVbEFBngeUnYG4khXnEVBRNrTdldfEMmy4OJaHQ9rdAHiJXobiR/KGCZXJh1CyG33k22+pCezgs5cidIKrHVEuTNz4Wv+5P/q7w8qtXtPqn88KsM0nJjDiAv6/AHfnp0+CbiW2vhG3M2uz8GLqXeBWHATC1YP1zOIqWAkjTxmAlKC9v4XFGEcLpfyXP4ym/WKWkegF4hC0G/tFL+mrGeg+7q/fHvMYujciR5czUQNOlVaWC8lhC0vGxuxtxGgZYQCzgMWjakVzXZTcuB0LvrdeycKPoKBP/AO4gX2lVxdLp03v7eErvAHymNqeNBApfpPqe0PPtrwhnAZMbJ9lfimCh+TWBfcEGdz7KpCZzwUPhPZ5krYisw3XHmbx/+iuvZ2SvZlakXYuP0nJtot1WyjUy9C/0yopZAYfk9s7DasZc/+O1gbKDoTrZEWe+rhYo4i1rjzqyMjhWeLOoIQX4gA3aLzEb0Vmi+67VD1M9NvDwtcuYRX5jM45rZ0JRPx5UGVMGmMwnJo7fsAA+JmJMo+94auN0jVfTAcxmHBHmushpkF+Jg8JUKkQ9rjRZGHAwkaVlicRbpEGMNh9Bu0VCkNVGzQKedWDv9WlwdoFe2YHhXOrbg5WfBRzWzp1clYaqwBhRFjwHmez/75Grt5TUAXCMBE="
+
 addons:
   apt:
     packages:
