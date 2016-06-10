@@ -1,6 +1,6 @@
 m c j o i n - tiny multicast testing tool
 =========================================
-[![Travis Status][]][Travis]
+[![Travis Status][]][Travis] [![Coverity Status][]][Coverity Scan]
 
 `mcjoin` is a very simple and easy-to-use tool to test IPv4 multicast.
 Simply start a multicast generator (server) on one end and one or more
@@ -96,3 +96,5 @@ bet most developer's don't know about this.
 
 [Travis]:          https://travis-ci.org/troglobit/mcjoin
 [Travis Status]:   https://travis-ci.org/troglobit/mcjoin.png?branch=master
+[Coverity Scan]:   https://scan.coverity.com/projects/9108
+[Coverity Status]: https://scan.coverity.com/projects/9108/badge.svg
