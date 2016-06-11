@@ -97,6 +97,7 @@ static int alloc_socket(int port)
 	if (setsockopt(sd, IPPROTO_IP, IP_MULTICAST_ALL, &val, sizeof(val)))
 		ERROR("Failed disabling IP_MULTICAST_ALL: %m\n");
 
+	memset(&sin, 0, sizeof(sin));
 	sin.sin_family      = AF_INET;
 	sin.sin_addr.s_addr = htonl(INADDR_ANY);
 	sin.sin_port        = htons(port);
