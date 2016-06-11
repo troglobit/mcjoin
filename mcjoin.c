@@ -71,7 +71,7 @@ unsigned char ttl = 1;
 size_t group_num = 0;
 struct gr groups[MAX_NUM_GROUPS];
 
-char iface[IFNAMSIZ];
+char iface[IFNAMSIZ + 1];
 int num_joins = 0;
 
 
@@ -380,6 +380,7 @@ static int usage(int code)
 int main(int argc, char *argv[])
 {
 	int i, c;
+	size_t len;
 	extern int optind;
 
 	/* Default interface
@@ -404,7 +405,13 @@ int main(int argc, char *argv[])
 			return usage(0);
 
 		case 'i':
+			len = strlen(optarg);
+			if (len >= sizeof(iface)) {
+				fprintf(stderr, "Too long interface name, max %zd chars.\n", sizeof(iface) - 1);
+				return 1;
+			}
 			strncpy(iface, optarg, sizeof(iface));
+			iface[len] = 0;
 			DEBUG("IFACE: %s\n", iface);
 			break;
 
