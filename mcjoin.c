@@ -170,7 +170,8 @@ static void send_mcast(int signo)
 
 		snprintf(buf, sizeof(buf), "Sender PID %u, MC group %s ... count: %u", getpid(), groups[i].group, counter++);
 		DEBUG("Sending packet on signal %d, msg: %s\n", signo, buf);
-		sendto(ssock, buf, sizeof(buf), 0, dest, len);
+		if (sendto(ssock, buf, sizeof(buf), 0, dest, len) < 0)
+			ERROR("Failed sending mcast packet: %m\n");
 	}
 }
 
