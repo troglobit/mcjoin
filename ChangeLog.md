@@ -48,7 +48,7 @@ and developed further by Joachim Nilsson, on his spare time.
 
 
 [UNRELEASED]: https://github.com/troglobit/mcjoin/compare/v2.1...HEAD
-[v2.1]:       https://github.com/troglobit/mcjoin/compare/2.0...2.1
-[v2.0]:       https://github.com/troglobit/mcjoin/compare/1.5...2.0
-[v1.5]:       https://github.com/troglobit/mcjoin/compare/1.4...1.5
-[v1.4]:       https://github.com/troglobit/mcjoin/compare/1.3...1.4
+[v2.1]:       https://github.com/troglobit/mcjoin/compare/v2.0...v2.1
+[v2.0]:       https://github.com/troglobit/mcjoin/compare/v1.5...v2.0
+[v1.5]:       https://github.com/troglobit/mcjoin/compare/v1.4...v1.5
+[v1.4]:       https://github.com/troglobit/mcjoin/compare/v1.3...v1.4
