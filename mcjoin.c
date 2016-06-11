@@ -39,9 +39,9 @@
 #define DEFAULT_GROUP   "225.1.2.3"
 #define DEFAULT_PORT    1234
 
-#define DEBUG(fmt, ...) { if (debug)  printf(fmt, ## __VA_ARGS__); fflush(stdout); }
-#define ERROR(fmt, ...) { fprintf(stderr, fmt, ## __VA_ARGS__);    }
-#define PRINT(fmt, ...) { if (!quiet) printf(fmt, ## __VA_ARGS__); fflush(stdout); }
+#define DEBUG(fmt, ...) { if (debug)  printf(fmt "\n", ## __VA_ARGS__); fflush(stdout); }
+#define ERROR(fmt, ...) { fprintf(stderr, fmt "\n", ## __VA_ARGS__);    }
+#define PRINT(fmt, ...) { if (!quiet) printf(fmt "\n", ## __VA_ARGS__); fflush(stdout); }
 
 /* Group info */
 struct gr {
@@ -82,27 +82,27 @@ static int alloc_socket(int port)
 
 	sd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if (sd < 0) {
-		ERROR("Failed opening socket(): %m\n");
+		ERROR("Failed opening socket(): %m");
 		return -1;
 	}
 
 	val = 1;
 	if (setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val)))
-		ERROR("Failed enabling SO_REUSEADDR: %m\n");
+		ERROR("Failed enabling SO_REUSEADDR: %m");
 
 	if (setsockopt(sd, SOL_IP, IP_PKTINFO, &val, sizeof(val)))
-		ERROR("Failed enabling IP_PKTINFO: %m\n");
+		ERROR("Failed enabling IP_PKTINFO: %m");
 
 	val = 0;
 	if (setsockopt(sd, IPPROTO_IP, IP_MULTICAST_ALL, &val, sizeof(val)))
-		ERROR("Failed disabling IP_MULTICAST_ALL: %m\n");
+		ERROR("Failed disabling IP_MULTICAST_ALL: %m");
 
 	memset(&sin, 0, sizeof(sin));
 	sin.sin_family      = AF_INET;
 	sin.sin_addr.s_addr = htonl(INADDR_ANY);
 	sin.sin_port        = htons(port);
 	if (bind(sd, (struct sockaddr *)&sin, sizeof(sin))) {
-		ERROR("Faild binding to socket: %m\n");
+		ERROR("Faild binding to socket: %m");
 		close(sd);
 		return -1;
 	}
@@ -122,23 +122,23 @@ static int join_group(int id)
 	memset(&mreqn, 0, sizeof(mreqn));
 	mreqn.imr_ifindex = if_nametoindex(iface);
 	if (!mreqn.imr_ifindex) {
-		ERROR("invalid interface: %s\n", iface);
+		ERROR("invalid interface: %s", iface);
 		goto error;
 	}
-	DEBUG("Added iface %s, idx %d\n", iface, mreqn.imr_ifindex);
+	DEBUG("Added iface %s, idx %d", iface, mreqn.imr_ifindex);
 
 	if (inet_pton(AF_INET, gr->group, &mreqn.imr_multiaddr) <= 0) {
-		ERROR("invalid group address: %s\n", gr->group);
+		ERROR("invalid group address: %s", gr->group);
 		goto error;
 	}
-	DEBUG("GROUP %#x (%s)\n", ntohl(mreqn.imr_multiaddr.s_addr), gr->group);
+	DEBUG("GROUP %#x (%s)", ntohl(mreqn.imr_multiaddr.s_addr), gr->group);
 
 	if (setsockopt(sd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreqn, sizeof(mreqn)) < 0) {
-		ERROR("IP_ADD_MEMBERSHIP: %m\n");
+		ERROR("IP_ADD_MEMBERSHIP: %m");
 		goto error;
 	}
 
-	PRINT("joined group %s on %s ...\n", gr->group, iface);
+	PRINT("joined group %s on %s ...", gr->group, iface);
 	gr->sd = sd;
 	return 0;
 
@@ -157,12 +157,12 @@ static void send_mcast(int signo)
 	if (!ssock) {
 		ssock = socket(AF_INET, SOCK_DGRAM, 0);
 		if (ssock < 0) {
-			ERROR("Failed opening socket(): %m\n");
+			ERROR("Failed opening socket(): %m");
 			return;
 		}
 
 		if (setsockopt(ssock, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl)))
-			ERROR("Failed setting IP_MULTICAST_TTL: %m\n");
+			ERROR("Failed setting IP_MULTICAST_TTL: %m");
 	}
 
 	for (i = 0; i < group_num; i++) {
@@ -170,9 +170,9 @@ static void send_mcast(int signo)
 		struct sockaddr *dest = (struct sockaddr *)&groups[i].to;
 
 		snprintf(buf, sizeof(buf), "Sender PID %u, MC group %s ... count: %u", getpid(), groups[i].group, counter++);
-		DEBUG("Sending packet on signal %d, msg: %s\n", signo, buf);
+		DEBUG("Sending packet on signal %d, msg: %s", signo, buf);
 		if (sendto(ssock, buf, sizeof(buf), 0, dest, len) < 0)
-			ERROR("Failed sending mcast packet: %m\n");
+			ERROR("Failed sending mcast packet: %m");
 	}
 }
 
@@ -227,10 +227,10 @@ static ssize_t recv_mcast(int id)
 		buf[bytes] = 0;
 		pid = atoi(buf);
 
-		DEBUG("Count %zu, Our PID %d Got PID: %d, dst %s group %s msg: %s\n", groups[id].count, getpid(), pid, dst, groups[id].group, buf);
+		DEBUG("Count %zu, Our PID %d Got PID: %d, dst %s group %s msg: %s", groups[id].count, getpid(), pid, dst, groups[id].group, buf);
 		if (pid != getpid()) {
 			if (strcmp(dst, groups[id].group)) {
-				ERROR("Packet for group %s received on wrong socket, expected group %s.\n", dst, groups[id].group);
+				ERROR("Packet for group %s received on wrong socket, expected group %s.", dst, groups[id].group);
 				return -1;
 			}
 
@@ -257,7 +257,7 @@ static int show_stats(void)
 			total_count = groups[0].count;
 		}
 
-		PRINT("\nReceived total: %zu packets\n", total_count);
+		PRINT("\nReceived total: %zu packets", total_count);
 	}
 
 	return 0;
@@ -330,7 +330,7 @@ static int loop(void)
 				}
 			}
 
-			DEBUG("\n");
+			DEBUG("");
 		}
 	}
 
@@ -342,14 +342,14 @@ static int loop(void)
 		}
 	}
 
-	DEBUG("Leaving main loop\n");
+	DEBUG("Leaving main loop");
 
 	return show_stats();
 }
 
 static void exit_loop(int signo)
 {
-	DEBUG("We got signal! (signo: %d)\n", signo);
+	DEBUG("We got signal! (signo: %d)", signo);
 	running = 0;
 }
 
@@ -407,12 +407,12 @@ int main(int argc, char *argv[])
 		case 'i':
 			len = strlen(optarg);
 			if (len >= sizeof(iface)) {
-				fprintf(stderr, "Too long interface name, max %zd chars.\n", sizeof(iface) - 1);
+				ERROR("Too long interface name, max %zd chars.", sizeof(iface) - 1);
 				return 1;
 			}
 			strncpy(iface, optarg, sizeof(iface));
 			iface[len] = 0;
-			DEBUG("IFACE: %s\n", iface);
+			DEBUG("IFACE: %s", iface);
 			break;
 
 		case 'j':
@@ -426,12 +426,12 @@ int main(int argc, char *argv[])
 		case 'p':
 			port = atoi(optarg);
 			if (port < 1024 && geteuid())
-				ERROR("Must be root to use priviliged ports (< 1024)\n");
+				ERROR("Must be root to use priviliged ports (< 1024)");
 			break;
 
 		case 'r':
 			restart = atoi(optarg);
-			DEBUG("RESTART: %d\n", restart);
+			DEBUG("RESTART: %d", restart);
 			if (restart < 1)
 				restart = 1;
 			break;
@@ -475,11 +475,11 @@ int main(int argc, char *argv[])
 
 		for (j = 0; j < num; j++) {
 			if (!inet_aton(group, &addr)) {
-				fprintf(stderr, "%s is not a valid IPv4 multicast group\n", group);
+				ERROR("%s is not a valid IPv4 multicast group", group);
 				return usage(1);
 			}
 
-			DEBUG("Adding group %s (0x%04x) to list ...\n", group, ntohl(addr.s_addr));
+			DEBUG("Adding group %s (0x%04x) to list ...", group, ntohl(addr.s_addr));
 			groups[group_num++].group = strdup(group);
 
 			/* Next group ... if any */
