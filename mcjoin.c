@@ -40,7 +40,7 @@
 #define DEFAULT_PORT    1234
 
 #define DEBUG(fmt, ...) { if (debug)  printf(fmt, ## __VA_ARGS__); fflush(stdout); }
-#define ERROR(fmt, ...) { fprintf(stderr, "%s:" fmt, __func__, ## __VA_ARGS__);    }
+#define ERROR(fmt, ...) { fprintf(stderr, fmt, ## __VA_ARGS__);    }
 #define PRINT(fmt, ...) { if (!quiet) printf(fmt, ## __VA_ARGS__); fflush(stdout); }
 
 /* Group info */
