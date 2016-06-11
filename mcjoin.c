@@ -82,27 +82,27 @@ static int alloc_socket(int port)
 
 	sd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if (sd < 0) {
-		ERROR("Failed opening socket(): %m");
+		ERROR("Failed opening socket(): %s", strerror(errno));
 		return -1;
 	}
 
 	val = 1;
 	if (setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val)))
-		ERROR("Failed enabling SO_REUSEADDR: %m");
+		ERROR("Failed enabling SO_REUSEADDR: %s", strerror(errno));
 
 	if (setsockopt(sd, SOL_IP, IP_PKTINFO, &val, sizeof(val)))
-		ERROR("Failed enabling IP_PKTINFO: %m");
+		ERROR("Failed enabling IP_PKTINFO: %s", strerror(errno));
 
 	val = 0;
 	if (setsockopt(sd, IPPROTO_IP, IP_MULTICAST_ALL, &val, sizeof(val)))
-		ERROR("Failed disabling IP_MULTICAST_ALL: %m");
+		ERROR("Failed disabling IP_MULTICAST_ALL: %s", strerror(errno));
 
 	memset(&sin, 0, sizeof(sin));
 	sin.sin_family      = AF_INET;
 	sin.sin_addr.s_addr = htonl(INADDR_ANY);
 	sin.sin_port        = htons(port);
 	if (bind(sd, (struct sockaddr *)&sin, sizeof(sin))) {
-		ERROR("Faild binding to socket: %m");
+		ERROR("Faild binding to socket: %s", strerror(errno));
 		close(sd);
 		return -1;
 	}
@@ -134,7 +134,7 @@ static int join_group(int id)
 	DEBUG("GROUP %#x (%s)", ntohl(mreqn.imr_multiaddr.s_addr), gr->group);
 
 	if (setsockopt(sd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreqn, sizeof(mreqn)) < 0) {
-		ERROR("IP_ADD_MEMBERSHIP: %m");
+		ERROR("IP_ADD_MEMBERSHIP: %s", strerror(errno));
 		goto error;
 	}
 
@@ -157,12 +157,12 @@ static void send_mcast(int signo)
 	if (!ssock) {
 		ssock = socket(AF_INET, SOCK_DGRAM, 0);
 		if (ssock < 0) {
-			ERROR("Failed opening socket(): %m");
+			ERROR("Failed opening socket(): %s", strerror(errno));
 			return;
 		}
 
 		if (setsockopt(ssock, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl)))
-			ERROR("Failed setting IP_MULTICAST_TTL: %m");
+			ERROR("Failed setting IP_MULTICAST_TTL: %s", strerror(errno));
 	}
 
 	for (i = 0; i < group_num; i++) {
@@ -172,7 +172,7 @@ static void send_mcast(int signo)
 		snprintf(buf, sizeof(buf), "Sender PID %u, MC group %s ... count: %u", getpid(), groups[i].group, counter++);
 		DEBUG("Sending packet on signal %d, msg: %s", signo, buf);
 		if (sendto(ssock, buf, sizeof(buf), 0, dest, len) < 0)
-			ERROR("Failed sending mcast packet: %m");
+			ERROR("Failed sending mcast packet: %s", strerror(errno));
 	}
 }
 
