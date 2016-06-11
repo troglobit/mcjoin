@@ -333,11 +333,10 @@ static int loop(void)
 	}
 
 	while (running) {
-		poll(NULL, 0, -1);
+		pause();	/* Let signal handler(s) do their job */
 		if (count > 0) {
-			count--;
-			if (!count)
-				return 0;
+			if (!--count)
+				break;
 		}
 	}
 
