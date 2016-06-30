@@ -190,6 +190,24 @@ struct in_pktinfo *find_pktinfo(struct msghdr *msgh)
 	return NULL;
 }
 
+static void progress(void)
+{
+	size_t num = 6;
+	const char *style = ".oOOo.";
+	static unsigned int i = 0;
+
+	if (quiet)
+		return;
+
+	if (!(i % num))
+		printf(".");
+
+	putchar(style[i++ % num]);
+	putchar('\b');
+
+	fflush(stdout);
+}
+
 /*
  * rcvmsg() wrapper which uses out-of-band info to verify expected
  * destination address (multicast group)
@@ -235,7 +253,7 @@ static ssize_t recv_mcast(int id)
 			}
 
 			groups[id].count++;
-			PRINT(".");
+			progress();
 			return 0;
 		}
 	}
