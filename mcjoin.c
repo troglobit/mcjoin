@@ -62,7 +62,7 @@ int sender = 0;
 int running = 1;
 
 /* Global data */
-int period = 1000000;		/* 1 sec in micro seconds*/
+int period = 100000;		/* 100 msec in micro seconds*/
 int restart = 0;
 size_t count = 0;
 int port = DEFAULT_PORT;
