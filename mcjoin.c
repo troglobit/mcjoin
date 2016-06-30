@@ -506,3 +506,10 @@ int main(int argc, char *argv[])
 
 	return loop();
 }
+
+/**
+ * Local Variables:
+ *  indent-tabs-mode: t
+ *  c-file-style: "linux"
+ * End:
+ */
