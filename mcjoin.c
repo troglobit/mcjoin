@@ -39,6 +39,11 @@
 #define DEFAULT_GROUP   "225.1.2.3"
 #define DEFAULT_PORT    1234
 
+/* Esc[?25l (lower case L)    - Hide Cursor */
+#define hidecursor()          fputs ("\e[?25l", stdout)
+/* Esc[?25h (lower case H)    - Show Cursor */
+#define showcursor()          fputs ("\e[?25h", stdout)
+
 #define DEBUG(fmt, ...) { if (debug)  printf(fmt "\n", ## __VA_ARGS__); fflush(stdout); }
 #define ERROR(fmt, ...) { fprintf(stderr, fmt "\n", ## __VA_ARGS__);    }
 #define PRINT(fmt, ...) { if (!quiet) printf(fmt "\n", ## __VA_ARGS__); fflush(stdout); }
@@ -307,6 +312,7 @@ static int loop(void)
 				return 1;
 		}
 
+		hidecursor();
 		while (running) {
 			int ret;
 			struct pollfd pfd[MAX_NUM_GROUPS];
@@ -354,6 +360,7 @@ static int loop(void)
 
 			DEBUG("");
 		}
+		showcursor();
 	}
 
 	while (running) {
