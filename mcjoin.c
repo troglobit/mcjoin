@@ -266,11 +266,15 @@ static int show_stats(void)
 static int loop(void)
 {
 	size_t i;
+	struct sigaction sa = {
+		.sa_flags = SA_RESTART,
+		.sa_handler = send_mcast,
+	};
 
 	if (sender) {
 		struct itimerval times;
 
-		signal(SIGALRM, send_mcast);
+		sigaction(SIGALRM, &sa, NULL);
 
 		times.it_value.tv_sec     = 1;	/* wait a bit for system to "stabilize"  */
 		times.it_value.tv_usec    = 0;	/* tv_sec or tv_usec cannot be both zero */
@@ -381,6 +385,10 @@ int main(int argc, char *argv[])
 {
 	int i, c;
 	size_t len;
+	struct sigaction sa = {
+		.sa_flags = SA_RESTART,
+		.sa_handler = exit_loop,
+	};
 	extern int optind;
 
 	/* Default interface
@@ -500,9 +508,9 @@ int main(int argc, char *argv[])
 	/*
 	 * Shared signal handlers between sender and receiver
 	 */
-	signal(SIGINT, exit_loop);
-	signal(SIGHUP, exit_loop);
-	signal(SIGTERM, exit_loop);
+	sigaction(SIGINT,  &sa, NULL);
+	sigaction(SIGHUP,  &sa, NULL);
+	sigaction(SIGTERM, &sa, NULL);
 
 	return loop();
 }
