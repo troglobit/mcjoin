@@ -21,6 +21,7 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <getopt.h>
+#include <ifaddrs.h>
 #include <libgen.h>
 #include <poll.h>
 #include <signal.h>
@@ -47,6 +48,19 @@
 #define DEBUG(fmt, ...) { if (debug)  printf(fmt "\n", ## __VA_ARGS__); fflush(stdout); }
 #define ERROR(fmt, ...) { fprintf(stderr, fmt "\n", ## __VA_ARGS__);    }
 #define PRINT(fmt, ...) { if (!quiet) printf(fmt "\n", ## __VA_ARGS__); fflush(stdout); }
+
+#ifndef IN_LINKLOCAL
+#define IN_LINKLOCALNETNUM	0xa9fe0000
+#define IN_LINKLOCAL(addr) ((addr & IN_CLASSB_NET) == IN_LINKLOCALNETNUM)
+#endif
+
+#ifndef IN_LOOPBACK
+#define IN_LOOPBACK(addr) ((addr & IN_CLASSA_NET) == 0x7f000000)
+#endif
+
+#ifndef IN_ZERONET
+#define IN_ZERONET(addr) ((addr & IN_CLASSA_NET) == 0)
+#endif
 
 /* Group info */
 struct gr {
@@ -152,6 +166,61 @@ error:
 	return 1;
 }
 
+static int is_address_valid(struct in_addr addr)
+{
+	char *address = inet_ntoa(addr);
+	in_addr_t ia;
+
+	DEBUG("Checking IPv4 address %s ...", address);
+
+	ia = ntohl(addr.s_addr);
+	if (IN_ZERONET(ia)   || IN_LOOPBACK(ia) || IN_LINKLOCAL(ia) ||
+	    IN_MULTICAST(ia) || IN_EXPERIMENTAL(ia)) {
+		DEBUG("IP address %s is not a routable address.", address);
+		return 0;
+	}
+
+	DEBUG("IPv4 address %s is valid.", address);
+	return 1;
+}
+
+static int find_iface(char *ifname, struct in_addr *addr)
+{
+	struct ifaddrs *ifa, *ifap, *match = NULL;
+	struct in_addr cand;
+
+	if (getifaddrs(&ifap) != 0)
+		return -1;
+
+	for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
+		DEBUG("Checking ifname %s against %s ...", ifname, ifa->ifa_name ?: "NULL");
+		if (strcmp(ifa->ifa_name, ifname) != 0)
+			continue;
+
+		if (ifa->ifa_addr == NULL)
+			continue;
+
+		if (ifa->ifa_addr->sa_family != AF_INET)
+			continue; /* Don't understand IPv6 yet ... */
+
+		cand = ((struct sockaddr_in *)ifa->ifa_addr)->sin_addr;
+		if (!is_address_valid(cand))
+			continue;
+
+		match = ifa;
+		break;
+	}
+
+	freeifaddrs(ifap);
+
+	if (match) {
+		*addr = cand;
+		return 0;
+	}
+
+	return 1;
+}
+
 static void send_mcast(int signo)
 {
 	size_t i;
@@ -160,6 +229,16 @@ static void send_mcast(int signo)
 	static unsigned int counter = 1;
 
 	if (!ssock) {
+		struct in_addr addr = {
+			.s_addr = INADDR_ANY,
+		};
+
+		if (find_iface(iface, &addr)) {
+			ERROR("Failed locating (a valid address on) %s: %s", iface, strerror(errno));
+			return;
+		}
+		DEBUG("Sending on iface %s addr %s", iface, inet_ntoa(addr));
+
 		ssock = socket(AF_INET, SOCK_DGRAM, 0);
 		if (ssock < 0) {
 			ERROR("Failed opening socket(): %s", strerror(errno));
@@ -168,6 +247,9 @@ static void send_mcast(int signo)
 
 		if (setsockopt(ssock, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl)))
 			ERROR("Failed setting IP_MULTICAST_TTL: %s", strerror(errno));
+
+		if (setsockopt(ssock, IPPROTO_IP, IP_MULTICAST_IF, &addr, sizeof(addr)))
+			ERROR("Failed setting IP_MULTICAST_IF: %s", strerror(errno));
 	}
 
 	for (i = 0; i < group_num; i++) {
