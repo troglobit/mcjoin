@@ -1,3 +1,10 @@
+mcjoin (2.2-1) xenial; urgency=medium
+
+  * New upstream release.  Bug fixes, increased sender rate (1/100 msec),
+    portability fixes, and a neat progress bar for the receiver.
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Tue, 08 Sep 2016 00:15:00 +0100
+
 mcjoin (2.1-1) wily; urgency=medium
 
   * New upstream release, adding support for packet validation: check
