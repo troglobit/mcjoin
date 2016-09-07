@@ -31,6 +31,27 @@ receiver$
 ```
 
 
+troubleshooting
+---------------
+
+the multicast producer, `mcjoin -s`, can send without a default route,
+but the sink need a default route to be able to receive the UDP stream.
+
+in particular, this issue will arise if you run `mcjoin` in isolated
+network namespaces in Linux.  e.g.
+
+    ip netns add sink
+    ip link set eth2 netns sink
+    ip netns exec sink /bin/bash
+    ip address add 127.0.0.1/8 dev lo
+    ip link set lo up
+    ip link set eth2 name eth0
+    ip address add 10.0.0.42/24 dev eth0
+    ip link set eth0 up
+    ip route add default via 10.0.0.1
+    mcjoin
+
+
 usage
 -----
 
@@ -98,3 +119,9 @@ bet most developer's don't know about this.
 [Travis Status]:   https://travis-ci.org/troglobit/mcjoin.png?branch=master
 [Coverity Scan]:   https://scan.coverity.com/projects/9108
 [Coverity Status]: https://scan.coverity.com/projects/9108/badge.svg
+
+<!--
+  -- Local Variables:
+  -- mode: markdown
+  -- End:
+  -->
