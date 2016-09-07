@@ -63,6 +63,11 @@
 #define IN_ZERONET(addr) ((addr & IN_CLASSA_NET) == 0)
 #endif
 
+/* From The Practice of Programming, by Kernighan and Pike */
+#ifndef NELEMS
+#define NELEMS(array) (sizeof(array) / sizeof(array[0]))
+#endif
+
 /* Group info */
 struct gr {
 	int                 sd;
@@ -589,6 +594,11 @@ int main(int argc, char *argv[])
 		if (pos) {
 			*pos = 0;
 			num = atoi(&pos[1]);
+		}
+
+		if (num < 0 || (num + group_num) >= NELEMS(groups)) {
+			ERROR("Invalid number of groups given (%d), or max (%zd) reached.", num, NELEMS(groups));
+			return usage(1);
 		}
 
 		for (j = 0; j < num; j++) {
