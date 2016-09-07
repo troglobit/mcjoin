@@ -95,7 +95,7 @@ char iface[IFNAMSIZ + 1];
 int num_joins = 0;
 
 
-static int alloc_socket(int port)
+static int alloc_socket(struct in_addr group, int port)
 {
 	int sd, val;
 	struct sockaddr_in sin;
@@ -118,9 +118,9 @@ static int alloc_socket(int port)
 		ERROR("Failed disabling IP_MULTICAST_ALL: %s", strerror(errno));
 
 	memset(&sin, 0, sizeof(sin));
-	sin.sin_family      = AF_INET;
-	sin.sin_addr.s_addr = htonl(INADDR_ANY);
-	sin.sin_port        = htons(port);
+	sin.sin_family = AF_INET;
+	sin.sin_addr   = group;
+	sin.sin_port   = htons(port);
 	if (bind(sd, (struct sockaddr *)&sin, sizeof(sin))) {
 		ERROR("Faild binding to socket: %s", strerror(errno));
 		close(sd);
@@ -132,10 +132,12 @@ static int alloc_socket(int port)
 
 static int join_group(int id)
 {
-	int sd = alloc_socket(port); /* Index port with id if IP_MULTICAST_ALL fails */
+	int sd;
 	struct ip_mreqn mreqn;
 	struct gr *gr = &groups[id];
 
+	/* Index port with id if IP_MULTICAST_ALL fails */
+	sd = alloc_socket(gr->to.sin_addr, port);
 	if (sd < 0)
 		return 1;
 
@@ -146,11 +148,7 @@ static int join_group(int id)
 		goto error;
 	}
 	DEBUG("Added iface %s, idx %d", iface, mreqn.imr_ifindex);
-
-	if (inet_pton(AF_INET, gr->group, &mreqn.imr_multiaddr) <= 0) {
-		ERROR("invalid group address: %s", gr->group);
-		goto error;
-	}
+	mreqn.imr_multiaddr = gr->to.sin_addr;
 	DEBUG("GROUP %#x (%s)", ntohl(mreqn.imr_multiaddr.s_addr), gr->group);
 
 	if (setsockopt(sd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreqn, sizeof(mreqn)) < 0) {
@@ -310,7 +308,7 @@ static ssize_t recv_mcast(int id)
 	struct in_pktinfo *ipi;
 	struct sockaddr_storage src;
 	struct iovec iov[1] = {
-		{ .iov_base  = buf, .iov_len   = sizeof(buf) },
+		{ .iov_base = buf, .iov_len = sizeof(buf) },
 	};
 
 	memset(&msgh, 0, sizeof(msgh));
