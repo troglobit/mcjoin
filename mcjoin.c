@@ -596,12 +596,12 @@ int main(int argc, char *argv[])
 			num = atoi(&pos[1]);
 		}
 
-		if (num < 0 || (num + group_num) >= NELEMS(groups)) {
+		if (num < 1 || (num + group_num) >= NELEMS(groups)) {
 			ERROR("Invalid number of groups given (%d), or max (%zd) reached.", num, NELEMS(groups));
 			return usage(1);
 		}
 
-		for (j = 0; j < num; j++) {
+		for (j = 0; j < num && group_num < NELEMS(groups); j++) {
 			if (!inet_aton(group, &addr)) {
 				ERROR("%s is not a valid IPv4 multicast group", group);
 				return usage(1);
