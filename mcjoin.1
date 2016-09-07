@@ -1,5 +1,5 @@
 .\" To process this file use: groff -man -Tascii netcalc.1
-.Dd 2 September, 2016
+.Dd 8 September, 2016
 .Dt MCJOIN 1
 .Os
 .Sh NAME
@@ -24,6 +24,13 @@ can help verify intended IGMP snooping functionality in layer-2 bridges
 (switches), as well as verify forwarding of multicast in static or
 dynamic multicast routing setups.
 .Sh OPTIONS
+With no options given
+.Nm
+acts as a multicast receiver (or sink), joining the default group
+225.1.2.3, listening on the default interface, eth0, binding to the
+default port, 1234.
+.Pp
+Use the following options to adjust this behavior:
 .Bl -tag -width Ds
 .It Fl c Ar COUNT
 Stop after sending/receiving COUNT number of packets
@@ -40,9 +47,10 @@ UDP port number to listen to, default: 1234
 .It Fl q
 Quiet mode
 .It Fl s
-Act as sender, sends packets to select groups, default: no
+Act as sender, sends packets to select groups, 1/100 msec, default: no
 .It Fl r Ar SEC
-Do leave/join repeatedly every SEC seconds
+Do leave/join repeatedly every SEC seconds.  Should not be needed
+anymore, kept for backwards compatibility.
 .It Fl t Ar TTL
 TTL to use when sending multicast packets, default: 1
 .It Fl v
@@ -71,6 +79,20 @@ receiver and the sender:
 For non-consecutive groups, simply add them in any order you want, up to
 250 groups are supported:
 .Ar 225.1.2.3 226.3.2.1+12 225.3.2.42 232.43.211.234
+.Pp
+To run
+.Nm
+as both a sender and a receiver on the same host you will likely need to
+employ something like network namespaces (Linux netns) for at least one
+of them.  Otherwise the network stack will likely let the sender's data
+stream take a short cut to the receiver, without passing through an
+actual wire.
+.Pp
+Also, like most network applications, to run properly
+.Nm
+needs both the loopback (lo) interface and a default route set up.  At
+least in the default (receiver) case.  In a network namespace neither of
+these are set up by default.
 .Sh SEE ALSO
 .Xr omping(1) ,
 .Xr ping(1) ,
