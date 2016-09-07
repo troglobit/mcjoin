@@ -39,6 +39,7 @@
 #define DEFAULT_IFNAME  "eth0"
 #define DEFAULT_GROUP   "225.1.2.3"
 #define DEFAULT_PORT    1234
+#define MAGIC_KEY       "Sender PID "
 
 /* Esc[?25l (lower case L)    - Hide Cursor */
 #define hidecursor()          fputs ("\e[?25l", stdout)
@@ -159,6 +160,7 @@ static int join_group(int id)
 
 	PRINT("joined group %s on %s ...", gr->group, iface);
 	gr->sd = sd;
+
 	return 0;
 
 error:
@@ -256,7 +258,7 @@ static void send_mcast(int signo)
 		socklen_t len = sizeof(groups[i].to);
 		struct sockaddr *dest = (struct sockaddr *)&groups[i].to;
 
-		snprintf(buf, sizeof(buf), "Sender PID %u, MC group %s ... count: %u", getpid(), groups[i].group, counter++);
+		snprintf(buf, sizeof(buf), "%s%u, MC group %s ... count: %u", MAGIC_KEY, getpid(), groups[i].group, counter++);
 		DEBUG("Sending packet on signal %d, msg: %s", signo, buf);
 		if (sendto(ssock, buf, sizeof(buf), 0, dest, len) < 0)
 			ERROR("Failed sending mcast packet: %s", strerror(errno));
@@ -325,15 +327,18 @@ static ssize_t recv_mcast(int id)
 
 	ipi = find_pktinfo(&msgh);
 	if (ipi) {
-		int pid;
-		char *dst;
+		int pid = 0;
+		char *ptr;
 
-		dst = inet_ntoa(ipi->ipi_addr);
 		buf[bytes] = 0;
-		pid = atoi(buf);
+		ptr = strstr(buf, MAGIC_KEY);
+		if (ptr)
+			pid = atoi(ptr + strlen(MAGIC_KEY));
 
-		DEBUG("Count %zu, Our PID %d Got PID: %d, dst %s group %s msg: %s", groups[id].count, getpid(), pid, dst, groups[id].group, buf);
+		DEBUG("Count %5zu, our PID %d, sender PID %d, group %s msg: %s", groups[id].count, getpid(), pid, groups[id].group, buf);
 		if (pid != getpid()) {
+			char *dst = inet_ntoa(ipi->ipi_addr);
+
 			if (strcmp(dst, groups[id].group)) {
 				ERROR("Packet for group %s received on wrong socket, expected group %s.", dst, groups[id].group);
 				return -1;
