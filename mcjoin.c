@@ -76,9 +76,6 @@ struct gr {
 	struct sockaddr_in  to;
 };
 
-/* Program meta data */
-extern char *__progname;
-
 /* Mode flags */
 int join = 1;
 int quiet = 0;
@@ -92,6 +89,7 @@ int restart = 0;
 size_t count = 0;
 int port = DEFAULT_PORT;
 unsigned char ttl = 1;
+char *ident = PACKAGE_NAME;
 
 size_t group_num = 0;
 struct gr groups[MAX_NUM_GROUPS];
@@ -491,9 +489,22 @@ static int usage(int code)
 	       "  -v           Display program version\n"
 	       "\n"
 	       "Bug report address: %-40s\n"
-	       "Project homepage: %s\n\n", __progname, DEFAULT_IFNAME, DEFAULT_PORT, PACKAGE_BUGREPORT, PACKAGE_URL);
+	       "Project homepage: %s\n\n", ident, DEFAULT_IFNAME, DEFAULT_PORT, PACKAGE_BUGREPORT, PACKAGE_URL);
 
 	return code;
+}
+
+static char *progname(char *arg0)
+{
+       char *nm;
+
+       nm = strrchr(arg0, '/');
+       if (nm)
+	       nm++;
+       else
+	       nm = arg0;
+
+       return nm;
 }
 
 int main(int argc, char *argv[])
@@ -514,6 +525,7 @@ int main(int argc, char *argv[])
 	for (i = 0; i < MAX_NUM_GROUPS; i++)
 		memset(&groups[i], 0, sizeof(groups[0]));
 
+	ident = progname(argv[0]);
 	while ((c = getopt(argc, argv, "c:di:jp:qr:st:vh")) != EOF) {
 		switch (c) {
 		case 'c':
