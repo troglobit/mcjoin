@@ -6,8 +6,7 @@ doc_DATA          = README.md LICENSE
 EXTRA_DIST        = README.md LICENSE ChangeLog.md
 
 package:
-	gbp buildpackage --git-ignore-new --git-ignore-branch			 \
-			 --git-no-create-orig --git-upstream-branch=master
+	dpkg-buildpackage -uc -us -B
 
 ## Target to run when building a release
 release: dist package
