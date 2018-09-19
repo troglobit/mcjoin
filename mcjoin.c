@@ -435,12 +435,10 @@ static int loop(void)
 			if (count > 0) {
 				size_t total = count * group_num;
 
-				for (i = 0; i < group_num; i++) {
-					if (groups[i].count >= count)
-						total--;
-				}
+				for (i = 0; i < group_num; i++)
+					total -= groups[i].count;
 
-				if (!total) {
+				if (total <= 0) {
 					running = 0;
 					break;
 				}
