@@ -112,6 +112,10 @@ static int alloc_socket(struct in_addr group, int port)
 	}
 
 	val = 1;
+#ifdef SO_REUSEPORT
+	if (setsockopt(sd, SOL_SOCKET, SO_REUSEPORT, &val, sizeof(val)))
+		ERROR("Failed enabling SO_REUSEPORT: %s", strerror(errno));
+#endif
 	if (setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val)))
 		ERROR("Failed enabling SO_REUSEADDR: %s", strerror(errno));
 
