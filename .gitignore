@@ -1,4 +1,5 @@
 *~
+*.o
 /.deps/*
 /autom4te.cache/*
 /Makefile
@@ -13,10 +14,10 @@
 /depcomp
 /install-sh
 /mcjoin
-/mcjoin-mcjoin.o
 /missing
 /stamp-h1
 /debian/mcjoin/*
 /debian/mcjoin.debhelper.log
 /debian/mcjoin.substvars
 /debian/files
+/debian/debhelper-build-stamp
