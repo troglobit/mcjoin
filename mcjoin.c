@@ -171,61 +171,6 @@ error:
 	return 1;
 }
 
-static int is_address_valid(struct in_addr addr)
-{
-	char *address = inet_ntoa(addr);
-	in_addr_t ia;
-
-	DEBUG("Checking IPv4 address %s ...", address);
-
-	ia = ntohl(addr.s_addr);
-	if (IN_ZERONET(ia)   || IN_LOOPBACK(ia) || IN_LINKLOCAL(ia) ||
-	    IN_MULTICAST(ia) || IN_EXPERIMENTAL(ia)) {
-		DEBUG("IP address %s is not a routable address.", address);
-		return 0;
-	}
-
-	DEBUG("IPv4 address %s is valid.", address);
-	return 1;
-}
-
-static int find_iface(char *ifname, struct in_addr *addr)
-{
-	struct ifaddrs *ifa, *ifap, *match = NULL;
-	struct in_addr cand;
-
-	if (getifaddrs(&ifap) != 0)
-		return -1;
-
-	for (ifa = ifap; ifa; ifa = ifa->ifa_next) {
-		DEBUG("Checking ifname %s against %s ...", ifname, ifa->ifa_name ?: "NULL");
-		if (strcmp(ifa->ifa_name, ifname) != 0)
-			continue;
-
-		if (ifa->ifa_addr == NULL)
-			continue;
-
-		if (ifa->ifa_addr->sa_family != AF_INET)
-			continue; /* Don't understand IPv6 yet ... */
-
-		cand = ((struct sockaddr_in *)ifa->ifa_addr)->sin_addr;
-		if (!is_address_valid(cand))
-			continue;
-
-		match = ifa;
-		break;
-	}
-
-	freeifaddrs(ifap);
-
-	if (match) {
-		*addr = cand;
-		return 0;
-	}
-
-	return 1;
-}
-
 static void send_mcast(int signo)
 {
 	size_t i;
@@ -238,7 +183,7 @@ static void send_mcast(int signo)
 			.s_addr = INADDR_ANY,
 		};
 
-		if (find_iface(iface, &addr)) {
+		if (getaddr(iface, &addr)) {
 			ERROR("Failed locating (a valid address on) %s: %s", iface, strerror(errno));
 			return;
 		}
