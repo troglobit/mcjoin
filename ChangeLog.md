@@ -4,6 +4,17 @@ ChangeLog
 All notable changes to the project are documented in this file.
 
 
+[v2.3][] - 2018-09-19
+---------------------
+
+- Automatically detect default interface
+- Enable support for multiple mcjoin receivers on one host using the
+  same destination (Internet) port
+- Fix #1: Receiver does not stop after count received packets
+- Avoid using GLIBC extension `__progname`
+- Updated build instructions in README
+
+
 [v2.2][] - 2016-09-08
 ---------------------
 
@@ -58,7 +69,8 @@ OnTime AS and later at Westermo.  Based on the work by David Stevens
 and developed further by Joachim Nilsson, on his spare time.
 
 
-[UNRELEASED]: https://github.com/troglobit/mcjoin/compare/v2.2...HEAD
+[UNRELEASED]: https://github.com/troglobit/mcjoin/compare/v2.3...HEAD
+[v2.3]:       https://github.com/troglobit/mcjoin/compare/v2.2...v2.3
 [v2.2]:       https://github.com/troglobit/mcjoin/compare/v2.1...v2.2
 [v2.1]:       https://github.com/troglobit/mcjoin/compare/v2.0...v2.1
 [v2.0]:       https://github.com/troglobit/mcjoin/compare/v1.5...v2.0
