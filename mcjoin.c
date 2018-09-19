@@ -36,7 +36,6 @@
 
 #define BUFSZ           100
 #define MAX_NUM_GROUPS  250
-#define DEFAULT_IFNAME  "eth0"
 #define DEFAULT_GROUP   "225.1.2.3"
 #define DEFAULT_PORT    1234
 #define MAGIC_KEY       "Sender PID "
@@ -96,6 +95,9 @@ struct gr groups[MAX_NUM_GROUPS];
 
 char iface[IFNAMSIZ + 1];
 int num_joins = 0;
+
+char *getifname(char *ifname, size_t len);
+int getaddr(char *iface, struct in_addr *ina);
 
 
 static int alloc_socket(struct in_addr group, int port)
@@ -487,7 +489,7 @@ static int usage(int code)
 	       "  -v           Display program version\n"
 	       "\n"
 	       "Bug report address: %-40s\n"
-	       "Project homepage: %s\n\n", ident, DEFAULT_IFNAME, DEFAULT_PORT, PACKAGE_BUGREPORT, PACKAGE_URL);
+	       "Project homepage: %s\n\n", ident, iface, DEFAULT_PORT, PACKAGE_BUGREPORT, PACKAGE_URL);
 
 	return code;
 }
@@ -515,11 +517,7 @@ int main(int argc, char *argv[])
 	};
 	extern int optind;
 
-	/* Default interface
-	 * XXX - Should be the first, after lo, in the list at /proc/net/dev, or
-	 * XXX - Iterate over /sys/class/net/.../link_mode */
-	strncpy(iface, DEFAULT_IFNAME, sizeof(iface));
-
+	getifname(iface, sizeof(iface));
 	for (i = 0; i < MAX_NUM_GROUPS; i++)
 		memset(&groups[i], 0, sizeof(groups[0]));
 
