@@ -4,7 +4,7 @@ ChangeLog
 All notable changes to the project are documented in this file.
 
 
-[v2.3][] - 2018-09-19
+[v2.3][] - 2018-09-20
 ---------------------
 
 - Automatically detect default interface

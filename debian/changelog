@@ -1,3 +1,11 @@
+mcjoin (2.3) unstable; urgency=medium
+
+  * New upstream release.  Automatically detect default interface, fix bug
+    in `-c count` handling for receiver, as well as portability fixes and
+    fixes to run multiple mcjoin receivers on the same host:post.
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Thu, 20 Sep 2018 20:48:20 +0200
+
 mcjoin (2.2-1) xenial; urgency=medium
 
   * New upstream release.  Bug fixes, increased sender rate (1/100 msec),
