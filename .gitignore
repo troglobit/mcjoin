@@ -16,8 +16,9 @@
 /mcjoin
 /missing
 /stamp-h1
+/debian/.debhelper/*
+/debian/debhelper-build-stamp
 /debian/mcjoin/*
 /debian/mcjoin.debhelper.log
 /debian/mcjoin.substvars
 /debian/files
-/debian/debhelper-build-stamp
