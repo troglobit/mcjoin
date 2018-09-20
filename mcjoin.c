@@ -421,24 +421,23 @@ static void exit_loop(int signo)
 
 static int usage(int code)
 {
-	printf("\nUsage: %s [dhjqsv] [-c COUNT] [-i IFACE] [-p PORT] [-r SEC] [-t TTL]\n"
+	printf("Usage: %s [-dhjqsv] [-c COUNT] [-i IFACE] [-p PORT] [-r SEC] [-t TTL]\n"
 	       "              [GROUP0 .. GROUPN | GROUP+NUM]\n"
-	       "\n"
 	       "Options:\n"
-	       "  -c COUNT     Stop after sending/receiving COUNT number of packets\n"
+	       "  -c COUNT     Stop sending/receiving after COUNT number of packets\n"
 	       "  -d           Debug output\n"
 	       "  -h           This help text\n"
 	       "  -i IFACE     Interface to use for sending/receiving multicast, default: %s\n"
 	       "  -j           Join groups, default unless acting as sender\n"
-	       "  -p PORT      UDP port number to listen to, default: %d\n"
+	       "  -p PORT      UDP port number to send/listen to, default: %d\n"
 	       "  -q           Quiet mode\n"
 	       "  -r SEC       Do a join/leave every SEC seconds (backwards compat. option)\n"
 	       "  -s           Act as sender, sends packets to select groups, default: no\n"
 	       "  -t TTL       TTL to use when sending multicast packets, default: 1\n"
 	       "  -v           Display program version\n"
 	       "\n"
-	       "Bug report address: %-40s\n"
-	       "Project homepage: %s\n\n", ident, iface, DEFAULT_PORT, PACKAGE_BUGREPORT, PACKAGE_URL);
+	       "Bug report address : %-40s\n"
+	       "Project homepage   : %s\n", ident, iface, DEFAULT_PORT, PACKAGE_BUGREPORT, PACKAGE_URL);
 
 	return code;
 }
