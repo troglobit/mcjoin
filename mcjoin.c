@@ -177,10 +177,10 @@ error:
 
 static void send_mcast(int signo)
 {
-	size_t i;
-	char buf[BUFSZ] = { 0 };
-	static int ssock = 0;
 	static unsigned int counter = 1;
+	static int ssock = 0;
+	char buf[BUFSZ] = { 0 };
+	size_t i;
 
 	if (!ssock) {
 		struct in_addr addr = {
@@ -233,9 +233,9 @@ struct in_pktinfo *find_pktinfo(struct msghdr *msgh)
 
 static void progress(void)
 {
-	size_t num = 6;
 	const char *style = ".oOOo.";
 	static unsigned int i = 0;
+	size_t num = 6;
 
 	if (quiet)
 		return;
@@ -255,21 +255,22 @@ static void progress(void)
  */
 static ssize_t recv_mcast(int id)
 {
-	ssize_t bytes;
-	char buf[BUFSZ];
-	char cmbuf[0x100];
-	struct msghdr msgh;
-	struct in_pktinfo *ipi;
 	struct sockaddr_storage src;
-	struct iovec iov[1] = {
-		{ .iov_base = buf, .iov_len = sizeof(buf) },
-	};
+	struct in_pktinfo *ipi;
+	struct msghdr msgh;
+	struct iovec iov[1];
+	ssize_t bytes;
+	char cmbuf[0x100];
+	char buf[BUFSZ];
+
+	iov[0].iov_base = buf;
+	iov[0].iov_len  = sizeof(buf);
 
 	memset(&msgh, 0, sizeof(msgh));
 	msgh.msg_name       = &src;
 	msgh.msg_namelen    = sizeof(src);
 	msgh.msg_iov        = iov;
-	msgh.msg_iovlen     = 1;
+	msgh.msg_iovlen     = NELEMS(iov);
 	msgh.msg_control    = cmbuf;
 	msgh.msg_controllen = sizeof(cmbuf);
 
@@ -279,8 +280,8 @@ static ssize_t recv_mcast(int id)
 
 	ipi = find_pktinfo(&msgh);
 	if (ipi) {
-		int pid = 0;
 		char *ptr;
+		int pid = 0;
 
 		buf[bytes] = 0;
 		ptr = strstr(buf, MAGIC_KEY);
@@ -327,11 +328,11 @@ static int show_stats(void)
 
 static int loop(void)
 {
-	size_t i;
 	struct sigaction sa = {
 		.sa_flags = SA_RESTART,
 		.sa_handler = send_mcast,
 	};
+	size_t i;
 
 	if (sender) {
 		struct itimerval times;
@@ -353,8 +354,8 @@ static int loop(void)
 
 		hidecursor();
 		while (running) {
-			int ret;
 			struct pollfd pfd[MAX_NUM_GROUPS];
+			int ret;
 
 			/* One group per socket */
 			for (i = 0; i < group_num; i++) {
@@ -457,13 +458,13 @@ static char *progname(char *arg0)
 
 int main(int argc, char *argv[])
 {
-	int i, c;
-	size_t len;
 	struct sigaction sa = {
 		.sa_flags = SA_RESTART,
 		.sa_handler = exit_loop,
 	};
 	extern int optind;
+	size_t len;
+	int i, c;
 
 	getifname(iface, sizeof(iface));
 	for (i = 0; i < MAX_NUM_GROUPS; i++)
@@ -566,7 +567,7 @@ int main(int argc, char *argv[])
 			DEBUG("Adding group %s (0x%04x) to list ...", group, ntohl(addr.s_addr));
 			groups[group_num++].group = strdup(group);
 
-			/* Next group ... if any */
+			/* Next group ... */
 			addr.s_addr = htonl(ntohl(addr.s_addr) + 1);
 			group = inet_ntoa(addr);
 		}
