@@ -43,12 +43,18 @@ char *getifname(char *ifname, size_t len)
 {
 	uint32_t dest, gw, mask;
 	char buf[256], name[17];
+	char *ptr;
 	FILE *fp;
 	int rc, flags, cnt, use, metric, mtu, win, irtt;
 	int found = 0;
 
 	fp = fopen("/proc/net/route", "r");
 	if (!fp)
+		return NULL;
+
+	/* Skip heading */
+	ptr = fgets(buf, sizeof(buf), fp);
+	if (!ptr)
 		return NULL;
 
 	while (fgets(buf, sizeof(buf), fp) != NULL) {
