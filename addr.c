@@ -46,7 +46,7 @@ char *getifname(char *ifname, size_t len)
 	char *ptr;
 	FILE *fp;
 	int rc, flags, cnt, use, metric, mtu, win, irtt;
-	int found = 0;
+	int best = 100000, found = 0;
 
 	fp = fopen("/proc/net/route", "r");
 	if (!fp)
@@ -69,9 +69,12 @@ char *getifname(char *ifname, size_t len)
 			continue;
 
 		if (!ifname[0] || !strncmp(ifname, "tun", 3)) {
+			if (metric >= best)
+				continue;
+
 			strncpy(ifname, name, len);
+			best = metric;
 			found = 1;
-			break;
 		}
 	}
 	fclose(fp);
