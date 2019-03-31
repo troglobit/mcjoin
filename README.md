@@ -150,9 +150,6 @@ this requires `automake` and `autoconf` to be installed on your system.
     ./configure && make
     sudo make install-strip
 
-**NOTE:** GIT sources are a moving target and are not recommended for
-  production systems, unless you know what you are doing!
-
 
 [Travis]:          https://travis-ci.org/troglobit/mcjoin
 [Travis Status]:   https://travis-ci.org/troglobit/mcjoin.png?branch=master
