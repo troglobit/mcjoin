@@ -206,8 +206,6 @@ static int join_group(struct gr *sg)
 		goto error;
 	}
 
-	return 0;
-
 	PRINT("joined group %s on %s ...", sg->group, iface);
 	sg->sd = sd;
 
