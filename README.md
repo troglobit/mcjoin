@@ -12,6 +12,8 @@ the `ompoing(8)` test group `232.43.211.234`, defined in this IETF draft
 <http://tools.ietf.org/html/draft-ietf-mboned-ssmping-08> and UDP port
 `4321`.  At the moment max 250 groups can be joined.
 
+The latest release is always available from GitHub at  
+> https://github.com/troglobit/mcjoin/releases
 
 example
 -------
