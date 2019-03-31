@@ -1,3 +1,10 @@
+mcjoin (2.4) unstable; urgency=medium
+
+  * New upstream release.  Support for SSM join (S,G) in addition to the
+    existing ASM (*,G) functionaliy.
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Sun, 31 Mar 2019 23:41:06 +0200
+
 mcjoin (2.3) unstable; urgency=medium
 
   * New upstream release.  Automatically detect default interface, fix bug

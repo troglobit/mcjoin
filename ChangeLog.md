@@ -4,6 +4,13 @@ ChangeLog
 All notable changes to the project are documented in this file.
 
 
+[v2.4][] - 2019-04-xx
+---------------------
+
+- Support for SSM (S,G) join, in addition to the existing ASM (*,G) join
+- Find interface bsaed on default route with *best* metric
+
+
 [v2.3][] - 2018-09-20
 ---------------------
 
