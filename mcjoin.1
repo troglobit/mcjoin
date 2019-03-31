@@ -1,5 +1,20 @@
-.\" To process this file use: groff -man -Tascii netcalc.1
-.Dd 8 September, 2016
+.\" Hey Emacs, this is an -*- nroff -*- document
+.\"
+.\" Copyright (C) 2016-2019  Joachim Nilsson
+.\"
+.\" Permission to use, copy, modify, and/or distribute this software for any
+.\" purpose with or without fee is hereby granted, provided that the above
+.\" copyright notice and this permission notice appear in all copies.
+.\" 
+.\" THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+.\" WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+.\" MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+.\" ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+.\" WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+.\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+.\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+.\"
+.Dd 31 March, 2019
 .Dt MCJOIN 1
 .Os
 .Sh NAME
@@ -13,7 +28,7 @@
 .Op Fl p Ar PORT
 .Op Fl r Ar SEC
 .Op Fl t Ar TTL
-.Op Ar GROUP0 .. GROUPN | GROUP+NUM
+.Op Ar [SOURCE,]GROUP0 .. [SOURCE,]GROUPN | [SOURCE,]GROUP+NUM
 .Sh DESCRIPTION
 .Nm
 can be used to join IPv4 multicast groups, display progress as multicast
@@ -23,6 +38,12 @@ packets are received, and also send multicast packets on select groups.
 can help verify intended IGMP snooping functionality in layer-2 bridges
 (switches), as well as verify forwarding of multicast in static or
 dynamic multicast routing setups.
+.Pp
+.Nm
+supports source-specific multicast (SSM) as well as any-source multicast
+(ASM).  The source IP of an (S,G) pair is an optional argument that must
+precede the group and be separated with a comma.  No spaces are allowed
+between source and group in this form.
 .Sh OPTIONS
 With no options given
 .Nm
