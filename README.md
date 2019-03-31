@@ -58,8 +58,8 @@ usage
 ```shell
     $ mcjoin -h
     
-    Usage: mcjoin [dhjqsv] [-c COUNT] [-i IFNAME] [-p PORT] [-r SEC] [-t TTL]
-    	      [GROUP0 .. GROUPN | GROUP+NUM]
+    Usage: mcjoin [-dhjqsv] [-c COUNT] [-i IFNAME] [-p PORT] [-r SEC] [-t TTL]
+                  [[SOURCE,]GROUP0 .. [SOURCE,]GROUPN | [SOURCE,]GROUP+NUM]
     
     Options:
       -c COUNT     Exit after COUNT number of received and/or sent packets
@@ -76,8 +76,6 @@ usage
     
     Bug report address: https://github.com/troglobit/mcjoin/issues
     Project homepage: https://github.com/troglobit/mcjoin/
-    
-    $
 ```
 
 
@@ -158,9 +156,3 @@ installed on your system.
 [Travis Status]:   https://travis-ci.org/troglobit/mcjoin.png?branch=master
 [Coverity Scan]:   https://scan.coverity.com/projects/9108
 [Coverity Status]: https://scan.coverity.com/projects/9108/badge.svg
-
-<!--
-  -- Local Variables:
-  -- mode: markdown
-  -- End:
-  -->

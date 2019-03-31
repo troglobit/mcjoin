@@ -466,7 +466,7 @@ static void exit_loop(int signo)
 static int usage(int code)
 {
 	printf("Usage: %s [-dhjqsv] [-c COUNT] [-i IFACE] [-p PORT] [-r SEC] [-t TTL]\n"
-	       "              [GROUP0 .. GROUPN | GROUP+NUM]\n"
+	       "              [[SOURCE,]GROUP0 .. [SOURCE,]GROUPN | [SOURCE,]GROUP+NUM]\n"
 	       "Options:\n"
 	       "  -c COUNT     Stop sending/receiving after COUNT number of packets\n"
 	       "  -d           Debug output\n"
