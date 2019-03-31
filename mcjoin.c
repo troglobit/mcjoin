@@ -1,7 +1,7 @@
 /* Join a multicast group and/or generate UDP test data
  *
  * Copyright (C) 2004       David Stevens <dlstevens()us!ibm!com>
- * Copyright (C) 2008-2018  Joachim Nilsson <troglobit()gmail!com>
+ * Copyright (C) 2008-2019  Joachim Nilsson <troglobit()gmail!com>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
