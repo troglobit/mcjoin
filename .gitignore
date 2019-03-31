@@ -1,5 +1,8 @@
 *~
 *.o
+GPATH
+GRTAGS
+GTAGS
 /.deps/*
 /autom4te.cache/*
 /Makefile
