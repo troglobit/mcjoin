@@ -198,7 +198,7 @@ static int join_group(struct gr *sg)
 	if (sg->source)
 		convert_address(&sg->src, src, sizeof(src));
 	convert_address(&sg->grp, grp, sizeof(grp));
-	DEBUG("Joining group (%s,%s) on %s", src, grp, iface);
+	DEBUG("Joining group (%s,%s) on iface %s, sd: %d", src, grp, iface, sd);
 
 	if (setsockopt(sd, IPPROTO_IP, op, arg, len)) {
 		ERROR("Failed %s group (%s,%s) on sd %d ... %d: %s",
