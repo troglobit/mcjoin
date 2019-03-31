@@ -67,12 +67,21 @@
 #define NELEMS(array) (sizeof(array) / sizeof(array[0]))
 #endif
 
+#ifdef  HAVE_IPV6_MULTICAST_HOST
+#define INET_ADDRSTR_LEN  INET6_ADDRSTRLEN
+#else
+#define INET_ADDRSTR_LEN  INET_ADDRSTRLEN
+#endif
+typedef struct sockaddr_storage inet_addr_t;
+
 /* Group info */
 struct gr {
-	int                 sd;
-	size_t              count;
-	char               *group;
-	struct sockaddr_in  to;
+	int          sd;
+	size_t       count;
+	char        *source;
+	char        *group;
+	inet_addr_t  src;
+	inet_addr_t  grp;	/* to */
 };
 
 /* Mode flags */
@@ -99,13 +108,26 @@ int num_joins = 0;
 char *getifname(char *ifname, size_t len);
 int getaddr(char *iface, struct in_addr *ina);
 
+static const char *convert_address(inet_addr_t *ss, char *buf, size_t len)
+{
+	struct sockaddr_in *sin;
 
-static int alloc_socket(struct in_addr group, int port)
+#ifdef HAVE_IPV6_MULTICAST_HOST
+	if (ss->ss_family == AF_INET6) {
+		struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)ss;
+		return inet_ntop(AF_INET6, &sin6->sin6_addr, buf, len);
+	}
+#endif
+
+	sin = (struct sockaddr_in *)ss;
+	return inet_ntop(AF_INET, &sin->sin_addr, buf, len);
+}
+
+static int alloc_socket(inet_addr_t group)
 {
 	int sd, val;
-	struct sockaddr_in sin;
 
-	sd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	sd = socket(group.ss_family, SOCK_DGRAM, IPPROTO_UDP);
 	if (sd < 0) {
 		ERROR("Failed opening socket(): %s", strerror(errno));
 		return -1;
@@ -126,11 +148,7 @@ static int alloc_socket(struct in_addr group, int port)
 	if (setsockopt(sd, IPPROTO_IP, IP_MULTICAST_ALL, &val, sizeof(val)))
 		ERROR("Failed disabling IP_MULTICAST_ALL: %s", strerror(errno));
 
-	memset(&sin, 0, sizeof(sin));
-	sin.sin_family = AF_INET;
-	sin.sin_addr   = group;
-	sin.sin_port   = htons(port);
-	if (bind(sd, (struct sockaddr *)&sin, sizeof(sin))) {
+	if (bind(sd, (struct sockaddr *)&group, sizeof(group))) {
 		ERROR("Faild binding to socket: %s", strerror(errno));
 		close(sd);
 		return -1;
@@ -139,34 +157,59 @@ static int alloc_socket(struct in_addr group, int port)
 	return sd;
 }
 
-static int join_group(int id)
+static int join_group(struct gr *sg)
 {
-	int sd;
-	struct ip_mreqn mreqn;
-	struct gr *gr = &groups[id];
+	struct group_source_req gsr;
+	struct group_req gr;
+	char src[INET_ADDRSTR_LEN] = "*";
+	char grp[INET_ADDRSTR_LEN];
+	size_t len;
+	void *arg;
+	int ifindex;
+	int sd, op;
 
 	/* Index port with id if IP_MULTICAST_ALL fails */
-	sd = alloc_socket(gr->to.sin_addr, port);
+	sd = alloc_socket(sg->grp);
 	if (sd < 0)
 		return 1;
 
-	memset(&mreqn, 0, sizeof(mreqn));
-	mreqn.imr_ifindex = if_nametoindex(iface);
-	if (!mreqn.imr_ifindex) {
+	ifindex = if_nametoindex(iface);
+	if (!ifindex) {
 		ERROR("invalid interface: %s", iface);
 		goto error;
 	}
-	DEBUG("Added iface %s, idx %d", iface, mreqn.imr_ifindex);
-	mreqn.imr_multiaddr = gr->to.sin_addr;
-	DEBUG("GROUP %#x (%s)", ntohl(mreqn.imr_multiaddr.s_addr), gr->group);
+	DEBUG("Added iface %s, idx %d", iface, ifindex);
 
-	if (setsockopt(sd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreqn, sizeof(mreqn)) < 0) {
-		ERROR("IP_ADD_MEMBERSHIP: %s", strerror(errno));
+	if (sg->source) {
+		gsr.gsr_interface  = ifindex;
+		gsr.gsr_source     = sg->src;
+		gsr.gsr_group      = sg->grp;
+		op                 = MCAST_JOIN_SOURCE_GROUP;
+		arg                = &gsr;
+		len                = sizeof(gsr);
+	} else {
+		gr.gr_interface    = ifindex;
+		gr.gr_group        = sg->grp;
+		op                 = MCAST_JOIN_GROUP;
+		arg                = &gr;
+		len                = sizeof(gr);
+	}
+
+	if (sg->source)
+		convert_address(&sg->src, src, sizeof(src));
+	convert_address(&sg->grp, grp, sizeof(grp));
+	DEBUG("Joining group (%s,%s) on %s", src, grp, iface);
+
+	if (setsockopt(sd, IPPROTO_IP, op, arg, len)) {
+		ERROR("Failed %s group (%s,%s) on sd %d ... %d: %s",
+		      src, grp, "joining", sd, errno, strerror(errno));
 		goto error;
 	}
 
-	PRINT("joined group %s on %s ...", gr->group, iface);
-	gr->sd = sd;
+	return 0;
+
+	PRINT("joined group %s on %s ...", sg->group, iface);
+	sg->sd = sd;
 
 	return 0;
 
@@ -207,8 +250,8 @@ static void send_mcast(int signo)
 	}
 
 	for (i = 0; i < group_num; i++) {
-		socklen_t len = sizeof(groups[i].to);
-		struct sockaddr *dest = (struct sockaddr *)&groups[i].to;
+		struct sockaddr *dest = (struct sockaddr *)&groups[i].grp;
+		socklen_t len = sizeof(groups[i].grp);
 
 		snprintf(buf, sizeof(buf), "%s%u, MC group %s ... count: %u", MAGIC_KEY, getpid(), groups[i].group, counter++);
 		DEBUG("Sending packet on signal %d, msg: %s", signo, buf);
@@ -348,7 +391,7 @@ static int loop(void)
 
 	while (join && running) {
 		for (i = 0; i < group_num; i++) {
-			if (join_group(i))
+			if (join_group(&groups[i]))
 				return 1;
 		}
 
@@ -542,9 +585,8 @@ int main(int argc, char *argv[])
 	 * mcjoin group0 group1 group2
 	 */
 	for (i = optind; i < argc; i++) {
+		char *pos, *group, *source = NULL;
 		int j, num = 1;
-		char *pos, *group;
-		struct in_addr addr;
 
 		group = argv[i];
 		pos = strchr(group, '+');
@@ -553,18 +595,28 @@ int main(int argc, char *argv[])
 			num = atoi(&pos[1]);
 		}
 
+		pos = strchr(group, ',');
+		if (pos) {
+			*pos++ = 0;
+			source = strdup(group);
+			group  = pos;
+		}
+
 		if (num < 1 || (num + group_num) >= NELEMS(groups)) {
 			ERROR("Invalid number of groups given (%d), or max (%zd) reached.", num, NELEMS(groups));
 			return usage(1);
 		}
 
 		for (j = 0; j < num && group_num < NELEMS(groups); j++) {
+			struct in_addr addr;
+
 			if (!inet_aton(group, &addr)) {
 				ERROR("%s is not a valid IPv4 multicast group", group);
 				return usage(1);
 			}
 
-			DEBUG("Adding group %s (0x%04x) to list ...", group, ntohl(addr.s_addr));
+			DEBUG("Adding (S,G) %s,%s to list ...", source, group);
+			groups[group_num].source  = source;
 			groups[group_num++].group = strdup(group);
 
 			/* Next group ... */
@@ -574,12 +626,18 @@ int main(int argc, char *argv[])
 	}
 
 	for (i = 0; i < (int)group_num; i++) {
-		char *group = groups[i].group;
-		struct sockaddr_in *sin = &groups[i].to;
+		struct sockaddr_in *grp = (struct sockaddr_in *)&groups[i].grp;
+		struct sockaddr_in *src = (struct sockaddr_in *)&groups[i].src;
 
-		sin->sin_family      = AF_INET;
-		sin->sin_addr.s_addr = inet_addr(group);
-		sin->sin_port        = htons(port); /* Index port with i if IP_MULTICAST_ALL fails */
+		inet_pton(AF_INET, groups[i].group, &grp->sin_addr);
+		grp->sin_family = AF_INET;
+		grp->sin_port   = htons(port);
+
+		if (groups[i].source) {
+			inet_pton(AF_INET, groups[i].source, &src->sin_addr);
+			src->sin_family = AF_INET;
+			src->sin_port   = htons(port);
+		}
 	}
 
 	/*
