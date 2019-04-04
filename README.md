@@ -3,17 +3,13 @@ m c j o i n - tiny multicast testing tool
 [![Travis Status][]][Travis] [![Coverity Status][]][Coverity Scan]
 
 `mcjoin` is a very simple and easy-to-use tool to test IPv4 and IPv6
-multicast.  it features an optional multicast generator (server) and
-an end device that can act as a data sink (client) or just join one
-or more groups.  both ASM (*,G) and SSM (S,G) is supported.
+multicast.  it features:
 
-without any arguments `mcjoin` defaults to an IPv4 ASM (*,G) join of
-`225.1.2.3`, UDP port `1234`.  see the usage section below for more
-help.
-
-for testing purposes you may want to use the `MCAST_TEST_NET` from
-RFC5771, `233.252.0.0/24`, or possibly the `ompoing(8)` test group
-`232.43.211.234`, UDP port `4321`, as defined in this IETF draft:
+- an optional multicast generator (server)
+- an end device that can act as a data sink (client), or
+- join one or more groups
+- ASM (*,G) support
+- SSM (S,G) support
 
 http://tools.ietf.org/html/draft-ietf-mboned-ssmping-08
 
@@ -30,6 +26,10 @@ sender$ mcjoin -s
 sender$
 ```
 
+without any arguments `mcjoin` defaults to an IPv4 ASM (*,G) join of
+`225.1.2.3`, UDP port `1234`.  see the usage section below for more
+help.
+
 ```shell
 receiver$ mcjoin
 joined group 225.1.2.3 on eth0 ...
@@ -37,6 +37,10 @@ joined group 225.1.2.3 on eth0 ...
 Received total: 66 packets
 receiver$
 ```
+
+for testing purposes you may want to use the `MCAST_TEST_NET` from
+RFC5771, `233.252.0.0/24`, or possibly the `ompoing(8)` test group
+`232.43.211.234`, UDP port `4321`, as defined in this IETF draft:
 
 
 usage
