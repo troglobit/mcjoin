@@ -39,27 +39,6 @@ receiver$
 ```
 
 
-troubleshooting
----------------
-
-the multicast producer, `mcjoin -s`, can send without a default route,
-but the sink need a default route to be able to receive the UDP stream.
-
-in particular, this issue will arise if you run `mcjoin` in isolated
-network namespaces in Linux.  e.g.
-
-    ip netns add sink
-    ip link set eth2 netns sink
-    ip netns exec sink /bin/bash
-    ip address add 127.0.0.1/8 dev lo
-    ip link set lo up
-    ip link set eth2 name eth0
-    ip address add 10.0.0.42/24 dev eth0
-    ip link set eth0 up
-    ip route add default via 10.0.0.1
-    mcjoin
-
-
 usage
 -----
 
@@ -90,6 +69,27 @@ the `SOURCE` argument is optional, but when used it must be of the same
 address family as the group.  to join multiple groups, either list them
 all on the command line, separated with space, or use the `+NUM` syntax.
 at the moment max 250 groups can be joined.
+
+
+troubleshooting
+---------------
+
+the multicast producer, `mcjoin -s`, can send without a default route,
+but the sink need a default route to be able to receive the UDP stream.
+
+in particular, this issue will arise if you run `mcjoin` in isolated
+network namespaces in Linux.  e.g.
+
+    ip netns add sink
+    ip link set eth2 netns sink
+    ip netns exec sink /bin/bash
+    ip address add 127.0.0.1/8 dev lo
+    ip link set lo up
+    ip link set eth2 name eth0
+    ip address add 10.0.0.42/24 dev eth0
+    ip link set eth0 up
+    ip route add default via 10.0.0.1
+    mcjoin
 
 
 caveat
