@@ -45,9 +45,9 @@
 /* Esc[?25h (lower case H)    - Show Cursor */
 #define showcursor()          fputs ("\e[?25h", stdout)
 
-#define DEBUG(fmt, ...) { if (debug)  printf(fmt "\n", ## __VA_ARGS__); fflush(stdout); }
-#define ERROR(fmt, ...) { fprintf(stderr, fmt "\n", ## __VA_ARGS__);    }
-#define PRINT(fmt, ...) { if (!quiet) printf(fmt "\n", ## __VA_ARGS__); fflush(stdout); }
+#define DEBUG(fmt, ...) do { if (debug)  printf(fmt "\n", ## __VA_ARGS__); fflush(stdout); } while (0)
+#define ERROR(fmt, ...) do { fprintf(stderr, fmt "\n", ## __VA_ARGS__);    } while (0)
+#define PRINT(fmt, ...) do { if (!quiet) printf(fmt "\n", ## __VA_ARGS__); fflush(stdout); } while (0)
 
 #ifndef IN_LINKLOCAL
 #define IN_LINKLOCALNETNUM	0xa9fe0000
