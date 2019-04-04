@@ -6,10 +6,12 @@ m c j o i n - tiny multicast testing tool
 multicast.  it features:
 
 - an optional multicast generator (server)
-- an end device that can act as a data sink (client), or
-- join one or more groups
-- ASM (*,G) support
-- SSM (S,G) support
+- an end device that can act as a data sink (client)
+- supports joining one or more groups:
+  - ASM (*,G) support
+  - SSM (S,G) support
+- IPv4
+- IPv6
 
 > the latest release is always available from GitHub at  
 > https://github.com/troglobit/mcjoin/releases
