@@ -4,11 +4,12 @@ ChangeLog
 All notable changes to the project are documented in this file.
 
 
-[v2.4][] - 2019-04-xx
+[v2.4][] - 2019-04-04
 ---------------------
 
 - Support for SSM (S,G) join, in addition to the existing ASM (*,G) join
 - Find interface bsaed on default route with *best* metric
+- Initial support for IPv6 (*,G) and (S,G) joins
 
 
 [v2.3][] - 2018-09-20
@@ -76,7 +77,8 @@ OnTime AS and later at Westermo.  Based on the work by David Stevens
 and developed further by Joachim Nilsson, on his spare time.
 
 
-[UNRELEASED]: https://github.com/troglobit/mcjoin/compare/v2.3...HEAD
+[UNRELEASED]: https://github.com/troglobit/mcjoin/compare/v2.4...HEAD
+[v2.4]:       https://github.com/troglobit/mcjoin/compare/v2.3...v2.4
 [v2.3]:       https://github.com/troglobit/mcjoin/compare/v2.2...v2.3
 [v2.2]:       https://github.com/troglobit/mcjoin/compare/v2.1...v2.2
 [v2.1]:       https://github.com/troglobit/mcjoin/compare/v2.0...v2.1

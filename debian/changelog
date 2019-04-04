@@ -2,8 +2,10 @@ mcjoin (2.4) unstable; urgency=medium
 
   * New upstream release.  Support for SSM join (S,G) in addition to the
     existing ASM (*,G) functionaliy.
+  * Find default interface based on default route with best metric.
+  * Initial support for IPv6 (*,G) and (S,G) joins
 
- -- Joachim Nilsson <troglobit@gmail.com>  Sun, 31 Mar 2019 23:41:06 +0200
+ -- Joachim Nilsson <troglobit@gmail.com>  Thu, 04 Apr 2019 09:57:39 +0200
 
 mcjoin (2.3) unstable; urgency=medium
 
