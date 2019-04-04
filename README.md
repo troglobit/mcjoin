@@ -2,18 +2,24 @@ m c j o i n - tiny multicast testing tool
 =========================================
 [![Travis Status][]][Travis] [![Coverity Status][]][Coverity Scan]
 
-`mcjoin` is a very simple and easy-to-use tool to test IPv4 multicast.
-Simply start a multicast generator (server) on one end and one or more
-data sinks (clients).
+`mcjoin` is a very simple and easy-to-use tool to test IPv4 and IPv6
+multicast.  it features an optional multicast generator (server) and
+an end device that can act as a data sink (client) or just join one
+or more groups.  both ASM (*,G) and SSM (S,G) is supported.
 
-By default the group `225.1.2.3` and the UDP port `1234` is used, you
-may want to use the `MCAST_TEST_NET` from RFC5771, `233.252.0.0/24`, or
-the `ompoing(8)` test group `232.43.211.234`, defined in this IETF draft
-<http://tools.ietf.org/html/draft-ietf-mboned-ssmping-08> and UDP port
-`4321`.  At the moment max 250 groups can be joined.
+without any arguments `mcjoin` defaults to an IPv4 ASM (*,G) join of
+`225.1.2.3`, UDP port `1234`.  see the usage section below for more
+help.
 
-The latest release is always available from GitHub at  
+for testing purposes you may want to use the `MCAST_TEST_NET` from
+RFC5771, `233.252.0.0/24`, or possibly the `ompoing(8)` test group
+`232.43.211.234`, UDP port `4321`, as defined in this IETF draft:
+
+http://tools.ietf.org/html/draft-ietf-mboned-ssmping-08
+
+> the latest release is always available from GitHub at  
 > https://github.com/troglobit/mcjoin/releases
+
 
 example
 -------
@@ -79,6 +85,11 @@ usage
     Bug report address: https://github.com/troglobit/mcjoin/issues
     Project homepage: https://github.com/troglobit/mcjoin/
 ```
+
+the `SOURCE` argument is optional, but when used it must be of the same
+address family as the group.  to join multiple groups, either list them
+all on the command line, separated with space, or use the `+NUM` syntax.
+at the moment max 250 groups can be joined.
 
 
 caveat
