@@ -67,7 +67,7 @@
 #define NELEMS(array) (sizeof(array) / sizeof(array[0]))
 #endif
 
-#ifdef  HAVE_IPV6_MULTICAST_HOST
+#ifdef AF_INET6
 #define INET_ADDRSTR_LEN  INET6_ADDRSTRLEN
 #else
 #define INET_ADDRSTR_LEN  INET_ADDRSTRLEN
@@ -112,7 +112,7 @@ static const char *convert_address(inet_addr_t *ss, char *buf, size_t len)
 {
 	struct sockaddr_in *sin;
 
-#ifdef HAVE_IPV6_MULTICAST_HOST
+#ifdef AF_INET6
 	if (ss->ss_family == AF_INET6) {
 		struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)ss;
 		return inet_ntop(AF_INET6, &sin6->sin6_addr, buf, len);
@@ -125,7 +125,14 @@ static const char *convert_address(inet_addr_t *ss, char *buf, size_t len)
 
 static int alloc_socket(inet_addr_t group)
 {
-	int sd, val;
+	int sd, val, proto;
+
+#ifdef AF_INET6
+	if (group.ss_family == AF_INET6)
+		proto = IPPROTO_IPV6;
+	else
+#endif
+		proto = IPPROTO_IP;
 
 	sd = socket(group.ss_family, SOCK_DGRAM, IPPROTO_UDP);
 	if (sd < 0) {
@@ -145,7 +152,7 @@ static int alloc_socket(inet_addr_t group)
 		ERROR("Failed enabling IP_PKTINFO: %s", strerror(errno));
 
 	val = 0;
-	if (setsockopt(sd, IPPROTO_IP, IP_MULTICAST_ALL, &val, sizeof(val)))
+	if (setsockopt(sd, proto, IP_MULTICAST_ALL, &val, sizeof(val)))
 		ERROR("Failed disabling IP_MULTICAST_ALL: %s", strerror(errno));
 
 	if (bind(sd, (struct sockaddr *)&group, sizeof(group))) {
@@ -166,7 +173,7 @@ static int join_group(struct gr *sg)
 	size_t len;
 	void *arg;
 	int ifindex;
-	int sd, op;
+	int sd, op, proto;
 
 	/* Index port with id if IP_MULTICAST_ALL fails */
 	sd = alloc_socket(sg->grp);
@@ -179,6 +186,13 @@ static int join_group(struct gr *sg)
 		goto error;
 	}
 	DEBUG("Added iface %s, idx %d", iface, ifindex);
+
+#ifdef AF_INET6
+	if (sg->grp.ss_family == AF_INET6)
+		proto = IPPROTO_IPV6;
+	else
+#endif
+		proto = IPPROTO_IP;
 
 	if (sg->source) {
 		gsr.gsr_interface  = ifindex;
@@ -200,13 +214,16 @@ static int join_group(struct gr *sg)
 	convert_address(&sg->grp, grp, sizeof(grp));
 	DEBUG("Joining group (%s,%s) on iface %s, sd: %d", src, grp, iface, sd);
 
-	if (setsockopt(sd, IPPROTO_IP, op, arg, len)) {
+	if (setsockopt(sd, proto, op, arg, len)) {
 		ERROR("Failed %s group (%s,%s) on sd %d ... %d: %s",
 		      src, grp, "joining", sd, errno, strerror(errno));
 		goto error;
 	}
 
-	PRINT("joined group %s on %s ...", sg->group, iface);
+	if (sg->source)
+		PRINT("joined source,group %s,%s on %s ...", sg->source, sg->group, iface);
+	else
+		PRINT("joined group %s on %s ...", sg->group, iface);
 	sg->sd = sd;
 
 	return 0;
@@ -606,10 +623,31 @@ int main(int argc, char *argv[])
 		}
 
 		for (j = 0; j < num && group_num < NELEMS(groups); j++) {
-			struct in_addr addr;
+#ifdef AF_INET6
+			struct sockaddr_in6 *sin6;
+#endif
+			struct sockaddr_in *sin;
+			inet_addr_t addr;
+			socklen_t len;
+			uint32_t step;
+			void *ptr;
+			int family;
 
-			if (!inet_aton(group, &addr)) {
-				ERROR("%s is not a valid IPv4 multicast group", group);
+#ifdef AF_INET6
+			if (strchr(group, ':')) {
+				family = AF_INET6;
+				sin6 = (struct sockaddr_in6 *)&addr;
+				ptr = &sin6->sin6_addr;
+			} else
+#endif
+			{
+				family = AF_INET;
+				sin = (struct sockaddr_in *)&addr;
+				ptr = &sin->sin_addr;
+			}
+
+			if (!inet_pton(family, group, ptr)) {
+				ERROR("%s is not a valid multicast group", group);
 				return usage(1);
 			}
 
@@ -618,23 +656,55 @@ int main(int argc, char *argv[])
 			groups[group_num++].group = strdup(group);
 
 			/* Next group ... */
-			addr.s_addr = htonl(ntohl(addr.s_addr) + 1);
-			group = inet_ntoa(addr);
+#ifdef AF_INET6
+			if (strchr(group, ':')) {
+				step = ntohl(sin6->sin6_addr.s6_addr32[3]);
+				step++;
+				sin6->sin6_addr.s6_addr32[3] = htonl(step);
+				len = sizeof(*sin6);
+			} else
+#endif
+			{
+				step = ntohl(sin->sin_addr.s_addr);
+				step++;
+				sin->sin_addr.s_addr = htonl(step);
+				len = sizeof(*sin);
+			}
+
+			inet_ntop(family, ptr, group, len);
 		}
 	}
 
 	for (i = 0; i < (int)group_num; i++) {
-		struct sockaddr_in *grp = (struct sockaddr_in *)&groups[i].grp;
-		struct sockaddr_in *src = (struct sockaddr_in *)&groups[i].src;
+#ifdef AF_INET6
+		if (strchr(groups[i].group, ':')) {
+			struct sockaddr_in6 *grp = (struct sockaddr_in6 *)&groups[i].grp;
+			struct sockaddr_in6 *src = (struct sockaddr_in6 *)&groups[i].src;
 
-		inet_pton(AF_INET, groups[i].group, &grp->sin_addr);
-		grp->sin_family = AF_INET;
-		grp->sin_port   = htons(port);
+			inet_pton(AF_INET6, groups[i].group, &grp->sin6_addr);
+			grp->sin6_family = AF_INET6;
+			grp->sin6_port   = htons(port);
 
-		if (groups[i].source) {
-			inet_pton(AF_INET, groups[i].source, &src->sin_addr);
-			src->sin_family = AF_INET;
-			src->sin_port   = htons(port);
+			if (groups[i].source) {
+				inet_pton(AF_INET6, groups[i].source, &src->sin6_addr);
+				src->sin6_family = AF_INET6;
+				src->sin6_port   = htons(port);
+			}
+		} else
+#endif
+		{
+			struct sockaddr_in *grp = (struct sockaddr_in *)&groups[i].grp;
+			struct sockaddr_in *src = (struct sockaddr_in *)&groups[i].src;
+
+			inet_pton(AF_INET, groups[i].group, &grp->sin_addr);
+			grp->sin_family = AF_INET;
+			grp->sin_port   = htons(port);
+
+			if (groups[i].source) {
+				inet_pton(AF_INET, groups[i].source, &src->sin_addr);
+				src->sin_family = AF_INET;
+				src->sin_port   = htons(port);
+			}
 		}
 	}
 
