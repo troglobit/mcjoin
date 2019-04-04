@@ -31,8 +31,9 @@
 .Op Ar [SOURCE,]GROUP0 .. [SOURCE,]GROUPN | [SOURCE,]GROUP+NUM
 .Sh DESCRIPTION
 .Nm
-can be used to join IPv4 multicast groups, display progress as multicast
-packets are received, and also send multicast packets on select groups.
+can be used to join IPv4 and IPv6 multicast groups, display progress as
+multicast packets are received, and also send multicast packets on
+select groups.
 .Pp
 .Nm
 can help verify intended IGMP snooping functionality in layer-2 bridges
@@ -40,10 +41,11 @@ can help verify intended IGMP snooping functionality in layer-2 bridges
 dynamic multicast routing setups.
 .Pp
 .Nm
-supports source-specific multicast (SSM) as well as any-source multicast
-(ASM).  The source IP of an (S,G) pair is an optional argument that must
-precede the group and be separated with a comma.  No spaces are allowed
-between source and group in this form.
+supports source-specific multicast, SSM (S,G), as well as any-source
+multicast, ASM (*,G).  The source IP of an (S,G) pair is an optional
+argument that must precede the group and be separated with a comma.  No
+spaces are allowed between source and group in this form.  Multiple
+(S,G) pairs are separated with space.
 .Sh OPTIONS
 With no options given
 .Nm
