@@ -1,8 +1,9 @@
 FROM alpine:3.9
+RUN apk add --update git build-base automake autoconf
 
-COPY . /root/mcjoin
+RUN git clone --depth=1 https://github.com/troglobit/mcjoin.git /root/mcjoin
 WORKDIR /root/mcjoin
-RUN apk add --update build-base automake autoconf
+
 RUN ./autogen.sh
 RUN ./configure --prefix=/usr
 RUN make
