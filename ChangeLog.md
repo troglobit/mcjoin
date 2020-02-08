@@ -14,6 +14,12 @@ All notable changes to the project are documented in this file.
 - Added new daemon mode, which makes mcjoin detach from its controlling
   terminal and run in the background, with all output except progress
   redirected to syslog
+- Fix possible file descriptor leak
+- Improve error detection if mcjoin cannot find a default interface,
+  a valid (source) IP address, or anything else goes wrong
+- Add support for `-w SEC`, initial delay before actually starting.
+  Useful if started very early in a system bootstrap before network
+  has come up properly
 
 
 [v2.4][] - 2019-04-04
