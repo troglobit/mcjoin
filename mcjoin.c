@@ -557,6 +557,9 @@ static void exit_loop(int signo)
 
 static int usage(int code)
 {
+	if (!iface[0])
+		getifname(iface, sizeof(iface));
+
 	printf("Usage: %s [-hjsv] [-c COUNT] [-i IFACE] [-l LEVEL] [-p PORT] [-r SEC]\n"
 	       "              [-t TTL] [-w SEC]\n"
 	       "              [[SOURCE,]GROUP0 .. [SOURCE,]GROUPN | [SOURCE,]GROUP+NUM]\n"
@@ -607,7 +610,6 @@ int main(int argc, char *argv[])
 	int wait = 0;
 	int i, c;
 
-	getifname(iface, sizeof(iface));
 	for (i = 0; i < MAX_NUM_GROUPS; i++)
 		memset(&groups[i], 0, sizeof(groups[0]));
 
@@ -695,6 +697,9 @@ int main(int argc, char *argv[])
 
 	if (wait)
 		sleep(wait);
+
+	if (!iface[0])
+		getifname(iface, sizeof(iface));
 
 	/*
 	 * mcjoin group+num
