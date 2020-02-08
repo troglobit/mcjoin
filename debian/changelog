@@ -1,3 +1,9 @@
+mcjoin (2.5) unstable; urgency=medium
+
+  * New upstream release.
+
+ -- Joachim Nilsson <troglobit@gmail.com>  Sat, 08 Feb 2020 17:29:05 +0100
+
 mcjoin (2.4) unstable; urgency=medium
 
   * New upstream release.  Support for SSM join (S,G) in addition to the
