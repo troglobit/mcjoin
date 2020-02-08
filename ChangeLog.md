@@ -9,6 +9,11 @@ All notable changes to the project are documented in this file.
 
 - Add Dockerfile, thanks to Graeme Lawes
 - FreeBSD support, by Ryan Libby
+- Replaced mutually exclusive options `-q` and `-d` with `-l level`.
+  Default log level is `notice`, for true quiet mode, use `-l none`
+- Added new daemon mode, which makes mcjoin detach from its controlling
+  terminal and run in the background, with all output except progress
+  redirected to syslog
 
 
 [v2.4][] - 2019-04-04
