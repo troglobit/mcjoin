@@ -17,6 +17,7 @@
  */
 
 #include "config.h"
+#define SYSLOG_NAMES
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -27,9 +28,12 @@
 #include <signal.h>
 #include <net/if.h>
 #include <netinet/in.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <syslog.h>
+#include <sys/param.h>		/* MIN() */
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <unistd.h>
@@ -39,15 +43,16 @@
 #define DEFAULT_GROUP   "225.1.2.3"
 #define DEFAULT_PORT    1234
 #define MAGIC_KEY       "Sender PID "
+#define QUIET          (log_level == INTERNAL_NOPRI)
 
 /* Esc[?25l (lower case L)    - Hide Cursor */
-#define hidecursor()          fputs ("\e[?25l", stdout)
+#define hidecursor()    if (!QUIET) fputs("\e[?25l", stderr)
 /* Esc[?25h (lower case H)    - Show Cursor */
-#define showcursor()          fputs ("\e[?25h", stdout)
+#define showcursor()    if (!QUIET) fputs("\e[?25h", stderr)
 
-#define DEBUG(fmt, ...) do { if (debug)  printf(fmt "\n", ## __VA_ARGS__); fflush(stdout); } while (0)
-#define ERROR(fmt, ...) do { fprintf(stderr, fmt "\n", ## __VA_ARGS__);    } while (0)
-#define PRINT(fmt, ...) do { if (!quiet) printf(fmt "\n", ## __VA_ARGS__); fflush(stdout); } while (0)
+#define DEBUG(fmt, args...) do { logit(LOG_DEBUG,  fmt "\n", ##args); } while (0)
+#define ERROR(fmt, args...) do { logit(LOG_ERR,    fmt "\n", ##args); } while (0)
+#define PRINT(fmt, args...) do { logit(LOG_NOTICE, fmt "\n", ##args); } while (0)
 
 #ifndef IN_LINKLOCAL
 #define IN_LINKLOCALNETNUM	0xa9fe0000
@@ -86,7 +91,6 @@ struct gr {
 
 /* Mode flags */
 int join = 1;
-int quiet = 0;
 int debug = 0;
 int sender = 0;
 int running = 1;
@@ -99,6 +103,8 @@ int port = DEFAULT_PORT;
 unsigned char ttl = 1;
 char *ident = PACKAGE_NAME;
 
+int log_level = LOG_NOTICE;
+
 size_t group_num = 0;
 struct gr groups[MAX_NUM_GROUPS];
 
@@ -107,6 +113,45 @@ int num_joins = 0;
 
 char *getifname(char *ifname, size_t len);
 int getaddr(char *iface, struct in_addr *ina);
+
+
+int loglvl(const char *level)
+{
+	int i;
+
+	for (i = 0; prioritynames[i].c_name; i++) {
+		size_t len = MIN(strlen(prioritynames[i].c_name), strlen(level));
+
+		if (!strncasecmp(prioritynames[i].c_name, level, len))
+			return prioritynames[i].c_val;
+	}
+
+	return atoi(level);
+}
+
+int logit(int prio, char *fmt, ...)
+{
+	va_list ap;
+	int rc = 0;
+
+	va_start(ap, fmt);
+	if (prio <= log_level) {
+		FILE *fp = stdout;
+		int sync = 1;
+
+		if (prio <= LOG_ERR) {
+			fp = stderr;
+			sync = 1;
+		}
+
+		rc = vfprintf(fp, fmt, ap);
+		if (sync)
+			fflush(fp);
+	}
+	va_end(ap);
+
+	return rc;
+}
 
 static const char *convert_address(inet_addr_t *ss, char *buf, size_t len)
 {
@@ -320,7 +365,7 @@ static void progress(void)
 	static unsigned int i = 0;
 	size_t num = 6;
 
-	if (quiet)
+	if (QUIET)
 		return;
 
 	if (!(i % num))
@@ -505,24 +550,26 @@ static void exit_loop(int signo)
 
 static int usage(int code)
 {
-	printf("Usage: %s [-dhjqsv] [-c COUNT] [-i IFACE] [-p PORT] [-r SEC] [-t TTL] [-w SEC]\n"
+	printf("Usage: %s [-hjsv] [-c COUNT] [-i IFACE] [-l LEVEL] [-p PORT] [-r SEC]\n"
+	       "              [-t TTL] [-w SEC]\n"
 	       "              [[SOURCE,]GROUP0 .. [SOURCE,]GROUPN | [SOURCE,]GROUP+NUM]\n"
 	       "Options:\n"
-	       "  -c COUNT     Stop sending/receiving after COUNT number of packets\n"
-	       "  -d           Debug output\n"
-	       "  -h           This help text\n"
-	       "  -i IFACE     Interface to use for sending/receiving multicast, default: %s\n"
-	       "  -j           Join groups, default unless acting as sender\n"
-	       "  -p PORT      UDP port number to send/listen to, default: %d\n"
-	       "  -q           Quiet mode\n"
-	       "  -r SEC       Do a join/leave every SEC seconds (backwards compat. option)\n"
-	       "  -s           Act as sender, sends packets to select groups, default: no\n"
-	       "  -t TTL       TTL to use when sending multicast packets, default: 1\n"
-	       "  -v           Display program version\n"
-	       "  -w SEC       Initial wait before opening sockets\n"
+	       "  -c COUNT    Stop sending/receiving after COUNT number of packets\n"
+	       "  -h          This help text\n"
+	       "  -i IFACE    Interface to use for sending/receiving multicast, default: %s\n"
+	       "  -j          Join groups, default unless acting as sender\n"
+	       "  -l LEVEL    Set log level; none, notice*, debug\n"
+	       "  -p PORT     UDP port number to send/listen to, default: %d\n"
+	       "  -r SEC      Do a join/leave every SEC seconds (backwards compat. option)\n"
+	       "  -s          Act as sender, sends packets to select groups, default: no\n"
+	       "  -t TTL      TTL to use when sending multicast packets, default: 1\n"
+	       "  -v          Display program version\n"
+	       "  -w SEC      Initial wait before opening sockets\n"
 	       "\n"
-	       "Bug report address : %-40s\n"
-	       "Project homepage   : %s\n", ident, iface, DEFAULT_PORT, PACKAGE_BUGREPORT, PACKAGE_URL);
+	       "Bug report address : %-40s\n", ident, iface, DEFAULT_PORT, PACKAGE_BUGREPORT);
+#ifdef PACKAGE_URL
+	printf("Project homepage:   %s\n", PACKAGE_URL);
+#endif
 
 	return code;
 }
@@ -556,14 +603,10 @@ int main(int argc, char *argv[])
 		memset(&groups[i], 0, sizeof(groups[0]));
 
 	ident = progname(argv[0]);
-	while ((c = getopt(argc, argv, "c:di:jp:qr:st:vhw:")) != EOF) {
+	while ((c = getopt(argc, argv, "c:i:jl:p:r:st:vhw:")) != EOF) {
 		switch (c) {
 		case 'c':
 			count = (size_t)atoi(optarg);
-			break;
-
-		case 'd':
-			debug = 1;
 			break;
 
 		case 'h':
@@ -584,8 +627,8 @@ int main(int argc, char *argv[])
 			join++;
 			break;
 
-		case 'q':
-			quiet = 1;
+		case 'l':
+			log_level = loglvl(optarg);
 			break;
 
 		case 'p':
