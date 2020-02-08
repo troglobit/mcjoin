@@ -4,6 +4,13 @@ ChangeLog
 All notable changes to the project are documented in this file.
 
 
+[v2.5][UNRELEASED]
+------------------
+
+- Add Dockerfile, thanks to Graeme Lawes
+- FreeBSD support, by Ryan Libby
+
+
 [v2.4][] - 2019-04-04
 ---------------------
 
@@ -85,9 +92,3 @@ and developed further by Joachim Nilsson, on his spare time.
 [v2.0]:       https://github.com/troglobit/mcjoin/compare/v1.5...v2.0
 [v1.5]:       https://github.com/troglobit/mcjoin/compare/v1.4...v1.5
 [v1.4]:       https://github.com/troglobit/mcjoin/compare/v1.3...v1.4
-
-<!--
-  -- Local Variables:
-  -- mode: markdown
-  -- End:
-  -->
