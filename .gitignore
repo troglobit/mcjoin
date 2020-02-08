@@ -19,6 +19,7 @@ GTAGS
 /mcjoin
 /missing
 /stamp-h1
+/debian/autoreconf.*
 /debian/.debhelper/*
 /debian/debhelper-build-stamp
 /debian/mcjoin/*
