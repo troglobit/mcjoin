@@ -55,7 +55,7 @@ char *getifname(char *ifname, size_t len)
 	/* Skip heading */
 	ptr = fgets(buf, sizeof(buf), fp);
 	if (!ptr)
-		return NULL;
+		goto end;
 
 	while (fgets(buf, sizeof(buf), fp) != NULL) {
 		rc = sscanf(buf, "%16s %X %X %X %d %d %d %X %d %d %d\n",
@@ -73,12 +73,14 @@ char *getifname(char *ifname, size_t len)
 				continue;
 
 			strncpy(ifname, name, len);
+			ifname[len] = 0;
 			best = metric;
 			found = 1;
 		}
 	}
-	fclose(fp);
 
+end:
+	fclose(fp);
 	if (found)
 		return ifname;
 
