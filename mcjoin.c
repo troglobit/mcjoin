@@ -312,9 +312,12 @@ static void send_mcast(int signo)
 		struct in_addr addr = {
 			.s_addr = INADDR_ANY,
 		};
+		int rc;
 
-		if (getaddr(iface, &addr)) {
-			ERROR("Failed locating (a valid address on) %s: %s", iface, strerror(errno));
+		rc = getaddr(iface, &addr);
+		if (rc) {
+			ERROR("No interface (%s), or no source address yet, rc %d: %s",
+			      iface[0] ? iface : "N/A", rc, strerror(errno));
 			return;
 		}
 		DEBUG("Sending on iface %s addr %s", iface, inet_ntoa(addr));

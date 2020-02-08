@@ -107,12 +107,14 @@ int getaddr(char *iface, struct in_addr *ina)
 	char buf[20] = { 0 };
 	int rc = -1;
 
-	if (!iface)
+	if (!iface || !iface[0])
 		iface = getifname(ifname, sizeof(ifname));
+	if (!iface)
+		return -1;
 
 	rc = getifaddrs(&ifaddr);
 	if (rc)
-		return -1;
+		return -2;
 
 	for (ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
 		if (!ifa->ifa_addr)
@@ -143,7 +145,7 @@ int getaddr(char *iface, struct in_addr *ina)
 	freeifaddrs(ifaddr);
 
 	if (rc || IN_ZERONET(ntohl(ina->s_addr)))
-		return -1;
+		return -3;
 
 	return 0;
 }
