@@ -43,7 +43,7 @@
 #define DEFAULT_GROUP   "225.1.2.3"
 #define DEFAULT_PORT    1234
 #define MAGIC_KEY       "Sender PID "
-#define QUIET          (log_level == INTERNAL_NOPRI)
+#define QUIET          (log_level == INTERNAL_NOPRI || log_syslog)
 
 /* Esc[?25l (lower case L)    - Hide Cursor */
 #define hidecursor()    if (!QUIET) fputs("\e[?25l", stderr)
@@ -103,7 +103,9 @@ int port = DEFAULT_PORT;
 unsigned char ttl = 1;
 char *ident = PACKAGE_NAME;
 
-int log_level = LOG_NOTICE;
+int log_level  = LOG_NOTICE;
+int log_syslog = 0;
+int log_opts   = LOG_NDELAY | LOG_PID;
 
 size_t group_num = 0;
 struct gr groups[MAX_NUM_GROUPS];
@@ -135,7 +137,9 @@ int logit(int prio, char *fmt, ...)
 	int rc = 0;
 
 	va_start(ap, fmt);
-	if (prio <= log_level) {
+	if (log_syslog)
+		vsyslog(prio, fmt, ap);
+	else if (prio <= log_level) {
 		FILE *fp = stdout;
 		int sync = 1;
 
@@ -555,6 +559,7 @@ static int usage(int code)
 	       "              [[SOURCE,]GROUP0 .. [SOURCE,]GROUPN | [SOURCE,]GROUP+NUM]\n"
 	       "Options:\n"
 	       "  -c COUNT    Stop sending/receiving after COUNT number of packets\n"
+	       "  -d          Run as daemon in background, output except progress to syslog\n"
 	       "  -h          This help text\n"
 	       "  -i IFACE    Interface to use for sending/receiving multicast, default: %s\n"
 	       "  -j          Join groups, default unless acting as sender\n"
@@ -595,6 +600,7 @@ int main(int argc, char *argv[])
 	};
 	extern int optind;
 	size_t ilen;
+	int foreground = 1;
 	int wait = 0;
 	int i, c;
 
@@ -603,10 +609,14 @@ int main(int argc, char *argv[])
 		memset(&groups[i], 0, sizeof(groups[0]));
 
 	ident = progname(argv[0]);
-	while ((c = getopt(argc, argv, "c:i:jl:p:r:st:vhw:")) != EOF) {
+	while ((c = getopt(argc, argv, "c:di:jl:p:r:st:vhw:")) != EOF) {
 		switch (c) {
 		case 'c':
 			count = (size_t)atoi(optarg);
+			break;
+
+		case 'd':
+			foreground = 0;
 			break;
 
 		case 'h':
@@ -669,6 +679,17 @@ int main(int argc, char *argv[])
 	if (optind == argc)
 		groups[group_num++].group = strdup(DEFAULT_GROUP);
 
+	if (!foreground) {
+		if (fork())
+			_exit(0);
+		if (setsid() == (pid_t)-1 || daemon(0, 0))
+			_exit(1);
+		log_syslog = 1;
+
+		openlog(ident, log_opts, LOG_DAEMON);
+		setlogmask(LOG_UPTO(log_level));
+	}
+
 	if (wait)
 		sleep(wait);
 
@@ -728,7 +749,7 @@ int main(int argc, char *argv[])
 				return usage(1);
 			}
 
-			DEBUG("Adding (S,G) %s,%s to list ...", source, group);
+			DEBUG("Adding (S,G) %s,%s to list ...", source ?: "*", group);
 			groups[group_num].source  = source;
 			groups[group_num++].group = strdup(group);
 

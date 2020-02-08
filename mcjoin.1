@@ -22,7 +22,7 @@
 .Nd tiny multicast testing tool
 .Sh SYNOPSIS
 .Nm
-.Op Fl hjsv
+.Op Fl dhjsv
 .Op Fl c Ar COUNT
 .Op Fl i Ar IFNAME
 .Op Fl l Ar LEVEL
@@ -59,6 +59,10 @@ Use the following options to adjust this behavior:
 .Bl -tag -width Ds
 .It Fl c Ar COUNT
 Stop sending/receiving after COUNT number of packets
+.It Fl d
+Run as a daemon in the background, detached from the current terminal.
+All output, except progress is sent to
+.Xr syslog 3 .
 .It Fl h
 Print a summary of the options and exit
 .It Fl i Ar IFNAME
