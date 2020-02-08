@@ -547,7 +547,7 @@ int main(int argc, char *argv[])
 		.sa_handler = exit_loop,
 	};
 	extern int optind;
-	size_t len;
+	size_t ilen;
 	int wait = 0;
 	int i, c;
 
@@ -570,13 +570,13 @@ int main(int argc, char *argv[])
 			return usage(0);
 
 		case 'i':
-			len = strlen(optarg);
-			if (len >= sizeof(iface)) {
+			ilen = strlen(optarg);
+			if (ilen >= sizeof(iface)) {
 				ERROR("Too long interface name, max %zd chars.", sizeof(iface) - 1);
 				return 1;
 			}
 			strncpy(iface, optarg, sizeof(iface));
-			iface[len] = 0;
+			iface[ilen] = 0;
 			DEBUG("IFACE: %s", iface);
 			break;
 
