@@ -505,7 +505,7 @@ static void exit_loop(int signo)
 
 static int usage(int code)
 {
-	printf("Usage: %s [-dhjqsv] [-c COUNT] [-i IFACE] [-p PORT] [-r SEC] [-t TTL]\n"
+	printf("Usage: %s [-dhjqsv] [-c COUNT] [-i IFACE] [-p PORT] [-r SEC] [-t TTL] [-w SEC]\n"
 	       "              [[SOURCE,]GROUP0 .. [SOURCE,]GROUPN | [SOURCE,]GROUP+NUM]\n"
 	       "Options:\n"
 	       "  -c COUNT     Stop sending/receiving after COUNT number of packets\n"
@@ -519,6 +519,7 @@ static int usage(int code)
 	       "  -s           Act as sender, sends packets to select groups, default: no\n"
 	       "  -t TTL       TTL to use when sending multicast packets, default: 1\n"
 	       "  -v           Display program version\n"
+	       "  -w SEC       Initial wait before opening sockets\n"
 	       "\n"
 	       "Bug report address : %-40s\n"
 	       "Project homepage   : %s\n", ident, iface, DEFAULT_PORT, PACKAGE_BUGREPORT, PACKAGE_URL);
@@ -547,6 +548,7 @@ int main(int argc, char *argv[])
 	};
 	extern int optind;
 	size_t len;
+	int wait = 0;
 	int i, c;
 
 	getifname(iface, sizeof(iface));
@@ -554,7 +556,7 @@ int main(int argc, char *argv[])
 		memset(&groups[i], 0, sizeof(groups[0]));
 
 	ident = progname(argv[0]);
-	while ((c = getopt(argc, argv, "c:di:jp:qr:st:vh")) != EOF) {
+	while ((c = getopt(argc, argv, "c:di:jp:qr:st:vhw:")) != EOF) {
 		switch (c) {
 		case 'c':
 			count = (size_t)atoi(optarg);
@@ -612,6 +614,10 @@ int main(int argc, char *argv[])
 			printf("%s\n", PACKAGE_VERSION);
 			return 0;
 
+		case 'w':
+			wait = atoi(optarg);
+			break;
+
 		default:
 			return usage(1);
 		}
@@ -619,6 +625,9 @@ int main(int argc, char *argv[])
 
 	if (optind == argc)
 		groups[group_num++].group = strdup(DEFAULT_GROUP);
+
+	if (wait)
+		sleep(wait);
 
 	/*
 	 * mcjoin group+num

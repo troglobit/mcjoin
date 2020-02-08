@@ -14,7 +14,7 @@
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
-.Dd 31 March, 2019
+.Dd March 8, 2020
 .Dt MCJOIN 1
 .Os
 .Sh NAME
@@ -28,6 +28,7 @@
 .Op Fl p Ar PORT
 .Op Fl r Ar SEC
 .Op Fl t Ar TTL
+.Op Fl w Ar SEC
 .Op Ar [SOURCE,]GROUP0 .. [SOURCE,]GROUPN | [SOURCE,]GROUP+NUM
 .Sh DESCRIPTION
 .Nm
@@ -78,6 +79,13 @@ anymore, kept for backwards compatibility.
 TTL to use when sending multicast packets, default: 1
 .It Fl v
 Show version information
+.It Fl w Ar SEC
+Initial wait, sleep
+.Ar SEC
+seconds before starting anything.  Useful for scripting test systems
+that launch
+.Nm
+at boot without syncing with creation of networking.
 .El
 .Sh USAGE
 To verify multicast connectivity, the simplest way is to run
