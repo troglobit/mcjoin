@@ -560,7 +560,7 @@ static int usage(int code)
 	if (!iface[0])
 		getifname(iface, sizeof(iface));
 
-	printf("Usage: %s [-hjsv] [-c COUNT] [-i IFACE] [-l LEVEL] [-p PORT] [-r SEC]\n"
+	printf("Usage: %s [-dhjsv] [-c COUNT] [-i IFACE] [-l LEVEL] [-p PORT] [-r SEC]\n"
 	       "              [-t TTL] [-w SEC]\n"
 	       "              [[SOURCE,]GROUP0 .. [SOURCE,]GROUPN | [SOURCE,]GROUP+NUM]\n"
 	       "Options:\n"
