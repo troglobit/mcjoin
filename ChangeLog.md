@@ -4,8 +4,8 @@ ChangeLog
 All notable changes to the project are documented in this file.
 
 
-[v2.5][] - 202-02-23
---------------------
+[v2.5][] - 2020-02-23
+---------------------
 
 - Add Dockerfile, thanks to Graeme Lawes
 - FreeBSD support, by Ryan Libby
