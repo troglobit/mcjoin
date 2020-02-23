@@ -1,3 +1,0 @@
-mcjoin binary: dir-in-usr-local *
-mcjoin binary: file-in-usr-local *
-mcjoin binary: file-in-unusual-dir *
