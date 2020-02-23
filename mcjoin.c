@@ -649,7 +649,7 @@ int main(int argc, char *argv[])
 		case 'p':
 			port = atoi(optarg);
 			if (port < 1024 && geteuid())
-				ERROR("Must be root to use priviliged ports (< 1024)");
+				ERROR("Must be root to use privileged ports (< 1024)");
 			break;
 
 		case 'r':
