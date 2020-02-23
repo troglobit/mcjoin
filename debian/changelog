@@ -1,8 +1,12 @@
 mcjoin (2.5) unstable; urgency=medium
 
   * New upstream release.
+  * New and changed command like options.
+  * Fixes possible file descriptor leaks.
+  * Improved error detection on startup, i.e., no default interface,
+    or interface has no IP address (yet).
 
- -- Joachim Nilsson <troglobit@gmail.com>  Sat, 08 Feb 2020 17:29:05 +0100
+ -- Joachim Nilsson <troglobit@gmail.com>  Sun, 23 Feb 2020 06:44:03 +0100
 
 mcjoin (2.4) unstable; urgency=medium
 

@@ -4,8 +4,8 @@ ChangeLog
 All notable changes to the project are documented in this file.
 
 
-[v2.5][UNRELEASED]
-------------------
+[v2.5][] - 202-02-23
+--------------------
 
 - Add Dockerfile, thanks to Graeme Lawes
 - FreeBSD support, by Ryan Libby
@@ -95,7 +95,8 @@ OnTime AS and later at Westermo.  Based on the work by David Stevens
 and developed further by Joachim Nilsson, on his spare time.
 
 
-[UNRELEASED]: https://github.com/troglobit/mcjoin/compare/v2.4...HEAD
+[UNRELEASED]: https://github.com/troglobit/mcjoin/compare/v2.5...HEAD
+[v2.5]:       https://github.com/troglobit/mcjoin/compare/v2.4...v2.5
 [v2.4]:       https://github.com/troglobit/mcjoin/compare/v2.3...v2.4
 [v2.3]:       https://github.com/troglobit/mcjoin/compare/v2.2...v2.3
 [v2.2]:       https://github.com/troglobit/mcjoin/compare/v2.1...v2.2
