@@ -11,11 +11,11 @@ Vcs-Browser: https://github.com/troglobit/mcjoin/commits/
 Package: mcjoin
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: IPv4 tool for verifying multicast connectivity.
- mcjoin can be used to join IPv4 multicast groups, display
- progress as multicast packets are received, and also send
- multicast packets on select groups.
+Description: tool for verifying multicast connectivity
+ mcjoin can be used to join IPv4/IPv6 multicast groups, display progress
+ as multicast packets are received, and also send multicast packets on
+ select groups.
  .
- mcjoin can help verify intended IGMP snooping functionality
- in layer-2 bridges/switches, as well as test forwarding of
- multicast in static or dynamic multicast routing setups.
+ mcjoin can help verify intended IGMP/MLD snooping functionality in
+ layer-2 bridges/switches, as well as test forwarding of multicast in
+ static or dynamic multicast routing setups.
