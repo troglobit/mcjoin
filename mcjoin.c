@@ -17,44 +17,36 @@
  */
 
 #include "config.h"
-#define SYSLOG_NAMES
 
 #include <errno.h>
 #include <getopt.h>
 #include <libgen.h>
 #include <poll.h>
 #include <signal.h>
-#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <syslog.h>
-#include <sys/param.h>		/* MIN() */
 #include <sys/time.h>
 #include <unistd.h>
 
 #include "addr.h"
+#include "log.h"
+
 #define BUFSZ           100
 #define MAX_NUM_GROUPS  250
 #define DEFAULT_GROUP   "225.1.2.3"
 #define DEFAULT_PORT    1234
 #define MAGIC_KEY       "Sender PID "
-#define QUIET          (log_level == INTERNAL_NOPRI || log_syslog)
 
 /* Esc[?25l (lower case L)    - Hide Cursor */
-#define hidecursor()    if (!QUIET) fputs("\e[?25l", stderr)
+#define hidecursor()    if (logon()) fputs("\e[?25l", stderr)
 /* Esc[?25h (lower case H)    - Show Cursor */
-#define showcursor()    if (!QUIET) fputs("\e[?25h", stderr)
-
-#define DEBUG(fmt, args...) do { logit(LOG_DEBUG,  fmt "\n", ##args); } while (0)
-#define ERROR(fmt, args...) do { logit(LOG_ERR,    fmt "\n", ##args); } while (0)
-#define PRINT(fmt, args...) do { logit(LOG_NOTICE, fmt "\n", ##args); } while (0)
+#define showcursor()    if (logon()) fputs("\e[?25h", stderr)
 
 /* From The Practice of Programming, by Kernighan and Pike */
 #ifndef NELEMS
 #define NELEMS(array) (sizeof(array) / sizeof(array[0]))
 #endif
-
 
 /* Mode flags */
 int join = 1;
@@ -70,56 +62,11 @@ int port = DEFAULT_PORT;
 unsigned char ttl = 1;
 char *ident = PACKAGE_NAME;
 
-int log_level  = LOG_NOTICE;
-int log_syslog = 0;
-int log_opts   = LOG_NDELAY | LOG_PID;
-
 size_t group_num = 0;
 struct gr groups[MAX_NUM_GROUPS];
 
 char iface[IFNAMSIZ + 1];
 int num_joins = 0;
-
-
-int loglvl(const char *level)
-{
-	int i;
-
-	for (i = 0; prioritynames[i].c_name; i++) {
-		size_t len = MIN(strlen(prioritynames[i].c_name), strlen(level));
-
-		if (!strncasecmp(prioritynames[i].c_name, level, len))
-			return prioritynames[i].c_val;
-	}
-
-	return atoi(level);
-}
-
-int logit(int prio, char *fmt, ...)
-{
-	va_list ap;
-	int rc = 0;
-
-	va_start(ap, fmt);
-	if (log_syslog)
-		vsyslog(prio, fmt, ap);
-	else if (prio <= log_level) {
-		FILE *fp = stdout;
-		int sync = 1;
-
-		if (prio <= LOG_ERR) {
-			fp = stderr;
-			sync = 1;
-		}
-
-		rc = vfprintf(fp, fmt, ap);
-		if (sync)
-			fflush(fp);
-	}
-	va_end(ap);
-
-	return rc;
-}
 
 
 static int alloc_socket(inet_addr_t group)

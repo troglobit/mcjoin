@@ -1,6 +1,6 @@
 bin_PROGRAMS      = mcjoin
 dist_man1_MANS    = mcjoin.1
-mcjoin_SOURCES    = mcjoin.c addr.c addr.h
+mcjoin_SOURCES    = mcjoin.c addr.c addr.h log.c log.h
 mcjoin_CFLAGS     = -W -Wall -Wextra -std=gnu99
 doc_DATA          = README.md LICENSE
 EXTRA_DIST        = README.md LICENSE ChangeLog.md
