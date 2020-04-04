@@ -1,0 +1,4 @@
+.deps/*
+mcjoin
+Makefile
+Makefile.in
