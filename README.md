@@ -58,7 +58,7 @@ usage
       -c COUNT    Stop sending/receiving after COUNT number of packets
       -d          Run as daemon in background, output except progress to syslog
       -h          This help text
-      -i IFACE    Interface to use for sending/receiving multicast, default eth0
+      -i IFACE    Interface to use for sending/receiving multicast, default: eth0
       -j          Join groups, default unless acting as sender
       -l LEVEL    Set log level; none, notice*, debug\n"
       -p PORT     UDP port number to listen to, default: 1234
@@ -68,8 +68,8 @@ usage
       -v          Display program version
 	  -w SEC      Initial wait before opening sockets
     
-    Bug report address: https://github.com/troglobit/mcjoin/issues
-    Project homepage: https://github.com/troglobit/mcjoin/
+    Bug report address : https://github.com/troglobit/mcjoin/issues
+    Project homepage   : https://github.com/troglobit/mcjoin/
 ```
 
 the `SOURCE` argument is optional, but when used it must be of the same

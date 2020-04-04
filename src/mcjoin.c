@@ -505,7 +505,7 @@ static int usage(int code)
 	       "\n"
 	       "Bug report address : %-40s\n", ident, iface, DEFAULT_PORT, PACKAGE_BUGREPORT);
 #ifdef PACKAGE_URL
-	printf("Project homepage:   %s\n", PACKAGE_URL);
+	printf("Project homepage   : %s\n", PACKAGE_URL);
 #endif
 
 	return code;
