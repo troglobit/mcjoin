@@ -101,6 +101,11 @@ end:
 	return NULL;
 }
 
+/* XXX: old IPv4-only address validation, fixme!
+ * http://osr600doc.xinuos.com/en/SDK_netapi/sockC.PortIPv4appIPv6.html
+ * http://www.kame.net/newsletter/19980604/
+ */
+#if 0
 /* Check if valid address */
 static int valid_addr(struct in_addr *ina)
 {
@@ -112,6 +117,7 @@ static int valid_addr(struct in_addr *ina)
 
 	return 1;
 }
+#endif
 
 /* Find IP address of default outbound LAN interface */
 int ifinfo(char *iface, inet_addr_t *addr, int family)

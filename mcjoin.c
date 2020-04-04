@@ -186,47 +186,88 @@ error:
 	return 1;
 }
 
+static int send_socket(int family)
+{
+	inet_addr_t addr;
+	char buf[INET_ADDRSTR_LEN];
+	int ifindex;
+	int sd;
+
+	ifindex = ifinfo(iface, &addr, family);
+	if (ifindex <= 0) {
+		ERROR("No interface (%s), or no IPv%s address yet, rc %d: %s",
+		      iface[0] ? iface : "N/A", family == AF_INET ? "4" : "6",
+		      ifindex, strerror(errno));
+		return -1;
+	}
+
+	DEBUG("Sending on iface %s addr %s ifindex %d", iface,
+	      inet_address(&addr, buf, sizeof(buf)), ifindex);
+
+	sd = socket(family, SOCK_DGRAM, 0);
+	if (sd < 0) {
+		ERROR("Failed opening socket(): %s", strerror(errno));
+		return -1;
+	}
+
+	if (family == AF_INET) {
+		struct ip_mreqn imr = { .imr_ifindex = ifindex };
+
+		if (setsockopt(sd, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl)))
+			ERROR("Failed setting IP_MULTICAST_TTL: %s", strerror(errno));
+
+		if (setsockopt(sd, IPPROTO_IP, IP_MULTICAST_IF, &imr, sizeof(imr)))
+			ERROR("Failed setting IP_MULTICAST_IF: %s", strerror(errno));
+	}
+#ifdef AF_INET6
+	else {
+		int hops = ttl;
+
+		if (setsockopt(sd, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &hops, sizeof(hops)))
+			ERROR("Failed setting IPV6_MULTICAST_HOPS: %s", strerror(errno));
+
+		if (setsockopt(sd, IPPROTO_IPV6, IPV6_MULTICAST_IF, &ifindex, sizeof(ifindex)))
+			ERROR("Failed setting IPV6_MULTICAST_IF: %s", strerror(errno));
+	}
+#endif
+	if (bind(sd, (struct sockaddr *)&addr, inet_addrlen(&addr)) == -1) {
+		ERROR("Failed binding socket to %s", buf);
+		close(sd);
+		return -1;
+	}
+
+	return sd;
+}
+
 static void send_mcast(int signo)
 {
 	static unsigned int counter = 1;
-	static int ssock = 0;
+	static int sd4 = -1;
+	static int sd6 = -1;
 	char buf[BUFSZ] = { 0 };
 	size_t i;
 
-	if (!ssock) {
-		struct in_addr addr = {
-			.s_addr = INADDR_ANY,
-		};
-		int rc;
-
-		rc = getaddr(iface, &addr);
-		if (rc) {
-			ERROR("No interface (%s), or no source address yet, rc %d: %s",
-			      iface[0] ? iface : "N/A", rc, strerror(errno));
+	if (sd4 == -1) {
+		sd4 = send_socket(AF_INET);
+		if (sd4 == -1)
 			return;
-		}
-		DEBUG("Sending on iface %s addr %s", iface, inet_ntoa(addr));
-
-		ssock = socket(AF_INET, SOCK_DGRAM, 0);
-		if (ssock < 0) {
-			ERROR("Failed opening socket(): %s", strerror(errno));
-			return;
-		}
-
-		if (setsockopt(ssock, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl)))
-			ERROR("Failed setting IP_MULTICAST_TTL: %s", strerror(errno));
-
-		if (setsockopt(ssock, IPPROTO_IP, IP_MULTICAST_IF, &addr, sizeof(addr)))
-			ERROR("Failed setting IP_MULTICAST_IF: %s", strerror(errno));
 	}
+#ifdef AF_INET6
+	if (sd6 == -1) {
+		sd6 = send_socket(AF_INET6);
+		if (sd6 == -1)
+			return;
+	}
+#endif
 
 	for (i = 0; i < group_num; i++) {
 		struct sockaddr *dest = (struct sockaddr *)&groups[i].grp;
-		socklen_t len = ss_get_len(&groups[i].grp);
+		socklen_t len = inet_addrlen(&groups[i].grp);
+		int sd = groups[i].grp.ss_family == AF_INET ? sd4 : sd6;
 
 		snprintf(buf, sizeof(buf), "%s%u, MC group %s ... count: %u", MAGIC_KEY, getpid(), groups[i].group, counter++);
 		DEBUG("Sending packet on signal %d, msg: %s", signo, buf);
-		if (sendto(ssock, buf, sizeof(buf), 0, dest, len) < 0)
+		if (sendto(sd, buf, sizeof(buf), 0, dest, len) < 0)
 			ERROR("Failed sending mcast packet: %s", strerror(errno));
 	}
 }
@@ -257,7 +298,7 @@ static void progress(void)
 	static unsigned int i = 0;
 	size_t num = 6;
 
-	if (QUIET)
+	if (!logon())
 		return;
 
 	if (!(i % num))
@@ -443,7 +484,7 @@ static void exit_loop(int signo)
 static int usage(int code)
 {
 	if (!iface[0])
-		getifname(iface, sizeof(iface));
+		ifdefault(iface, sizeof(iface));
 
 	printf("Usage: %s [-dhjsv] [-c COUNT] [-i IFACE] [-l LEVEL] [-p PORT] [-r SEC]\n"
 	       "              [-t TTL] [-w SEC]\n"
@@ -584,7 +625,7 @@ int main(int argc, char *argv[])
 		sleep(wait);
 
 	if (!iface[0])
-		getifname(iface, sizeof(iface));
+		ifdefault(iface, sizeof(iface));
 
 	/*
 	 * mcjoin group+num
@@ -700,9 +741,9 @@ int main(int argc, char *argv[])
 			}
 		}
 #ifdef HAVE_STRUCT_SOCKADDR_STORAGE_SS_LEN
-		groups[i].grp.ss_len = ss_get_len(&groups[i].grp);
+		groups[i].grp.ss_len = inet_addrlen(&groups[i].grp);
 		if (groups[i].source)
-			groups[i].src.ss_len = ss_get_len(&groups[i].src);
+			groups[i].src.ss_len = inet_addrlen(&groups[i].src);
 #endif
 	}
 
