@@ -42,8 +42,10 @@ for testing purposes you may want to use the `MCAST_TEST_NET` from
 RFC5771, `233.252.0.0/24`, or possibly the [ompoing(8)][1] test group
 `232.43.211.234`, UDP port `4321`, as defined in [this IETF draft][2].
 
-for testing IPv6 you can use ff2e::42
+for testing IPv6 you can use ff2e::42.  for ipv6 groups the ipv6 address
+of the outbound interface will be used.
 
+> **remember:** to set ipv4 and/or ipv6 address on the outbound interface!
 
 usage
 -----
