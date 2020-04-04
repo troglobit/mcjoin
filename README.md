@@ -50,7 +50,7 @@ of the outbound interface will be used.
 usage
 -----
 
-```shell
+```
     $ mcjoin -h
     
     Usage: mcjoin [-dhjsv] [-c COUNT] [-i IFACE] [-p PORT] [-r SEC] [-t TTL] [-w SEC]
@@ -62,13 +62,13 @@ usage
       -h          This help text
       -i IFACE    Interface to use for sending/receiving multicast, default: eth0
       -j          Join groups, default unless acting as sender
-      -l LEVEL    Set log level; none, notice*, debug\n"
+      -l LEVEL    Set log level; none, notice*, debug
       -p PORT     UDP port number to listen to, default: 1234
       -r SEC      Do a join/leave every SEC seconds (backwards compat. option)
       -s          Act as sender, sends packets to select groups
       -t TTL      TTL to use when sending multicast packets, default 1
       -v          Display program version
-	  -w SEC      Initial wait before opening sockets
+      -w SEC      Initial wait before opening sockets
     
     Bug report address : https://github.com/troglobit/mcjoin/issues
     Project homepage   : https://github.com/troglobit/mcjoin/
