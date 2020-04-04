@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019  Joachim Nilsson <troglobit@gmail.com>
+ * Copyright (c) 2018-2020  Joachim Nilsson <troglobit@gmail.com>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -14,35 +14,46 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <ifaddrs.h>
 #include <netdb.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include <net/if.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
 #include <sys/types.h>
 
-#ifndef IN_ZERONET
-#define IN_ZERONET(addr) ((addr & IN_CLASSA_NET) == 0)
+#include "addr.h"
+
+const char *inet_address(inet_addr_t *ss, char *buf, size_t len)
+{
+	struct sockaddr_in *sin;
+
+#ifdef AF_INET6
+	if (ss->ss_family == AF_INET6) {
+		struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)ss;
+		return inet_ntop(AF_INET6, &sin6->sin6_addr, buf, len);
+	}
 #endif
 
-#ifndef IN_LOOPBACK
-#define IN_LOOPBACK(addr) ((addr & IN_CLASSA_NET) == 0x7f000000)
-#endif
+	sin = (struct sockaddr_in *)ss;
+	return inet_ntop(AF_INET, &sin->sin_addr, buf, len);
+}
 
-#ifndef IN_LINKLOCAL
-#define IN_LINKLOCALNETNUM 0xa9fe0000
-#define IN_LINKLOCAL(addr) ((addr & IN_CLASSB_NET) == IN_LINKLOCALNETNUM)
+socklen_t inet_addrlen(inet_addr_t *ss)
+{
+
+#ifdef AF_INET6
+	if (ss->ss_family == AF_INET6)
+		return sizeof(struct sockaddr_in6);
 #endif
+	if (ss->ss_family == AF_INET)
+		return sizeof(struct sockaddr_in);
+	return 0;
+}
 
 /* Find default outbound *LAN* interface, i.e. skipping tunnels */
-char *getifname(char *ifname, size_t len)
+char *ifdefault(char *iface, size_t len)
 {
 	uint32_t dest, gw, mask;
-	char buf[256], name[17];
+	char buf[256], ifname[17];
 	char *ptr;
 	FILE *fp;
 	int rc, flags, cnt, use, metric, mtu, win, irtt;
@@ -59,7 +70,7 @@ char *getifname(char *ifname, size_t len)
 
 	while (fgets(buf, sizeof(buf), fp) != NULL) {
 		rc = sscanf(buf, "%16s %X %X %X %d %d %d %X %d %d %d\n",
-			   name, &dest, &gw, &flags, &cnt, &use, &metric,
+			   ifname, &dest, &gw, &flags, &cnt, &use, &metric,
 			   &mask, &mtu, &win, &irtt);
 
 		if (rc < 10 || !(flags & 1)) /* IFF_UP */
@@ -68,21 +79,22 @@ char *getifname(char *ifname, size_t len)
 		if (dest != 0 || mask != 0)
 			continue;
 
-		if (!ifname[0] || !strncmp(ifname, "tun", 3)) {
+		if (!iface[0] || !strncmp(iface, "tun", 3)) {
 			if (metric >= best)
 				continue;
 
-			strncpy(ifname, name, len);
-			ifname[len] = 0;
+			strncpy(iface, ifname, len);
+			iface[len] = 0;
 			best = metric;
 			found = 1;
+
 		}
 	}
 
 end:
 	fclose(fp);
 	if (found)
-		return ifname;
+		return iface;
 
 	return NULL;
 }
@@ -99,55 +111,51 @@ static int valid_addr(struct in_addr *ina)
 	return 1;
 }
 
-/* Find IPv4 address of default outbound LAN interface */
-int getaddr(char *iface, struct in_addr *ina)
+/* Find IP address of default outbound LAN interface */
+int ifinfo(char *iface, inet_addr_t *addr, int family)
 {
 	struct ifaddrs *ifaddr, *ifa;
 	char ifname[17] = { 0 };
-	char buf[20] = { 0 };
+	char buf[INET_ADDRSTR_LEN] = { 0 };
 	int rc = -1;
 
 	if (!iface || !iface[0])
-		iface = getifname(ifname, sizeof(ifname));
+		iface = ifdefault(ifname, sizeof(ifname));
 	if (!iface)
-		return -1;
+		return -2;
 
 	rc = getifaddrs(&ifaddr);
-	if (rc)
-		return -2;
+	if (rc == -1)
+		return -3;
 
 	for (ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
 		if (!ifa->ifa_addr)
 			continue;
 
-		if (ifa->ifa_flags & IFF_LOOPBACK)
-			continue;
-
 		if (!(ifa->ifa_flags & IFF_MULTICAST))
 			continue;
 
-		if (ifa->ifa_addr->sa_family != AF_INET)
+		if (ifa->ifa_addr->sa_family != family)
 			continue;
 
 		if (iface && strcmp(iface, ifa->ifa_name))
 			continue;
 
-		rc = getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in),
-				 buf, sizeof(buf), NULL, 0, NI_NUMERICHOST);
-		if (!rc) {
+		*addr = *(inet_addr_t *)ifa->ifa_addr;
+#if 0 /* XXX: old IPv4-only address validation, fixme! */
+		if (family == AF_INET) {
 			if (!inet_aton(buf, ina))
 				continue;
 			if (!valid_addr(ina))
 				continue;
-			break;
 		}
+#endif
+		rc = if_nametoindex(ifa->ifa_name);
+		break;
 	}
 	freeifaddrs(ifaddr);
 
-	if (rc || IN_ZERONET(ntohl(ina->s_addr)))
-		return -3;
-
-	return 0;
+	return rc;
 }
 
 /**

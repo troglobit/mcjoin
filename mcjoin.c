@@ -19,25 +19,21 @@
 #include "config.h"
 #define SYSLOG_NAMES
 
-#include <arpa/inet.h>
 #include <errno.h>
 #include <getopt.h>
-#include <ifaddrs.h>
 #include <libgen.h>
 #include <poll.h>
 #include <signal.h>
-#include <net/if.h>
-#include <netinet/in.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
 #include <sys/param.h>		/* MIN() */
-#include <sys/socket.h>
 #include <sys/time.h>
 #include <unistd.h>
 
+#include "addr.h"
 #define BUFSZ           100
 #define MAX_NUM_GROUPS  250
 #define DEFAULT_GROUP   "225.1.2.3"
@@ -54,40 +50,11 @@
 #define ERROR(fmt, args...) do { logit(LOG_ERR,    fmt "\n", ##args); } while (0)
 #define PRINT(fmt, args...) do { logit(LOG_NOTICE, fmt "\n", ##args); } while (0)
 
-#ifndef IN_LINKLOCAL
-#define IN_LINKLOCALNETNUM	0xa9fe0000
-#define IN_LINKLOCAL(addr) ((addr & IN_CLASSB_NET) == IN_LINKLOCALNETNUM)
-#endif
-
-#ifndef IN_LOOPBACK
-#define IN_LOOPBACK(addr) ((addr & IN_CLASSA_NET) == 0x7f000000)
-#endif
-
-#ifndef IN_ZERONET
-#define IN_ZERONET(addr) ((addr & IN_CLASSA_NET) == 0)
-#endif
-
 /* From The Practice of Programming, by Kernighan and Pike */
 #ifndef NELEMS
 #define NELEMS(array) (sizeof(array) / sizeof(array[0]))
 #endif
 
-#ifdef AF_INET6
-#define INET_ADDRSTR_LEN  INET6_ADDRSTRLEN
-#else
-#define INET_ADDRSTR_LEN  INET_ADDRSTRLEN
-#endif
-typedef struct sockaddr_storage inet_addr_t;
-
-/* Group info */
-struct gr {
-	int          sd;
-	size_t       count;
-	char        *source;
-	char        *group;
-	inet_addr_t  src;
-	inet_addr_t  grp;	/* to */
-};
 
 /* Mode flags */
 int join = 1;
@@ -112,9 +79,6 @@ struct gr groups[MAX_NUM_GROUPS];
 
 char iface[IFNAMSIZ + 1];
 int num_joins = 0;
-
-char *getifname(char *ifname, size_t len);
-int getaddr(char *iface, struct in_addr *ina);
 
 
 int loglvl(const char *level)
@@ -157,32 +121,6 @@ int logit(int prio, char *fmt, ...)
 	return rc;
 }
 
-static const char *convert_address(inet_addr_t *ss, char *buf, size_t len)
-{
-	struct sockaddr_in *sin;
-
-#ifdef AF_INET6
-	if (ss->ss_family == AF_INET6) {
-		struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)ss;
-		return inet_ntop(AF_INET6, &sin6->sin6_addr, buf, len);
-	}
-#endif
-
-	sin = (struct sockaddr_in *)ss;
-	return inet_ntop(AF_INET, &sin->sin_addr, buf, len);
-}
-
-static socklen_t ss_get_len(const struct sockaddr_storage *ss)
-{
-
-#ifdef AF_INET6
-	if (ss->ss_family == AF_INET6)
-		return sizeof(struct sockaddr_in6);
-#endif
-	if (ss->ss_family == AF_INET)
-		return sizeof(struct sockaddr_in);
-	return 0;
-}
 
 static int alloc_socket(inet_addr_t group)
 {
@@ -223,7 +161,7 @@ static int alloc_socket(inet_addr_t group)
 		ERROR("Failed disabling IP_MULTICAST_ALL: %s", strerror(errno));
 #endif
 
-	if (bind(sd, (struct sockaddr *)&group, ss_get_len(&group))) {
+	if (bind(sd, (struct sockaddr *)&group, inet_addrlen(&group))) {
 		ERROR("Failed binding to socket: %s", strerror(errno));
 		close(sd);
 		return -1;
@@ -278,8 +216,8 @@ static int join_group(struct gr *sg)
 	}
 
 	if (sg->source)
-		convert_address(&sg->src, src, sizeof(src));
-	convert_address(&sg->grp, grp, sizeof(grp));
+		inet_address(&sg->src, src, sizeof(src));
+	inet_address(&sg->grp, grp, sizeof(grp));
 	DEBUG("Joining group (%s,%s) on iface %s, sd: %d", src, grp, iface, sd);
 
 	if (setsockopt(sd, proto, op, arg, len)) {
