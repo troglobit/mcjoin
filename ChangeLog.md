@@ -3,6 +3,16 @@ ChangeLog
 
 All notable changes to the project are documented in this file.
 
+[v2.6][] - 2020-04-22
+---------------------
+
+Full IPv6 support, both send and join.
+
+- Increase MAX number of groups to join: 250 -> 2048
+- Relocate source code to `src/` sub-directory
+- Add support for sending with/to IPv6 address/group
+- Update docs slightly
+
 
 [v2.5][] - 2020-02-23
 ---------------------
