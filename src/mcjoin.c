@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
+#include <sys/resource.h>
 #include <unistd.h>
 
 #include "addr.h"
@@ -530,6 +531,7 @@ int main(int argc, char *argv[])
 		.sa_flags = SA_RESTART,
 		.sa_handler = exit_loop,
 	};
+	struct rlimit rlim;
 	extern int optind;
 	size_t ilen;
 	int foreground = 1;
@@ -626,6 +628,19 @@ int main(int argc, char *argv[])
 
 	if (!iface[0])
 		ifdefault(iface, sizeof(iface));
+
+	if (getrlimit(RLIMIT_NOFILE, &rlim)) {
+		ERROR("Failed reading RLIMIT_NOFILE");
+		return 1;
+	}
+
+	DEBUG("NOFILE: current %ld max %ld", rlim.rlim_cur, rlim.rlim_max);
+	rlim.rlim_cur = MAX_NUM_GROUPS + 10; /* Need stdio + pollfd, etc. */
+	if (setrlimit(RLIMIT_NOFILE, &rlim)) {
+		ERROR("Failed setting RLIMIT_NOFILE soft limit to %d", MAX_NUM_GROUPS);
+		return 1;
+	}
+	DEBUG("NOFILE: set new current %ld max %ld", rlim.rlim_cur, rlim.rlim_max);
 
 	/*
 	 * mcjoin group+num
