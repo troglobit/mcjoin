@@ -33,7 +33,7 @@
 #include "addr.h"
 #include "log.h"
 
-#define BUFSZ           100
+#define BUFSZ           1606	/* +42 => 1648 */
 #define MAX_NUM_GROUPS  2048
 #define DEFAULT_GROUP   "225.1.2.3"
 #define DEFAULT_PORT    1234
@@ -58,6 +58,7 @@ int running = 1;
 /* Global data */
 int period = 100000;		/* 100 msec in micro seconds*/
 int restart = 0;
+size_t bytes = 100;
 size_t count = 0;
 int port = DEFAULT_PORT;
 unsigned char ttl = 1;
@@ -268,7 +269,7 @@ static void send_mcast(int signo)
 
 		snprintf(buf, sizeof(buf), "%s%u, MC group %s ... count: %u", MAGIC_KEY, getpid(), groups[i].group, counter++);
 		DEBUG("Sending packet on signal %d, msg: %s", signo, buf);
-		if (sendto(sd, buf, sizeof(buf), 0, dest, len) < 0)
+		if (sendto(sd, buf, bytes, 0, dest, len) < 0)
 			ERROR("Failed sending mcast packet: %s", strerror(errno));
 	}
 }
@@ -323,7 +324,7 @@ static ssize_t recv_mcast(int id)
 	struct iovec iov[1];
 	ssize_t bytes;
 	char cmbuf[0x100];
-	char buf[BUFSZ];
+	char buf[BUFSZ] = { 0 };
 
 	iov[0].iov_base = buf;
 	iov[0].iov_len  = sizeof(buf);
@@ -491,6 +492,7 @@ static int usage(int code)
 	       "              [-t TTL] [-w SEC]\n"
 	       "              [[SOURCE,]GROUP0 .. [SOURCE,]GROUPN | [SOURCE,]GROUP+NUM]\n"
 	       "Options:\n"
+	       "  -b BYTES    Payload in bytes over IP/UDP header (42 bytes), default: 100\n"
 	       "  -c COUNT    Stop sending/receiving after COUNT number of packets\n"
 	       "  -d          Run as daemon in background, output except progress to syslog\n"
 	       "  -h          This help text\n"
@@ -542,8 +544,16 @@ int main(int argc, char *argv[])
 		memset(&groups[i], 0, sizeof(groups[0]));
 
 	ident = progname(argv[0]);
-	while ((c = getopt(argc, argv, "c:di:jl:p:r:st:vhw:")) != EOF) {
+	while ((c = getopt(argc, argv, "b:c:di:jl:p:r:st:vhw:")) != EOF) {
 		switch (c) {
+		case 'b':
+			bytes = (size_t)atoi(optarg);
+			if (bytes > BUFSZ) {
+				ERROR("Too long payload, max %zu bytes", BUFSZ);
+				return 1;
+			}
+			break;
+
 		case 'c':
 			count = (size_t)atoi(optarg);
 			break;
