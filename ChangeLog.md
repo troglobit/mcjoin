@@ -3,6 +3,12 @@ ChangeLog
 
 All notable changes to the project are documented in this file.
 
+[v2.7][UNRELEASED]
+---------------------
+
+- Adjust ulimit so we can open enough sockets to send/receive multicast
+
+
 [v2.6][] - 2020-04-22
 ---------------------
 
@@ -105,7 +111,8 @@ OnTime AS and later at Westermo.  Based on the work by David Stevens
 and developed further by Joachim Nilsson, on his spare time.
 
 
-[UNRELEASED]: https://github.com/troglobit/mcjoin/compare/v2.5...HEAD
+[UNRELEASED]: https://github.com/troglobit/mcjoin/compare/v2.6...HEAD
+[v2.6]:       https://github.com/troglobit/mcjoin/compare/v2.5...v2.6
 [v2.5]:       https://github.com/troglobit/mcjoin/compare/v2.4...v2.5
 [v2.4]:       https://github.com/troglobit/mcjoin/compare/v2.3...v2.4
 [v2.3]:       https://github.com/troglobit/mcjoin/compare/v2.2...v2.3
