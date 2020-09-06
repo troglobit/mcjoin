@@ -1,7 +1,7 @@
 Source: mcjoin
 Section: net
 Priority: optional
-Maintainer: Joachim Nilsson <troglobit@gmail.com>
+Maintainer: Joachim Wiberg <troglobit@gmail.com>
 Homepage: https://github.com/troglobit/mcjoin
 Build-Depends: debhelper (>= 10)
 Standards-Version: 4.3.0
