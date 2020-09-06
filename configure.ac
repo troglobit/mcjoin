@@ -1,6 +1,6 @@
 AC_INIT(mcjoin, 2.7-dev, https://github.com/troglobit/mcjoin/issues,, https://github.com/troglobit/mcjoin/)
 AC_CONFIG_AUX_DIR(aux)
-AM_INIT_AUTOMAKE([1.11 foreign no-dist-gzip dist-xz])
+AM_INIT_AUTOMAKE([1.11 foreign])
 
 AC_CONFIG_SRCDIR([src/mcjoin.c])
 AC_CONFIG_HEADER([config.h])

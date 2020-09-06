@@ -7,6 +7,7 @@ All notable changes to the project are documented in this file.
 ---------------------
 
 - Adjust ulimit so we can open enough sockets to send/receive multicast
+- Change back to tar.gz for distribution tarballs
 
 
 [v2.6][] - 2020-04-22
