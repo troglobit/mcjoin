@@ -136,6 +136,7 @@ int ifinfo(char *iface, inet_addr_t *addr, int family)
 	if (rc == -1)
 		return -3;
 
+	rc = -1; /* Return -1 if iface with family is not found */
 	for (ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
 		if (!ifa->ifa_addr)
 			continue;

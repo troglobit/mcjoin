@@ -197,6 +197,9 @@ static int send_socket(int family)
 
 	ifindex = ifinfo(iface, &addr, family);
 	if (ifindex <= 0) {
+		if (ifindex == -1 && family != AF_INET)
+			return -1;
+
 		ERROR("No interface (%s), or no IPv%s address yet, rc %d: %s",
 		      iface[0] ? iface : "N/A", family == AF_INET ? "4" : "6",
 		      ifindex, strerror(errno));
@@ -249,23 +252,23 @@ static void send_mcast(int signo)
 	char buf[BUFSZ] = { 0 };
 	size_t i;
 
-	if (sd4 == -1) {
+	if (sd4 == -1)
 		sd4 = send_socket(AF_INET);
-		if (sd4 == -1)
-			return;
-	}
 #ifdef AF_INET6
-	if (sd6 == -1) {
+	if (sd6 == -1)
 		sd6 = send_socket(AF_INET6);
-		if (sd6 == -1)
-			return;
-	}
 #endif
 
 	for (i = 0; i < group_num; i++) {
 		struct sockaddr *dest = (struct sockaddr *)&groups[i].grp;
 		socklen_t len = inet_addrlen(&groups[i].grp);
 		int sd = groups[i].grp.ss_family == AF_INET ? sd4 : sd6;
+
+		if (sd < 0) {
+			DEBUG("Skipping group %s, no available %s socket.  No address on interface?",
+			      groups[i].group, groups[i].grp.ss_family == AF_INET ? "IPv4" : "IPv6");
+			continue;
+		}
 
 		snprintf(buf, sizeof(buf), "%s%u, MC group %s ... count: %u", MAGIC_KEY, getpid(), groups[i].group, counter++);
 		DEBUG("Sending packet on signal %d, msg: %s", signo, buf);
