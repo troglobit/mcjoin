@@ -38,6 +38,7 @@
 #define DEFAULT_GROUP   "225.1.2.3"
 #define DEFAULT_PORT    1234
 #define MAGIC_KEY       "Sender PID "
+#define SEQ_KEY         "count: "
 
 /* Esc[?25l (lower case L)    - Hide Cursor */
 #define hidecursor()    if (logon()) fputs("\e[?25l", stderr)
@@ -246,7 +247,6 @@ static int send_socket(int family)
 
 static void send_mcast(int signo)
 {
-	static unsigned int counter = 1;
 	static int sd4 = -1;
 	static int sd6 = -1;
 	char buf[BUFSZ] = { 0 };
@@ -270,7 +270,8 @@ static void send_mcast(int signo)
 			continue;
 		}
 
-		snprintf(buf, sizeof(buf), "%s%u, MC group %s ... count: %u", MAGIC_KEY, getpid(), groups[i].group, counter++);
+		snprintf(buf, sizeof(buf), "%s%u, MC group %s ... %s%zu", MAGIC_KEY, getpid(),
+			 groups[i].group, SEQ_KEY, groups[i].seq++);
 		DEBUG("Sending packet on signal %d, msg: %s", signo, buf);
 		if (sendto(sd, buf, bytes, 0, dest, len) < 0)
 			ERROR("Failed sending mcast packet: %s", strerror(errno));
@@ -325,9 +326,13 @@ static ssize_t recv_mcast(int id)
 	struct in_addr *dstaddr;
 	struct msghdr msgh;
 	struct iovec iov[1];
-	ssize_t bytes;
 	char cmbuf[0x100];
-	char buf[BUFSZ] = { 0 };
+	char buf[BUFSZ];
+	size_t seq = 0;
+	ssize_t bytes;
+	int pid = 0;
+	char *dst;
+	char *ptr;
 
 	iov[0].iov_base = buf;
 	iov[0].iov_len  = sizeof(buf);
@@ -345,31 +350,35 @@ static ssize_t recv_mcast(int id)
 		return -1;
 
 	dstaddr = find_dstaddr(&msgh);
-	if (dstaddr) {
-		char *ptr;
-		int pid = 0;
+	if (!dstaddr)
+		return -1;
+	dst = inet_ntoa(*dstaddr);
 
-		buf[bytes] = 0;
-		ptr = strstr(buf, MAGIC_KEY);
-		if (ptr)
-			pid = atoi(ptr + strlen(MAGIC_KEY));
+	buf[bytes] = 0;
+	ptr = strstr(buf, MAGIC_KEY);
+	if (ptr)
+		pid = atoi(ptr + strlen(MAGIC_KEY));
+	ptr = strstr(buf, SEQ_KEY);
+	if (ptr)
+		seq = atoi(ptr + strlen(SEQ_KEY));
 
-		DEBUG("Count %5zu, our PID %d, sender PID %d, group %s msg: %s", groups[id].count, getpid(), pid, groups[id].group, buf);
-		if (pid != getpid()) {
-			char *dst = inet_ntoa(*dstaddr);
+	DEBUG("Count %5zu, our PID %d, sender PID %d, group %s, seq: %zu, msg: %s",
+	      groups[id].count, getpid(), pid, groups[id].group, seq, buf);
 
-			if (strcmp(dst, groups[id].group)) {
-				ERROR("Packet for group %s received on wrong socket, expected group %s.", dst, groups[id].group);
-				return -1;
-			}
-
-			groups[id].count++;
-			progress();
-			return 0;
-		}
+	if (strcmp(dst, groups[id].group)) {
+		ERROR("Packet for group %s received on wrong socket, expected group %s.", dst, groups[id].group);
+		return -1;
 	}
 
-	return -1;
+	if (groups[id].seq != seq) {
+		DEBUG("group seq %zu vs seq %zu", groups[id].seq, seq);
+		groups[id].gaps++;
+	}
+	groups[id].seq = seq + 1; /* Next expected sequence number */
+	groups[id].count++;
+	progress();
+
+	return 0;
 }
 
 static int show_stats(void)

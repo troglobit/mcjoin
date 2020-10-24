@@ -52,6 +52,8 @@ typedef struct sockaddr_storage inet_addr_t;
 struct gr {
 	int          sd;
 	size_t       count;
+	size_t       seq;
+	size_t       gaps;
 	char        *source;
 	char        *group;
 	inet_addr_t  src;
