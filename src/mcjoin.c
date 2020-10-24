@@ -378,8 +378,10 @@ static int show_stats(void)
 		size_t i, total_count = 0;
 
 		if (group_num > 1) {
+			PRINT("");
 			for (i = 0; i < group_num; i++) {
-				PRINT("\nGroup %s received %zu packets", groups[i].group, groups[i].count);
+				PRINT("Group %s received %zu packets, gaps: %zu",
+				      groups[i].group, groups[i].count, groups[i].gaps);
 				total_count += groups[i].count;
 			}
 		} else {
