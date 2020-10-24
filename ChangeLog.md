@@ -3,11 +3,15 @@ ChangeLog
 
 All notable changes to the project are documented in this file.
 
-[v2.7][UNRELEASED]
+[v2.7][] - 2020-10-25
 ---------------------
 
 - Adjust ulimit so we can open enough sockets to send/receive multicast
 - Change back to tar.gz for distribution tarballs
+- Support for adjusting payload length, 42 -> 1648
+- Fix #8: Handle IPv6 being disabled, per group and per socket
+- Fix #9: No feedback on receiver when using mcjoin as sender
+- Fix #10: Calculate and show gaps in received groups
 
 
 [v2.6][] - 2020-04-22
@@ -112,7 +116,8 @@ OnTime AS and later at Westermo.  Based on the work by David Stevens
 and developed further by Joachim Nilsson, on his spare time.
 
 
-[UNRELEASED]: https://github.com/troglobit/mcjoin/compare/v2.6...HEAD
+[UNRELEASED]: https://github.com/troglobit/mcjoin/compare/v2.7...HEAD
+[v2.7]:       https://github.com/troglobit/mcjoin/compare/v2.6...v2.7
 [v2.6]:       https://github.com/troglobit/mcjoin/compare/v2.5...v2.6
 [v2.5]:       https://github.com/troglobit/mcjoin/compare/v2.4...v2.5
 [v2.4]:       https://github.com/troglobit/mcjoin/compare/v2.3...v2.4
