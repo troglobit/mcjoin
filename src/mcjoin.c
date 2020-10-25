@@ -101,7 +101,7 @@ static int alloc_socket(inet_addr_t group)
 	if (setsockopt(sd, SOL_IP, IP_PKTINFO, &val, sizeof(val)))
 		ERROR("Failed enabling IP_PKTINFO: %s", strerror(errno));
 #elif defined(IP_RECVDSTADDR)
-	if (setsockopt(sd, IPPROTO_IP, IP_RECVDSTADDR, &val, sizeof(val)))
+	if (setsockopt(sd, proto, IP_RECVDSTADDR, &val, sizeof(val)))
 		ERROR("Failed enabling IP_RECVDSTADDR: %s", strerror(errno));
 #endif
 
