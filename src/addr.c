@@ -50,6 +50,39 @@ socklen_t inet_addrlen(inet_addr_t *ss)
 	return 0;
 }
 
+/* The BSD's or SVR4 systems like Solaris don't have /proc/net/route */
+static char *altdefault(char *iface, size_t len)
+{
+	char buf[256];
+	FILE *fp;
+
+	fp = popen("netstat -r", "r");
+	if (!fp)
+		return NULL;
+
+	while (fgets(buf, sizeof(buf), fp)) {
+		char *token;
+
+		if (strncmp(buf, "default", 7))
+			continue;
+
+		token = strtok(buf, " \t\n");
+		while (token) {
+			if (if_nametoindex(token)) {
+				strncpy(iface, token, len);
+				pclose(fp);
+
+				return iface;
+			}
+
+			token = strtok(NULL, " \t\n");
+		}
+	}
+
+	pclose(fp);
+	return NULL;
+}
+
 /* Find default outbound *LAN* interface, i.e. skipping tunnels */
 char *ifdefault(char *iface, size_t len)
 {
@@ -62,7 +95,7 @@ char *ifdefault(char *iface, size_t len)
 
 	fp = fopen("/proc/net/route", "r");
 	if (!fp)
-		return NULL;
+		return altdefault(iface, len);
 
 	/* Skip heading */
 	ptr = fgets(buf, sizeof(buf), fp);
