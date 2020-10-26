@@ -39,8 +39,8 @@ receiver$
 ```
 
 for testing purposes you may want to use the `MCAST_TEST_NET` from
-RFC5771, `233.252.0.0/24`, or possibly the [ompoing(8)][1] test group
-`232.43.211.234`, UDP port `4321`, as defined in [this IETF draft][2].
+RFC5771, `233.252.0.0/24`, or possibly test group `232.43.211.234`, UDP
+port `4321`, as defined in [this IETF draft][1].
 
 for testing IPv6 you can use ff2e::42.  for ipv6 groups the ipv6 address
 of the outbound interface will be used.
@@ -171,8 +171,7 @@ this requires `automake` and `autoconf` to be installed on your system.
     sudo make install-strip
 
 
-[1]:               https://github.com/troglobit/omping
-[2]:               http://tools.ietf.org/html/draft-ietf-mboned-ssmping-08
+[1]:               http://tools.ietf.org/html/draft-ietf-mboned-ssmping-08
 [Travis]:          https://travis-ci.org/troglobit/mcjoin
 [Travis Status]:   https://travis-ci.org/troglobit/mcjoin.png?branch=master
 [Coverity Scan]:   https://scan.coverity.com/projects/9108
