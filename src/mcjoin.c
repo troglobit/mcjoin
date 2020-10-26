@@ -19,6 +19,7 @@
 #include "config.h"
 
 #include <errno.h>
+#include <fcntl.h>		/* open() on macOS */
 #include <getopt.h>
 #include <libgen.h>
 #include <poll.h>
@@ -680,10 +681,35 @@ int main(int argc, char *argv[])
 		groups[group_num++].group = strdup(DEFAULT_GROUP);
 
 	if (!foreground) {
+		/* Going to background ... */
 		if (fork())
 			_exit(0);
-		if (setsid() == (pid_t)-1 || daemon(0, 0))
+
+		/* Starta a new session */
+		if (setsid() == (pid_t)-1)
 			_exit(1);
+
+		/*
+		 * Old double-fork trick to prevent us from reacquiring
+		 * any controlling terminal.
+		 */
+		if (fork())
+			_exit(0);
+
+
+		/* Neutral directory in case of unmounts */
+		chdir("/");
+
+		/* Going dark, redirect stdio to /dev/null */
+		close(0);
+		close(1);
+		close(2);
+
+		if (open("/dev/null", O_RDWR) != 0)
+			_exit(0);
+		dup(0);
+		dup(0);
+
 		log_syslog = 1;
 
 		openlog(ident, log_opts, LOG_DAEMON);
