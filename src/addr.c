@@ -87,14 +87,14 @@ static char *altdefault(char *iface, size_t len)
 	char buf[256];
 	FILE *fp;
 
-	fp = popen("netstat -r", "r");
+	fp = popen("netstat -rn", "r");
 	if (!fp)
 		return NULL;
 
 	while (fgets(buf, sizeof(buf), fp)) {
 		char *token;
 
-		if (strncmp(buf, "default", 7))
+		if (strncmp(buf, "default", 7) && strncmp(buf, "0.0.0.0", 7))
 			continue;
 
 		token = strtok(buf, " \t\n");
