@@ -202,9 +202,9 @@ static int join_group(struct gr *sg)
 	}
 
 	if (sg->source)
-		PRINT("joined source,group %s,%s on %s ...", sg->source, sg->group, iface);
+		PRINT("Joined source,group %s,%s on %s ...", sg->source, sg->group, iface);
 	else
-		PRINT("joined group %s on %s ...", sg->group, iface);
+		PRINT("Joined group %s on %s ...", sg->group, iface);
 	sg->sd = sd;
 
 	return 0;
@@ -232,7 +232,8 @@ static int send_socket(int family)
 		return -1;
 	}
 
-	DEBUG("Sending on iface %s addr %s ifindex %d", iface,
+	PRINT("Sending IPv%s multicast on iface %s addr %s ifindex %d",
+	      family == AF_INET ? "4" : "6", iface,
 	      inet_address(&addr, buf, sizeof(buf)), ifindex);
 
 	sd = socket(family, SOCK_DGRAM, 0);
