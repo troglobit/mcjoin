@@ -63,6 +63,9 @@ struct gr {
 const char *inet_address(inet_addr_t *ss, char *buf, size_t len);
 socklen_t   inet_addrlen(inet_addr_t *ss);
 
+void  inet_addr_set_port(inet_addr_t *ss, short port);
+short inet_addr_get_port(inet_addr_t *ss);
+
 char *ifdefault (char *iface, size_t len);
 int   ifinfo    (char *iface, inet_addr_t *addr, int family);
 

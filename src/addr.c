@@ -49,6 +49,38 @@ socklen_t inet_addrlen(inet_addr_t *ss)
 	return 0;
 }
 
+void inet_addr_set_port(inet_addr_t *ss, short port)
+{
+	struct sockaddr_in *sin;
+
+#ifdef AF_INET6
+	if (ss->ss_family == AF_INET6) {
+		struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)ss;
+
+		sin6->sin6_port = port;
+		return;
+	}
+#endif
+
+	sin = (struct sockaddr_in *)ss;
+	sin->sin_port = port;
+}
+
+short inet_addr_get_port(inet_addr_t *ss)
+{
+	struct sockaddr_in *sin;
+
+#ifdef AF_INET6
+	if (ss->ss_family == AF_INET6) {
+		struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)ss;
+		return sin6->sin6_port;
+	}
+#endif
+
+	sin = (struct sockaddr_in *)ss;
+	return sin->sin_port;
+}
+
 /* The BSD's or SVR4 systems like Solaris don't have /proc/net/route */
 static char *altdefault(char *iface, size_t len)
 {
