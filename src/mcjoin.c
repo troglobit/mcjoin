@@ -50,6 +50,11 @@
 #define NELEMS(array) (sizeof(array) / sizeof(array[0]))
 #endif
 
+/* RFC3542: Advanced Socket API.  For OS that don't have it yet */
+#ifndef IPV6_RECVPKTINFO
+#define IPV6_RECVPKTINFO IPV6_PKTINFO
+#endif
+
 /* Mode flags */
 int join = 1;
 int debug = 0;
@@ -104,19 +109,26 @@ static int alloc_socket(inet_addr_t group)
 	if (setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val)))
 		ERROR("Failed enabling SO_REUSEADDR: %s", strerror(errno));
 
+#ifdef AF_INET6
+	if (proto == IPPROTO_IPV6) {
+		if (setsockopt(sd, IPPROTO_IPV6, IPV6_RECVPKTINFO, &val, sizeof(val)))
+			ERROR("Failed enabling IPV6_RECVPKTINFO: %s", strerror(errno));
+	}
+#endif
+	else {
 #if defined(IP_PKTINFO) || !defined(IP_RECVDSTADDR)
-	if (setsockopt(sd, SOL_IP, IP_PKTINFO, &val, sizeof(val)))
-		ERROR("Failed enabling IP_PKTINFO: %s", strerror(errno));
+		if (setsockopt(sd, SOL_IP, IP_PKTINFO, &val, sizeof(val)))
+			ERROR("Failed enabling IP_PKTINFO: %s", strerror(errno));
 #elif defined(IP_RECVDSTADDR)
-	if (setsockopt(sd, proto, IP_RECVDSTADDR, &val, sizeof(val)))
-		ERROR("Failed enabling IP_RECVDSTADDR: %s", strerror(errno));
+		if (setsockopt(sd, proto, IP_RECVDSTADDR, &val, sizeof(val)))
+			ERROR("Failed enabling IP_RECVDSTADDR: %s", strerror(errno));
 #endif
-
-	val = 0;
 #ifdef IP_MULTICAST_ALL
-	if (setsockopt(sd, proto, IP_MULTICAST_ALL, &val, sizeof(val)))
-		ERROR("Failed disabling IP_MULTICAST_ALL: %s", strerror(errno));
+		val = 0;
+		if (setsockopt(sd, proto, IP_MULTICAST_ALL, &val, sizeof(val)))
+			ERROR("Failed disabling IP_MULTICAST_ALL: %s", strerror(errno));
 #endif
+	}
 
 	if (bind(sd, (struct sockaddr *)&ina, inet_addrlen(&ina))) {
 		ERROR("Failed binding to socket: %s", strerror(errno));
@@ -301,6 +313,21 @@ struct in_addr *find_dstaddr(struct msghdr *msgh)
 	return NULL;
 }
 
+struct in6_addr *find_dstaddr6(struct msghdr *msgh)
+{
+	struct cmsghdr *cmsg;
+
+	for (cmsg = CMSG_FIRSTHDR(msgh); cmsg; cmsg = CMSG_NXTHDR(msgh, cmsg)) {
+#if defined(IPV6_PKTINFO)
+		if (cmsg->cmsg_level == IPPROTO_IPV6 &&
+		    cmsg->cmsg_type == IPV6_PKTINFO)
+			return &((struct in6_pktinfo *)CMSG_DATA(cmsg))->ipi6_addr;
+#endif
+	}
+
+	return NULL;
+}
+
 static void progress(void)
 {
 	const char *style = ".oOOo.";
@@ -327,14 +354,16 @@ static ssize_t recv_mcast(int id)
 {
 	struct sockaddr_storage src;
 	struct in_addr *dstaddr;
+	struct in6_addr *dstaddr6;
 	struct msghdr msgh;
 	struct iovec iov[1];
+	char addr[INET6_ADDRSTRLEN];
 	char cmbuf[0x100];
 	char buf[BUFSZ];
+	const char *dst;
 	size_t seq = 0;
 	ssize_t bytes;
 	int pid = 0;
-	char *dst;
 	char *ptr;
 
 	iov[0].iov_base = buf;
@@ -353,9 +382,17 @@ static ssize_t recv_mcast(int id)
 		return -1;
 
 	dstaddr = find_dstaddr(&msgh);
-	if (!dstaddr)
-		return -1;
-	dst = inet_ntoa(*dstaddr);
+	if (dstaddr)
+		dst = inet_ntop(AF_INET, dstaddr, addr, sizeof(addr));
+#ifdef AF_INET6
+	else {
+		dstaddr6 = find_dstaddr6(&msgh);
+		if (!dstaddr6)
+			return -1;
+
+		dst = inet_ntop(AF_INET6, dstaddr6, addr, sizeof(addr));
+	}
+#endif
 
 	buf[bytes] = 0;
 	ptr = strstr(buf, MAGIC_KEY);
