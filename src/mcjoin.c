@@ -681,6 +681,8 @@ int main(int argc, char *argv[])
 		groups[group_num++].group = strdup(DEFAULT_GROUP);
 
 	if (!foreground) {
+		int rc = 0;
+
 		/* Going to background ... */
 		if (fork())
 			_exit(0);
@@ -698,17 +700,15 @@ int main(int argc, char *argv[])
 
 
 		/* Neutral directory in case of unmounts */
-		chdir("/");
+		rc |= chdir("/");
 
-		/* Going dark, redirect stdio to /dev/null */
-		close(0);
-		close(1);
-		close(2);
+		/* Going dark */
+		rc |= close(0) | close(1) | close(2);
 
-		if (open("/dev/null", O_RDWR) != 0)
-			_exit(0);
-		dup(0);
-		dup(0);
+		/* Redirect stdio to /dev/null */
+		if (open("/dev/null", O_RDWR) != 0 ||
+		    dup(0) == -1 || dup(0) == -1 || rc)
+			_exit(1);
 
 		log_syslog = 1;
 
