@@ -288,7 +288,7 @@ struct in_addr *find_dstaddr(struct msghdr *msgh)
 
 	for (cmsg = CMSG_FIRSTHDR(msgh); cmsg; cmsg = CMSG_NXTHDR(msgh, cmsg)) {
 #if defined(IP_PKTINFO) || !defined(IP_RECVDSTADDR)
-		if (cmsg->cmsg_level == IPPROTO_IP &&
+		if (cmsg->cmsg_level == SOL_IP &&
 		    cmsg->cmsg_type == IP_PKTINFO)
 			return &((struct in_pktinfo *)CMSG_DATA(cmsg))->ipi_addr;
 #elif defined(IP_RECVDSTADDR)
