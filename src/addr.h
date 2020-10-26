@@ -17,6 +17,8 @@
 #ifndef MCJOIN_ADDR_H_
 #define MCJOIN_ADDR_H_
 
+#define __APPLE_USE_RFC_3542 1		/* On Apple macOS */
+
 #include <arpa/inet.h>
 #include <ifaddrs.h>
 #include <net/if.h>

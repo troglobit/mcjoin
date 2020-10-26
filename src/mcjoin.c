@@ -55,6 +55,11 @@
 #define IPV6_RECVPKTINFO IPV6_PKTINFO
 #endif
 
+/* Linux use SOL_IP and everyone else (*BSD & SVR4) use IPPROTO_IP */
+#ifndef SOL_IP
+#define SOL_IP IPPROTO_IP
+#endif
+
 /* Mode flags */
 int join = 1;
 int debug = 0;
