@@ -223,9 +223,12 @@ static int send_socket(int family)
 
 	ifindex = ifinfo(iface, &addr, family);
 	if (ifindex <= 0) {
-		ERROR("No interface (%s), or no IPv%s address yet, rc %d: %s",
-		      iface[0] ? iface : "N/A", family == AF_INET ? "4" : "6",
-		      ifindex, strerror(errno));
+		if (!iface[0])
+			ERROR("No outbound interface available, use `-i IFNAME`.");
+		else
+			ERROR("Interface %s has no IPv%s address yet, rc %d: %s",
+			      iface, family == AF_INET ? "4" : "6",
+			      ifindex, strerror(errno));
 		return -1;
 	}
 
@@ -280,6 +283,10 @@ static void send_mcast(int signo)
 	if (sd6 == -1 && need6)
 		sd6 = send_socket(AF_INET6);
 #endif
+
+	/* Need at least one socket to send any packet */
+	if (sd4 < 0 && sd6 < 0)
+		exit(1);
 
 	for (i = 0; i < group_num; i++) {
 		struct sockaddr *dest = (struct sockaddr *)&groups[i].grp;
