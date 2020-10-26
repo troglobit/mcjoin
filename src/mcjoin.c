@@ -65,6 +65,9 @@ int port = DEFAULT_PORT;
 unsigned char ttl = 1;
 char *ident = PACKAGE_NAME;
 
+int need4 = 0;
+int need6 = 0;
+
 size_t group_num = 0;
 struct gr groups[MAX_NUM_GROUPS];
 
@@ -198,9 +201,6 @@ static int send_socket(int family)
 
 	ifindex = ifinfo(iface, &addr, family);
 	if (ifindex <= 0) {
-		if (ifindex == -1 && family != AF_INET)
-			return -1;
-
 		ERROR("No interface (%s), or no IPv%s address yet, rc %d: %s",
 		      iface[0] ? iface : "N/A", family == AF_INET ? "4" : "6",
 		      ifindex, strerror(errno));
@@ -252,10 +252,10 @@ static void send_mcast(int signo)
 	char buf[BUFSZ] = { 0 };
 	size_t i;
 
-	if (sd4 == -1)
+	if (sd4 == -1 && need4)
 		sd4 = send_socket(AF_INET);
 #ifdef AF_INET6
-	if (sd6 == -1)
+	if (sd6 == -1 && need6)
 		sd6 = send_socket(AF_INET6);
 #endif
 
@@ -761,8 +761,9 @@ int main(int argc, char *argv[])
 			if (groups[i].source) {
 				inet_pton(AF_INET6, groups[i].source, &src->sin6_addr);
 				src->sin6_family = AF_INET6;
-				src->sin6_port   = htons(port);
+				src->sin6_port   = 0;
 			}
+			need6++;
 		} else
 #endif
 		{
@@ -776,8 +777,9 @@ int main(int argc, char *argv[])
 			if (groups[i].source) {
 				inet_pton(AF_INET, groups[i].source, &src->sin_addr);
 				src->sin_family = AF_INET;
-				src->sin_port   = htons(port);
+				src->sin_port   = 0;
 			}
+			need4++;
 		}
 #ifdef HAVE_STRUCT_SOCKADDR_STORAGE_SS_LEN
 		groups[i].grp.ss_len = inet_addrlen(&groups[i].grp);

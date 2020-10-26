@@ -2,6 +2,7 @@ mcjoin (2.7) unstable; urgency=medium
 
   * Increase ulimit to be able match max multicast groups
   * Support for adjusting payload length, 42 -> 1648
+  * Allow any source port in (S,G) joins
   * Fix #8: Handle IPv6 being disabled, per group and per socket
   * Fix #9: No feedback on receiver when using mcjoin as sender
   * Fix #10: Calculate and show gaps in received groups

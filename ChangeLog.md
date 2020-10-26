@@ -10,6 +10,7 @@ All notable changes to the project are documented in this file.
 - Change back to tar.gz for distribution tarballs
 - Support for adjusting payload length, 42 -> 1648
 - Support for figuring out default interface on *BSD
+- Allow any source port in (S,G) joins
 - Fix #8: Handle IPv6 being disabled, per group and per socket
 - Fix #9: No feedback on receiver when using mcjoin as sender
 - Fix #10: Calculate and show gaps in received groups
