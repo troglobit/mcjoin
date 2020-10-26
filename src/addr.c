@@ -40,7 +40,6 @@ const char *inet_address(inet_addr_t *ss, char *buf, size_t len)
 
 socklen_t inet_addrlen(inet_addr_t *ss)
 {
-
 #ifdef AF_INET6
 	if (ss->ss_family == AF_INET6)
 		return sizeof(struct sockaddr_in6);
@@ -183,7 +182,8 @@ int ifinfo(char *iface, inet_addr_t *addr, int family)
 		if (iface && strcmp(iface, ifa->ifa_name))
 			continue;
 
-		DEBUG("Found %s addr %s", ifa->ifa_name, inet_address((inet_addr_t *)ifa->ifa_addr, buf, sizeof(buf)));
+		DEBUG("Found %s addr %s", ifa->ifa_name,
+		      inet_address((inet_addr_t *)ifa->ifa_addr, buf, sizeof(buf)));
 		*addr = *(inet_addr_t *)ifa->ifa_addr;
 #if 0 /* XXX: old IPv4-only address validation, fixme! */
 		if (family == AF_INET) {

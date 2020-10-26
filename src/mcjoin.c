@@ -286,8 +286,7 @@ struct in_addr *find_dstaddr(struct msghdr *msgh)
 #if defined(IP_PKTINFO) || !defined(IP_RECVDSTADDR)
 		if (cmsg->cmsg_level == IPPROTO_IP &&
 		    cmsg->cmsg_type == IP_PKTINFO)
-			return &((struct in_pktinfo *)CMSG_DATA(cmsg))->
-			    ipi_addr;
+			return &((struct in_pktinfo *)CMSG_DATA(cmsg))->ipi_addr;
 #elif defined(IP_RECVDSTADDR)
 		if (cmsg->cmsg_level == IPPROTO_IP &&
 		    cmsg->cmsg_type == IP_RECVDSTADDR)
@@ -472,8 +471,6 @@ static int loop(void)
 					break;
 				}
 			}
-
-			DEBUG("");
 		}
 		showcursor();
 	}
