@@ -77,7 +77,11 @@ int num_joins = 0;
 
 static int alloc_socket(inet_addr_t group)
 {
+	inet_addr_t ina = { 0 };
 	int sd, val, proto;
+
+	ina.ss_family = group.ss_family;
+	inet_addr_set_port(&ina, inet_addr_get_port(&group));
 
 #ifdef AF_INET6
 	if (group.ss_family == AF_INET6)
@@ -114,7 +118,7 @@ static int alloc_socket(inet_addr_t group)
 		ERROR("Failed disabling IP_MULTICAST_ALL: %s", strerror(errno));
 #endif
 
-	if (bind(sd, (struct sockaddr *)&group, inet_addrlen(&group))) {
+	if (bind(sd, (struct sockaddr *)&ina, inet_addrlen(&ina))) {
 		ERROR("Failed binding to socket: %s", strerror(errno));
 		close(sd);
 		return -1;
