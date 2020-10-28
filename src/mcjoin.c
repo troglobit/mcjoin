@@ -19,7 +19,6 @@
 #include "config.h"
 
 #include <errno.h>
-#include <fcntl.h>		/* open() on macOS */
 #include <getopt.h>
 #include <libgen.h>
 #include <poll.h>
@@ -29,7 +28,6 @@
 #include <string.h>
 #include <sys/time.h>
 #include <sys/resource.h>
-#include <unistd.h>
 
 #include "addr.h"
 #include "log.h"
@@ -84,6 +82,8 @@ struct gr groups[MAX_NUM_GROUPS];
 
 char iface[IFNAMSIZ + 1];
 int num_joins = 0;
+
+extern int daemonize(void);
 
 
 static int alloc_socket(inet_addr_t group)
@@ -689,34 +689,10 @@ int main(int argc, char *argv[])
 		groups[group_num++].group = strdup(DEFAULT_GROUP);
 
 	if (!foreground) {
-		int rc = 0;
-
-		/* Going to background ... */
-		if (fork())
-			_exit(0);
-
-		/* Starta a new session */
-		if (setsid() == (pid_t)-1)
+		if (daemonize()) {
+			printf("Failed backgrounding: %s", strerror(errno));
 			_exit(1);
-
-		/*
-		 * Old double-fork trick to prevent us from reacquiring
-		 * any controlling terminal.
-		 */
-		if (fork())
-			_exit(0);
-
-
-		/* Neutral directory in case of unmounts */
-		rc |= chdir("/");
-
-		/* Going dark */
-		rc |= close(0) | close(1) | close(2);
-
-		/* Redirect stdio to /dev/null */
-		if (open("/dev/null", O_RDWR) != 0 ||
-		    dup(0) == -1 || dup(0) == -1 || rc)
-			_exit(1);
+		}
 
 		log_syslog = 1;
 
