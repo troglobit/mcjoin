@@ -208,7 +208,11 @@ int ifinfo(char *iface, inet_addr_t *addr, int family)
 		if (!(ifa->ifa_flags & IFF_MULTICAST))
 			continue;
 
-		if (ifa->ifa_addr->sa_family != family)
+		if (family == AF_UNSPEC) {
+			if (ifa->ifa_addr->sa_family != AF_INET &&
+			    ifa->ifa_addr->sa_family != AF_INET6)
+				continue;
+		} else if (ifa->ifa_addr->sa_family != family)
 			continue;
 
 		if (iface && strcmp(iface, ifa->ifa_name))
