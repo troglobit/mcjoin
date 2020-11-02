@@ -3,9 +3,8 @@ dist_man1_MANS    = mcjoin.1
 doc_DATA          = README.md LICENSE
 EXTRA_DIST        = README.md LICENSE ChangeLog.md
 
-# lintian --profile debian -i -I --show-overrides ../$PKG.changes
 package:
-	dpkg-buildpackage -uc -us -B
+	@debuild -uc -us -B --lintian-opts --profile debian -i -I --show-overrides
 
 ## Generate MD5 checksum file
 MD5 = md5sum
@@ -16,7 +15,7 @@ md5-dist:
 
 ## Check if tagged in git
 release-hook:
-	if [ ! `git tag | grep $(PACKAGE_VERSION)` ]; then				\
+	@if [ ! `git tag | grep $(PACKAGE_VERSION)` ]; then				\
 		echo;									\
 		printf "\e[1m\e[41mCannot find release tag $(PACKAGE_VERSION)\e[0m\n";	\
 		printf "\e[1m\e[5mDo release anyway?\e[0m "; read yorn;			\
