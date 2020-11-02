@@ -26,11 +26,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <sys/time.h>
 #include <sys/resource.h>
 
 #include "addr.h"
 #include "log.h"
+#include "screen.h"
 
 #define BUFSZ           1606	/* +42 => 1648 */
 #define MAX_NUM_GROUPS  2048
@@ -38,11 +40,6 @@
 #define DEFAULT_PORT    1234
 #define MAGIC_KEY       "Sender PID "
 #define SEQ_KEY         "count: "
-
-/* Esc[?25l (lower case L)    - Hide Cursor */
-#define hidecursor()    if (logon()) fputs("\e[?25l", stderr)
-/* Esc[?25h (lower case H)    - Show Cursor */
-#define showcursor()    if (logon()) fputs("\e[?25h", stderr)
 
 /* From The Practice of Programming, by Kernighan and Pike */
 #ifndef NELEMS
@@ -68,6 +65,7 @@ int running = 1;
 /* Global data */
 int period = 100000;		/* 100 msec in micro seconds*/
 int restart = 0;
+int width = 80;
 size_t bytes = 100;
 size_t count = 0;
 int port = DEFAULT_PORT;
@@ -84,6 +82,59 @@ char iface[IFNAMSIZ + 1];
 int num_joins = 0;
 
 extern int daemonize(void);
+
+
+static void display(int signo)
+{
+	inet_addr_t addr = { 0 };
+	char buf[INET_ADDRSTR_LEN] = "0.0.0.0";
+	const char *spinner = "|/-\\";
+	size_t num = strlen(spinner);
+	char hostname[80];
+	time_t now;
+	char *snow;
+	int line = 4;
+	int swidth;
+	int spos;
+	size_t i;
+
+	(void)signo;
+
+	gethostname(hostname, sizeof(hostname));
+	ifinfo(iface, &addr, AF_UNSPEC);
+	inet_address(&addr, buf, sizeof(buf));
+
+	now = time(NULL);
+	snow = ctime(&now);
+	gotoxy(0, 2);
+	fprintf(stderr, "%s (%s@%s)", hostname, buf, iface);
+	gotoxy(width - strlen(snow) + 2, 2);
+	fputs(snow, stderr);
+
+	swidth = width - 50;
+	if (swidth > STATUS_HISTORY)
+		swidth = STATUS_HISTORY;
+	spos = STATUS_HISTORY - swidth;
+
+	for (i = 0; i < group_num; i++) {
+		struct gr *g = &groups[i];
+		char sgbuf[35];
+		char act;
+
+		/* spin on activity only */
+		act = spinner[g->spin % num];
+		if (g->status[STATUS_POS] == '.')
+			g->spin++;
+
+		gotoxy(0, line++);
+		snprintf(sgbuf, sizeof(sgbuf), "%s,%s", g->source ? g->source : "*", g->group);
+		fprintf(stderr, "%-31s  %c [%s] %zu", sgbuf, act, &g->status[spos], g->count);
+
+		/* prepare next iteration */
+		memmove(g->status, &g->status[1], STATUS_HISTORY - 1);
+		g->status[STATUS_POS] = ' ';
+	}
+}
 
 
 static int alloc_socket(inet_addr_t group)
@@ -200,11 +251,12 @@ static int join_group(struct gr *sg)
 		      src, grp, "joining", sd, errno, strerror(errno));
 		goto error;
 	}
-
+#if 0
 	if (sg->source)
 		PRINT("Joined source,group %s,%s on %s ...", sg->source, sg->group, iface);
 	else
 		PRINT("Joined group %s on %s ...", sg->group, iface);
+#endif
 	sg->sd = sd;
 
 	return 0;
@@ -305,6 +357,8 @@ static void send_mcast(int signo)
 		DEBUG("Sending packet on signal %d, msg: %s", signo, buf);
 		if (sendto(sd, buf, bytes, 0, dest, len) < 0)
 			ERROR("Failed sending mcast packet: %s", strerror(errno));
+		else
+			progress();
 	}
 }
 
@@ -340,24 +394,6 @@ struct in6_addr *find_dstaddr6(struct msghdr *msgh)
 	}
 
 	return NULL;
-}
-
-static void progress(void)
-{
-	const char *style = ".oOOo.";
-	static unsigned int i = 0;
-	size_t num = 6;
-
-	if (logon())
-		return;
-
-	if (!(i % num))
-		printf(".");
-
-	putchar(style[i++ % num]);
-	putchar('\b');
-
-	fflush(stdout);
 }
 
 /*
@@ -430,7 +466,8 @@ static ssize_t recv_mcast(int id)
 	}
 	groups[id].seq = seq + 1; /* Next expected sequence number */
 	groups[id].count++;
-	progress();
+	groups[id].status[STATUS_POS] = '.'; /* XXX: Use increasing dot size for more hits? */
+//	progress();
 
 	return 0;
 }
@@ -457,25 +494,32 @@ static int show_stats(void)
 	return 0;
 }
 
-static int loop(void)
+static void timer_init(void (*cb)(int))
 {
 	struct sigaction sa = {
 		.sa_flags = SA_RESTART,
-		.sa_handler = send_mcast,
+		.sa_handler = cb,
 	};
+	struct itimerval times;
+
+	sigaction(SIGALRM, &sa, NULL);
+
+	/* wait a bit (1 sec) for system to "stabilize" */
+	times.it_value.tv_sec     = 1;
+	times.it_value.tv_usec    = 0;
+	times.it_interval.tv_sec  = (time_t)(period / 1000000);
+	times.it_interval.tv_usec =   (long)(period % 1000000);
+	setitimer(ITIMER_REAL, &times, NULL);
+}
+
+static int loop(void)
+{
 	size_t i;
 
-	if (sender) {
-		struct itimerval times;
-
-		sigaction(SIGALRM, &sa, NULL);
-
-		times.it_value.tv_sec     = 1;	/* wait a bit for system to "stabilize"  */
-		times.it_value.tv_usec    = 0;	/* tv_sec or tv_usec cannot be both zero */
-		times.it_interval.tv_sec  = (time_t)(period / 1000000);
-		times.it_interval.tv_usec =   (long)(period % 1000000);
-		setitimer(ITIMER_REAL, &times, NULL);
-	}
+	if (sender)
+		timer_init(send_mcast);
+	else
+		timer_init(display);
 
 	while (join && running) {
 		for (i = 0; i < group_num; i++) {
@@ -483,6 +527,7 @@ static int loop(void)
 				return 1;
 		}
 
+		ttraw();
 		hidecursor();
 		while (running) {
 			struct pollfd pfd[MAX_NUM_GROUPS];
@@ -509,10 +554,8 @@ static int loop(void)
 			}
 
 			for (i = 0; i < group_num; i++) {
-				if (pfd[i].revents) {
+				if (pfd[i].revents)
 					recv_mcast(i);
-					pfd[i].revents = 0;
-				}
 			}
 
 			if (count > 0) {
@@ -527,7 +570,9 @@ static int loop(void)
 				}
 			}
 		}
+		gotoxy(0, group_num + 4);
 		showcursor();
+		ttcooked();
 	}
 
 	while (running) {
@@ -839,6 +884,9 @@ int main(int argc, char *argv[])
 		if (groups[i].source)
 			groups[i].src.ss_len = inet_addrlen(&groups[i].src);
 #endif
+
+		memset(groups[i].status, ' ', STATUS_HISTORY - 1);
+		groups[i].spin  = groups[i].group[strlen(groups[i].group) - 1];
 	}
 
 	/*
@@ -847,6 +895,17 @@ int main(int argc, char *argv[])
 	sigaction(SIGINT,  &sa, NULL);
 	sigaction(SIGHUP,  &sa, NULL);
 	sigaction(SIGTERM, &sa, NULL);
+
+	if (join && foreground) {
+		char *title = "mcjoin :: receiving multicast";
+
+		width = ttwidth();
+		cls();
+		gotoxy((width - strlen(title)) / 2, 1);
+		fprintf(stderr, "\e[1m%s\e[0m", title);
+		gotoxy(0, 3);
+		fprintf(stderr, "\e[7m%-31s    PLOTTER%*sPACKETS      \e[0m", "SOURCE,GROUP", width - 55, " ");
+	}
 
 	return loop();
 }

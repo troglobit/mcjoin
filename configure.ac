@@ -11,6 +11,7 @@ AC_PROG_INSTALL
 
 AC_HEADER_STDC
 
+AC_CHECK_HEADERS([termios.h])
 AC_CHECK_MEMBERS([struct sockaddr_storage.ss_len], , ,
 [
 #include <sys/socket.h>
