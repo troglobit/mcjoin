@@ -49,6 +49,16 @@ multicast, ASM (*,G).  The source IP of an (S,G) pair is an optional
 argument that must precede the group and be separated with a comma.  No
 spaces are allowed between source and group in this form.  Multiple
 (S,G) pairs are separated with space.
+.Pp
+.Nm
+does not create or send IGMP or MLD frames directly.  It only asks the
+underlying UNIX kernel for for groups from a specific interface, which
+is then converted to the appropriate wire format by the kernel.  This
+means, for instance, that if you want to create an IGMP v3 membership
+report on the wire that joins one group from multiple sources, you tell
+.Nm
+to join two (S,G) pairs.  The conversion to IGMP v3 report format is
+done by the kernel.
 .Sh OPTIONS
 With no options given
 .Nm
@@ -133,8 +143,9 @@ needs both the loopback (lo) interface and a default route set up.  At
 least in the default (receiver) case.  In a network namespace neither of
 these are set up by default.
 .Sh SEE ALSO
-.Xr ping(1) ,
-.Xr mgen(1)
+.Xr ping 1 ,
+.Xr mgen 1 ,
+.Xr nemesis 1
 .Sh BUGS
 Use the project's GitHub page to file bug reports, feature requests or
 patches (preferably as GitHub pull requests), or questions at
