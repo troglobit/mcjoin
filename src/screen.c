@@ -103,9 +103,6 @@ void progress(void)
 	static unsigned int i = 0;
 	size_t num = 6;
 
-	if (logon())
-		return;
-
 	if (!(i % num))
 		printf(".");
 

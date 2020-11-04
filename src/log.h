@@ -31,12 +31,4 @@ int logon(void);
 int loglvl(const char *level);
 int logit(int prio, char *fmt, ...);
 
-static int is_debug(void)
-{
-	if (log_level == LOG_DEBUG)
-		return 1;
-
-	return 0;
-}
-
 #endif /* MCJOIN_LOG_H_ */

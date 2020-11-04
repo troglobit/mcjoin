@@ -58,10 +58,12 @@
 #endif
 
 /* Mode flags */
+int old = 0;
 int join = 1;
 int debug = 0;
 int sender = 0;
 int running = 1;
+int foreground = 1;
 
 /* Global data */
 int period = 100000;		/* 100 msec in micro seconds*/
@@ -84,6 +86,18 @@ int num_joins = 0;
 
 extern int daemonize(void);
 
+/* prepare next iteration */
+static void update(void)
+{
+	size_t i;
+
+	for (i = 0; i < group_num; i++) {
+		struct gr *g = &groups[i];
+
+		memmove(g->status, &g->status[1], STATUS_HISTORY - 1);
+		g->status[STATUS_POS] = ' ';
+	}
+}
 
 static void display(int signo)
 {
@@ -102,7 +116,7 @@ static void display(int signo)
 
 	(void)signo;
 
-	if (is_debug()) {
+	if (old) {
 		for (i = 0; i < group_num; i++) {
 			struct gr *g = &groups[i];
 
@@ -111,7 +125,9 @@ static void display(int signo)
 		}
 
 		if (act)
-			putchar(act);
+			progress();
+
+		update();
 		return;
 	}
 
@@ -143,11 +159,9 @@ static void display(int signo)
 		gotoxy(0, line++);
 		snprintf(sgbuf, sizeof(sgbuf), "%s,%s", g->source ? g->source : "*", g->group);
 		fprintf(stderr, "%-31s  %c [%s] %zu", sgbuf, act, &g->status[spos], g->count);
-
-		/* prepare next iteration */
-		memmove(g->status, &g->status[1], STATUS_HISTORY - 1);
-		g->status[STATUS_POS] = ' ';
 	}
+
+	update();
 }
 
 
@@ -369,11 +383,16 @@ static void send_mcast(int signo)
 		snprintf(buf, sizeof(buf), "%s%u, MC group %s ... %s%zu", MAGIC_KEY, getpid(),
 			 groups[i].group, SEQ_KEY, groups[i].seq++);
 		DEBUG("Sending packet on signal %d, msg: %s", signo, buf);
-		if (sendto(sd, buf, bytes, 0, dest, len) < 0)
+		if (sendto(sd, buf, bytes, 0, dest, len) < 0) {
 			ERROR("Failed sending mcast packet: %s", strerror(errno));
-		else
-			progress();
+			groups[i].status[STATUS_POS] = 'E';
+		} else {
+			groups[i].count++;
+			groups[i].status[STATUS_POS] = '.';
+		}
 	}
+
+	display(0);
 }
 
 struct in_addr *find_dstaddr(struct msghdr *msgh)
@@ -528,12 +547,34 @@ static void timer_init(void (*cb)(int))
 
 static int loop(void)
 {
+	const char *title;
 	size_t i;
 
-	if (sender)
+	if (sender) {
+		title = "mcjoin :: sending multicast";
 		timer_init(send_mcast);
-	else
+	} else {
+		title = "mcjoin :: receiving multicast";
 		timer_init(display);
+	}
+
+	if (foreground && !old) {
+		width = ttwidth();
+		cls();
+		ttraw();
+		hidecursor();
+
+		log_syslog = 1;
+
+		openlog(ident, log_opts, LOG_DAEMON);
+		setlogmask(LOG_UPTO(log_level));
+
+		gotoxy((width - strlen(title)) / 2, 1);
+		fprintf(stderr, "\e[1m%s\e[0m", title);
+		gotoxy(0, 3);
+		fprintf(stderr, "\e[7m%-31s    PLOTTER%*sPACKETS      \e[0m", "SOURCE,GROUP", width - 55, " ");
+	}
+
 
 	while (join && running) {
 		for (i = 0; i < group_num; i++) {
@@ -541,10 +582,6 @@ static int loop(void)
 				return 1;
 		}
 
-		if (!is_debug()) {
-			ttraw();
-			hidecursor();
-		}
 		while (running) {
 			struct pollfd pfd[MAX_NUM_GROUPS];
 			int ret;
@@ -586,12 +623,6 @@ static int loop(void)
 				}
 			}
 		}
-
-		if (!is_debug()) {
-			gotoxy(0, group_num + 4);
-			showcursor();
-			ttcooked();
-		}
 	}
 
 	while (running) {
@@ -602,6 +633,11 @@ static int loop(void)
 		}
 	}
 
+	if (foreground && !old) {
+		gotoxy(0, group_num + 4);
+		showcursor();
+		ttcooked();
+	}
 	DEBUG("Leaving main loop");
 
 	return show_stats();
@@ -629,6 +665,7 @@ static int usage(int code)
 	       "  -i IFACE    Interface to use for sending/receiving multicast, default: %s\n"
 	       "  -j          Join groups, default unless acting as sender\n"
 	       "  -l LEVEL    Set log level; none, notice*, debug\n"
+	       "  -o          Old (plain/ordinary) output, no fancy progress bars\n"
 	       "  -p PORT     UDP port number to send/listen to, default: %d\n"
 	       "  -r SEC      Do a join/leave every SEC seconds (backwards compat. option)\n"
 	       "  -s          Act as sender, sends packets to select groups, default: no\n"
@@ -666,7 +703,6 @@ int main(int argc, char *argv[])
 	struct rlimit rlim;
 	extern int optind;
 	size_t ilen;
-	int foreground = 1;
 	int wait = 0;
 	int i, c;
 
@@ -674,7 +710,7 @@ int main(int argc, char *argv[])
 		memset(&groups[i], 0, sizeof(groups[0]));
 
 	ident = progname(argv[0]);
-	while ((c = getopt(argc, argv, "b:c:di:jl:p:r:st:vhw:")) != EOF) {
+	while ((c = getopt(argc, argv, "b:c:di:jl:op:r:st:vhw:")) != EOF) {
 		switch (c) {
 		case 'b':
 			bytes = (size_t)atoi(optarg);
@@ -712,6 +748,10 @@ int main(int argc, char *argv[])
 
 		case 'l':
 			log_level = loglvl(optarg);
+			break;
+
+		case 'o':
+			old++;
 			break;
 
 		case 'p':
@@ -757,11 +797,6 @@ int main(int argc, char *argv[])
 			printf("Failed backgrounding: %s", strerror(errno));
 			_exit(1);
 		}
-
-		log_syslog = 1;
-
-		openlog(ident, log_opts, LOG_DAEMON);
-		setlogmask(LOG_UPTO(log_level));
 	}
 
 	if (wait)
@@ -914,17 +949,6 @@ int main(int argc, char *argv[])
 	sigaction(SIGINT,  &sa, NULL);
 	sigaction(SIGHUP,  &sa, NULL);
 	sigaction(SIGTERM, &sa, NULL);
-
-	if (join && foreground && !is_debug()) {
-		char *title = "mcjoin :: receiving multicast";
-
-		width = ttwidth();
-		cls();
-		gotoxy((width - strlen(title)) / 2, 1);
-		fprintf(stderr, "\e[1m%s\e[0m", title);
-		gotoxy(0, 3);
-		fprintf(stderr, "\e[7m%-31s    PLOTTER%*sPACKETS      \e[0m", "SOURCE,GROUP", width - 55, " ");
-	}
 
 	return loop();
 }
