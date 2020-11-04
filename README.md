@@ -135,6 +135,46 @@ POSIX, and (unregulated) multicast is akin to broadcast, but still!  I
 bet most developer's don't know about this.
 
 
+testing on the same machine
+---------------------------
+
+in many cases while using mcjoin for testing networking equipment, you
+need to use at least two local network interfaces (nics): one acting as
+multicast sender and one as receiver.  (often you need multiple sender
+interfaces, which can be physical, virtual or vlan interfaces.)
+
+            .-------.
+            |       |
+        .---+  dut  +---.
+        |   |       |   |
+        |   '-------'   |
+        |               |
+    .- eth0 ---------- eth1 -.
+    |                        |
+    |           pc           |
+    |                        |
+    '------------------------'
+
+to get this to work on linux you need to *disable* the `rp_filter` and
+*enable* `accept_local` sysctl settings for the involved interfaces.
+here is an example of how to adjust this for *all* interfaces. use with
+care, this can cause a lot of other problems if you use the same pc for
+other purposes as well:
+
+    $ cd /etc/sysctl.d/
+    $ cat 10-network-security.conf
+    # Allow receiving IP packets from local interfaces, useful for testing
+    # rigs where looping packets via networking infrastructure.
+    net.ipv4.conf.default.accept_all=1
+    net.ipv4.conf.all.accept_all=1
+    
+    # Disable Source Address Verification in all interfaces to, usually set
+    # to 1 to prevent some spoofing attacks.  But for a testing rig this is
+    # usually the source of many woes, in particular for multicast testing.
+    net.ipv4.conf.default.rp_filter=0
+    net.ipv4.conf.all.rp_filter=0
+
+
 build & install
 ---------------
 
