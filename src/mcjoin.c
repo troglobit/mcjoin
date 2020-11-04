@@ -97,9 +97,23 @@ static void display(int signo)
 	int line = 4;
 	int swidth;
 	int spos;
+	char act = 0;
 	size_t i;
 
 	(void)signo;
+
+	if (is_debug()) {
+		for (i = 0; i < group_num; i++) {
+			struct gr *g = &groups[i];
+
+			if (g->status[STATUS_POS] == '.')
+				act = act == '.' ? '*' : '.';
+		}
+
+		if (act)
+			putchar(act);
+		return;
+	}
 
 	gethostname(hostname, sizeof(hostname));
 	ifinfo(iface, &addr, AF_UNSPEC);
@@ -120,7 +134,6 @@ static void display(int signo)
 	for (i = 0; i < group_num; i++) {
 		struct gr *g = &groups[i];
 		char sgbuf[35];
-		char act;
 
 		/* spin on activity only */
 		act = spinner[g->spin % num];
@@ -528,8 +541,10 @@ static int loop(void)
 				return 1;
 		}
 
-		ttraw();
-		hidecursor();
+		if (!is_debug()) {
+			ttraw();
+			hidecursor();
+		}
 		while (running) {
 			struct pollfd pfd[MAX_NUM_GROUPS];
 			int ret;
@@ -571,9 +586,12 @@ static int loop(void)
 				}
 			}
 		}
-		gotoxy(0, group_num + 4);
-		showcursor();
-		ttcooked();
+
+		if (!is_debug()) {
+			gotoxy(0, group_num + 4);
+			showcursor();
+			ttcooked();
+		}
 	}
 
 	while (running) {
@@ -591,7 +609,7 @@ static int loop(void)
 
 static void exit_loop(int signo)
 {
-	DEBUG("We got signal! (signo: %d)", signo);
+	DEBUG("\nWe got signal! (signo: %d)", signo);
 	running = 0;
 }
 
@@ -897,7 +915,7 @@ int main(int argc, char *argv[])
 	sigaction(SIGHUP,  &sa, NULL);
 	sigaction(SIGTERM, &sa, NULL);
 
-	if (join && foreground) {
+	if (join && foreground && !is_debug()) {
 		char *title = "mcjoin :: receiving multicast";
 
 		width = ttwidth();
