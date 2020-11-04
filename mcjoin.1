@@ -69,13 +69,13 @@ default port, 1234.
 Use the following options to adjust this behavior:
 .Bl -tag -width Ds
 .It Fl b Ar BYTES
-Payload in bytes over IP/UDP header (42 bytes), default: 100.
+Payload in bytes over IP/UDP header (42 bytes), default: 100
 .It Fl c Ar COUNT
 Stop sending/receiving after COUNT number of packets
 .It Fl d
 Run as a daemon in the background, detached from the current terminal.
 All output, except progress is sent to
-.Xr syslog 3 .
+.Xr syslog 3
 .It Fl f Ar MSEC
 Frequency, poll/send every MSEC milliseoncds, default: 100
 .It Fl h
@@ -87,14 +87,14 @@ Join groups, default unless acting as sender
 .It Fl l Ar LEVEL
 Control
 .Nm
-log level; none, notice, debug.  Default: notice.
+log level; none, notice, debug.  Default: notice
 .It Fl p Ar PORT
 UDP port number to send/listen to, default: 1234
 .It Fl s
 Act as sender, sends packets to select groups, 1/100 msec, default: no
 .It Fl r Ar SEC
 Do leave/join repeatedly every SEC seconds.  Should not be needed
-anymore, kept for backwards compatibility.
+anymore, kept for backwards compatibility
 .It Fl t Ar TTL
 TTL to use when sending multicast packets, default: 1
 .It Fl v
@@ -105,7 +105,7 @@ Initial wait, sleep
 seconds before starting anything.  Useful for scripting test systems
 that launch
 .Nm
-at boot without syncing with creation of networking.
+at boot without syncing with creation of networking
 .El
 .Sh USAGE
 To verify multicast connectivity, the simplest way is to run
