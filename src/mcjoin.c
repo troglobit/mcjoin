@@ -41,6 +41,7 @@
 #define DEFAULT_PORT    1234
 #define MAGIC_KEY       "Sender PID "
 #define SEQ_KEY         "count: "
+#define FREQ_KEY        "freq: "
 
 /* From The Practice of Programming, by Kernighan and Pike */
 #ifndef NELEMS
@@ -380,8 +381,10 @@ static void send_mcast(int signo)
 			continue;
 		}
 
-		snprintf(buf, sizeof(buf), "%s%u, MC group %s ... %s%zu", MAGIC_KEY, getpid(),
-			 groups[i].group, SEQ_KEY, groups[i].seq++);
+		snprintf(buf, sizeof(buf), "%s%u, MC group %s ... %s%zu, %s%d",
+			 MAGIC_KEY, getpid(), groups[i].group,
+			 SEQ_KEY, groups[i].seq++,
+			 FREQ_KEY, period / 1000);
 		DEBUG("Sending packet on signal %d, msg: %s", signo, buf);
 		if (sendto(sd, buf, bytes, 0, dest, len) < 0) {
 			ERROR("Failed sending mcast packet: %s", strerror(errno));
@@ -661,6 +664,7 @@ static int usage(int code)
 	       "  -b BYTES    Payload in bytes over IP/UDP header (42 bytes), default: 100\n"
 	       "  -c COUNT    Stop sending/receiving after COUNT number of packets\n"
 	       "  -d          Run as daemon in background, output except progress to syslog\n"
+	       "  -f MSEC     Frequency, poll/send every MSEC milliseoncds, default: %d\n"
 	       "  -h          This help text\n"
 	       "  -i IFACE    Interface to use for sending/receiving multicast, default: %s\n"
 	       "  -j          Join groups, default unless acting as sender\n"
@@ -673,7 +677,8 @@ static int usage(int code)
 	       "  -v          Display program version\n"
 	       "  -w SEC      Initial wait before opening sockets\n"
 	       "\n"
-	       "Bug report address : %-40s\n", ident, iface, DEFAULT_PORT, PACKAGE_BUGREPORT);
+	       "Bug report address : %-40s\n", ident, period / 1000, iface, DEFAULT_PORT,
+	       PACKAGE_BUGREPORT);
 #ifdef PACKAGE_URL
 	printf("Project homepage   : %s\n", PACKAGE_URL);
 #endif
@@ -710,7 +715,7 @@ int main(int argc, char *argv[])
 		memset(&groups[i], 0, sizeof(groups[0]));
 
 	ident = progname(argv[0]);
-	while ((c = getopt(argc, argv, "b:c:di:jl:op:r:st:vhw:")) != EOF) {
+	while ((c = getopt(argc, argv, "b:c:df:hi:jl:op:r:st:vw:")) != EOF) {
 		switch (c) {
 		case 'b':
 			bytes = (size_t)atoi(optarg);
@@ -726,6 +731,10 @@ int main(int argc, char *argv[])
 
 		case 'd':
 			foreground = 0;
+			break;
+
+		case 'f':
+			period = atoi(optarg) * 1000;
 			break;
 
 		case 'h':
