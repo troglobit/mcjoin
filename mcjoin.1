@@ -22,9 +22,10 @@
 .Nd tiny multicast testing tool
 .Sh SYNOPSIS
 .Nm
-.Op Fl dhjsv
+.Op Fl dhjosv
 .Op Fl b Ar BYTES
 .Op Fl c Ar COUNT
+.Op Fl f Ar MSEC
 .Op Fl i Ar IFNAME
 .Op Fl l Ar LEVEL
 .Op Fl p Ar PORT
@@ -35,13 +36,20 @@
 .Sh DESCRIPTION
 .Nm
 can be used to join IPv4 and IPv6 multicast groups, display progress as
-multicast packets are received, and also send multicast packets on
-select groups.
+multicast packets are received, or sent when acting as sender, and also
+send multicast packets on select groups.
 .Pp
 .Nm
 can help verify intended IGMP snooping functionality in layer-2 bridges
-(switches), as well as verify forwarding of multicast in static or
-dynamic multicast routing setups.
+(switches), as well as verify forwarding of multicast in static
+.Nm ( SMCRoute )
+or dynamic
+.Nm ( mrouted ,
+.Nm pimd ,
+.Nm pimd-dense ,
+or
+.Nm pim6sd )
+multicast routing setups.
 .Pp
 .Nm
 supports source-specific multicast, SSM (S,G), as well as any-source
