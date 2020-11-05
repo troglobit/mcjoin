@@ -48,6 +48,7 @@ int foreground = 1;
 int period = 100000;		/* 100 msec in micro seconds*/
 int restart = 0;
 int width = 80;
+int height = 24;
 size_t bytes = 100;
 size_t count = 0;
 int port = DEFAULT_PORT;
@@ -76,13 +77,26 @@ static void update(void)
 	}
 }
 
-static void display(int signo)
+static char spin(struct gr *g)
 {
-	inet_addr_t addr = { 0 };
-	char buf[INET_ADDRSTR_LEN] = "0.0.0.0";
 	const char *spinner = "|/-\\";
 	size_t num = strlen(spinner);
-	char hostname[80];
+	char act;
+
+	/* spin on activity only */
+	act = spinner[g->spin % num];
+	if (g->status[STATUS_POS] == '.')
+		g->spin++;
+
+	return act;
+}
+
+static void display(int signo)
+{
+	static char buf[INET_ADDRSTR_LEN] = "0.0.0.0";
+	static inet_addr_t addr = { 0 };
+	static char hostname[80];
+	static int once = 1;
 	time_t now;
 	char *snow;
 	int swidth;
@@ -107,9 +121,12 @@ static void display(int signo)
 		return;
 	}
 
-	gethostname(hostname, sizeof(hostname));
-	ifinfo(iface, &addr, AF_UNSPEC);
-	inet_address(&addr, buf, sizeof(buf));
+	if (once) {
+		once = 0;
+		gethostname(hostname, sizeof(hostname));
+		ifinfo(iface, &addr, AF_UNSPEC);
+		inet_address(&addr, buf, sizeof(buf));
+	}
 
 	now = time(NULL);
 	snow = ctime(&now);
@@ -127,12 +144,9 @@ static void display(int signo)
 		struct gr *g = &groups[i];
 		char sgbuf[35];
 
-		/* spin on activity only */
-		act = spinner[g->spin % num];
-		if (g->status[STATUS_POS] == '.')
-			g->spin++;
-
 		gotoxy(0, GROUP_ROW + i);
+		act = spin(g);
+
 		snprintf(sgbuf, sizeof(sgbuf), "%s,%s", g->source ? g->source : "*", g->group);
 		fprintf(stderr, "%-31s  %c [%s] %zu", sgbuf, act, &g->status[spos], g->count);
 	}
@@ -526,6 +540,7 @@ static void timer_init(void (*cb)(int))
 static int loop(void)
 {
 	const char *title;
+	int rc = 0;
 	size_t i;
 
 	if (sender) {
@@ -537,7 +552,6 @@ static int loop(void)
 	}
 
 	if (foreground && !old) {
-		width = ttwidth();
 		cls();
 		ttraw();
 		hidecursor();
@@ -547,13 +561,17 @@ static int loop(void)
 		gotoxy(0, HEADING_ROW);
 		fprintf(stderr, "\e[7m%-31s    PLOTTER%*sPACKETS      \e[0m", "SOURCE,GROUP", width - 55, " ");
 
+		gotoxy(0, LOGHEADING_ROW); /* Thu Nov  5 09:08:59 2020 */
+		fprintf(stderr, "\e[7m%-24s  LOG%*s\e[0m", "TIME", width - 29, " ");
 	}
 
 
 	while (join && running) {
 		for (i = 0; i < group_num; i++) {
-			if (join_group(&groups[i]))
-				return 1;
+			if (join_group(&groups[i])) {
+				rc = 1;
+				goto error;
+			}
 		}
 
 		while (running) {
@@ -607,12 +625,15 @@ static int loop(void)
 		}
 	}
 
-	if (foreground && !old) {
+	DEBUG("Leaving main loop");
+error:	if (foreground && !old) {
 		gotoxy(0, EXIT_ROW);
 		showcursor();
 		ttcooked();
 	}
-	DEBUG("Leaving main loop");
+
+	if (rc)
+		return rc;
 
 	return show_stats();
 }
@@ -780,7 +801,8 @@ int main(int argc, char *argv[])
 			printf("Failed backgrounding: %s", strerror(errno));
 			_exit(1);
 		}
-	}
+	} else if (!old)
+		ttsize(&width, &height);
 
 	if (wait)
 		sleep(wait);

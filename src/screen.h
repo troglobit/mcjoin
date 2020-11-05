@@ -26,6 +26,8 @@
 
 /* Esc[2J                     - Clear screen */
 #define cls()                 fputs("\e[2J", stderr)
+/* Esc[0J                     - Clear screen from cursor down */
+#define clsdn()               fputs("\e[0J", stderr)
 /* Esc[Line;ColumnH           - Moves the cursor to the specified position (coordinates) */
 #define gotoxy(x,y)           fprintf(stderr, "\e[%d;%dH", (int)(y), (int)(x))
 /* Esc[?25l (lower case L)    - Hide Cursor */
@@ -47,12 +49,12 @@
 
 int ttraw    (void);
 int ttcooked (void);
-int ttwidth  (void);
+int ttsize   (int *, int *);
 
 #else
-#define ttraw()    0
-#define ttcooked() 0
-#define ttwidth()  0
+#define ttraw()     0
+#define ttcooked()  0
+#define ttsize(a,b) 0
 
 #endif /* HAVE_TERMIOS_H */
 

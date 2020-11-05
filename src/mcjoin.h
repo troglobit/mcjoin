@@ -18,6 +18,7 @@
 #define MCJOIN_H_
 
 #include "addr.h"
+#include "log.h"
 
 #define BUFSZ           1606	/* +42 => 1648 */
 #define MAX_NUM_GROUPS  2048
@@ -60,7 +61,10 @@ struct gr {
 };
 
 extern int old;
+extern int width;
+extern int height;
 extern int foreground;
+extern size_t group_num;
 
 extern int daemonize(void);
 

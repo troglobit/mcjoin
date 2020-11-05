@@ -68,30 +68,36 @@ int ttcooked(void)
 	return 0;
 }
 
-int ttwidth(void)
+int ttsize(int *cols, int *rows)
 {
 	struct pollfd fd = { STDIN_FILENO, POLLIN, 0 };
 	struct termios tc, saved;
-	char buf[42];
-	int rc = 79;
+	int rc;
 
-	memset(buf, 0, sizeof(buf));
-	tcgetattr(STDERR_FILENO, &tc);
-	saved = tc;
-	tc.c_cflag |= (CLOCAL | CREAD);
-	tc.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
-	tcsetattr(STDERR_FILENO, TCSANOW, &tc);
+	/* disable output while probing terminal size */
+	rc = tcgetattr(STDERR_FILENO, &tc);
+	if (!rc) {
+		saved = tc;
+		tc.c_cflag |= (CLOCAL | CREAD);
+		tc.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
+		tcsetattr(STDERR_FILENO, TCSANOW, &tc);
+	}
+
 	fprintf(stderr, "\e7\e[r\e[999;999H\e[6n");
-
 	if (poll(&fd, 1, 300) > 0) {
 		int row, col;
 
-		if (scanf("\e[%d;%dR", &row, &col) == 2)
-			rc = col;
+		if (scanf("\e[%d;%dR", &row, &col) == 2) {
+			if (rows)
+				*rows = row;
+			if (cols)
+				*cols = col;
+		}
 	}
 
 	fprintf(stderr, "\e8");
-	tcsetattr(STDERR_FILENO, TCSANOW, &saved);
+	if (!rc)
+		tcsetattr(STDERR_FILENO, TCSANOW, &saved);
 
 	return rc;
 }

@@ -18,8 +18,10 @@
 #define MCJOIN_LOG_H_
 
 #include <syslog.h>
+#include "mcjoin.h"
 
-#define LOG_MAX  3
+#define LOG_MAX  (height - (int)LOG_ROW < 1 ? 1 : height - (int)LOG_ROW)
+#define LOG_POS  0
 
 #define DEBUG(fmt, args...) do { logit(LOG_DEBUG,  fmt "\n", ##args); } while (0)
 #define ERROR(fmt, args...) do { logit(LOG_ERR,    fmt "\n", ##args); } while (0)
