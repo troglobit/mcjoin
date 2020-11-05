@@ -542,11 +542,6 @@ static int loop(void)
 		ttraw();
 		hidecursor();
 
-		log_syslog = 1;
-
-		openlog(ident, log_opts, LOG_DAEMON);
-		setlogmask(LOG_UPTO(log_level));
-
 		gotoxy((width - strlen(title)) / 2, TITLE_ROW);
 		fprintf(stderr, "\e[1m%s\e[0m", title);
 		gotoxy(0, HEADING_ROW);
@@ -732,7 +727,10 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'l':
-			log_level = loglvl(optarg);
+			if (log_level(optarg)) {
+				ERROR("Invalid log level: %s", strerror(errno));
+				return 1;
+			}
 			break;
 
 		case 'o':
@@ -786,6 +784,8 @@ int main(int argc, char *argv[])
 
 	if (wait)
 		sleep(wait);
+
+	log_init(ident);
 
 	if (!iface[0])
 		ifdefault(iface, sizeof(iface));

@@ -15,29 +15,65 @@
 */
 
 #define SYSLOG_NAMES
+#include <errno.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <sys/param.h>		/* MIN() */
+
 #include "log.h"
+#include "mcjoin.h"
 
-int log_level  = LOG_NOTICE;
-int log_syslog = 0;
-int log_opts   = LOG_NDELAY | LOG_PID;
+static int log_prio   = LOG_NOTICE;
+static int log_syslog = 0;
+static int log_opts   = LOG_NDELAY | LOG_PID;
 
-int loglvl(const char *level)
+int log_init(char *ident)
+{
+	if (!foreground)
+		return 0;
+
+	log_syslog = 1;
+
+	openlog(ident, log_opts, LOG_DAEMON);
+	setlogmask(LOG_UPTO(log_prio));
+
+	return 0;
+}
+
+int log_exit(void)
+{
+	if (!foreground)
+		return 0;
+
+	closelog();
+
+	return 0;
+}
+
+int log_level(const char *level)
 {
 	int i;
 
 	for (i = 0; prioritynames[i].c_name; i++) {
 		size_t len = MIN(strlen(prioritynames[i].c_name), strlen(level));
 
-		if (!strncasecmp(prioritynames[i].c_name, level, len))
-			return prioritynames[i].c_val;
+		if (strncasecmp(prioritynames[i].c_name, level, len))
+			continue;
+
+		log_prio = prioritynames[i].c_val;
+		return 0;
 	}
 
-	return atoi(level);
+	errno = 0;
+	i = strtol(level, NULL, 0);
+	if (errno)
+		return -1;
+
+	log_prio = i;
+
+	return 0;
 }
 
 int logit(int prio, char *fmt, ...)
@@ -48,7 +84,7 @@ int logit(int prio, char *fmt, ...)
 	va_start(ap, fmt);
 	if (log_syslog)
 		vsyslog(prio, fmt, ap);
-	else if (prio <= log_level) {
+	else if (prio <= log_prio) {
 		FILE *fp = stdout;
 		int sync = 1;
 

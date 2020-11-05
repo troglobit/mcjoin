@@ -25,11 +25,11 @@
 #define ERROR(fmt, args...) do { logit(LOG_ERR,    fmt "\n", ##args); } while (0)
 #define PRINT(fmt, args...) do { logit(LOG_NOTICE, fmt "\n", ##args); } while (0)
 
-extern int log_level;
-extern int log_syslog;
-extern int log_opts;
+int log_init(char *ident);
+int log_exit(void);
 
-int loglvl(const char *level);
+int log_level(const char *level);
+
 int logit(int prio, char *fmt, ...);
 
 #endif /* MCJOIN_LOG_H_ */
