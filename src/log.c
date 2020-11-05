@@ -29,9 +29,9 @@ static int log_prio   = LOG_NOTICE;
 static int log_syslog = 0;
 static int log_opts   = LOG_NDELAY | LOG_PID;
 
-int log_init(char *ident)
+int log_init(int fg, char *ident)
 {
-	if (!foreground)
+	if (fg)
 		return 0;
 
 	log_syslog = 1;

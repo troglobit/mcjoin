@@ -25,7 +25,7 @@
 #define ERROR(fmt, args...) do { logit(LOG_ERR,    fmt "\n", ##args); } while (0)
 #define PRINT(fmt, args...) do { logit(LOG_NOTICE, fmt "\n", ##args); } while (0)
 
-int log_init(char *ident);
+int log_init(int fg, char *ident);
 int log_exit(void);
 
 int log_level(const char *level);

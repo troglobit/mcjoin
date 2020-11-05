@@ -785,7 +785,7 @@ int main(int argc, char *argv[])
 	if (wait)
 		sleep(wait);
 
-	log_init(ident);
+	log_init(foreground, ident);
 
 	if (!iface[0])
 		ifdefault(iface, sizeof(iface));
