@@ -33,30 +33,8 @@
 
 #include "addr.h"
 #include "log.h"
+#include "mcjoin.h"
 #include "screen.h"
-
-#define BUFSZ           1606	/* +42 => 1648 */
-#define MAX_NUM_GROUPS  2048
-#define DEFAULT_GROUP   "225.1.2.3"
-#define DEFAULT_PORT    1234
-#define MAGIC_KEY       "Sender PID "
-#define SEQ_KEY         "count: "
-#define FREQ_KEY        "freq: "
-
-/* From The Practice of Programming, by Kernighan and Pike */
-#ifndef NELEMS
-#define NELEMS(array) (sizeof(array) / sizeof(array[0]))
-#endif
-
-/* RFC3542: Advanced Socket API.  For OS that don't have it yet */
-#ifndef IPV6_RECVPKTINFO
-#define IPV6_RECVPKTINFO IPV6_PKTINFO
-#endif
-
-/* Linux use SOL_IP and everyone else (*BSD & SVR4) use IPPROTO_IP */
-#ifndef SOL_IP
-#define SOL_IP IPPROTO_IP
-#endif
 
 /* Mode flags */
 int old = 0;
@@ -85,8 +63,6 @@ struct gr groups[MAX_NUM_GROUPS];
 char iface[IFNAMSIZ + 1];
 int num_joins = 0;
 
-extern int daemonize(void);
-
 /* prepare next iteration */
 static void update(void)
 {
@@ -109,7 +85,6 @@ static void display(int signo)
 	char hostname[80];
 	time_t now;
 	char *snow;
-	int line = 4;
 	int swidth;
 	int spos;
 	char act = 0;
@@ -138,9 +113,9 @@ static void display(int signo)
 
 	now = time(NULL);
 	snow = ctime(&now);
-	gotoxy(0, 2);
+	gotoxy(0, HOSTDATE_ROW);
 	fprintf(stderr, "%s (%s@%s)", hostname, buf, iface);
-	gotoxy(width - strlen(snow) + 2, 2);
+	gotoxy(width - strlen(snow) + 2, HOSTDATE_ROW);
 	fputs(snow, stderr);
 
 	swidth = width - 50;
@@ -157,7 +132,7 @@ static void display(int signo)
 		if (g->status[STATUS_POS] == '.')
 			g->spin++;
 
-		gotoxy(0, line++);
+		gotoxy(0, GROUP_ROW + i);
 		snprintf(sgbuf, sizeof(sgbuf), "%s,%s", g->source ? g->source : "*", g->group);
 		fprintf(stderr, "%-31s  %c [%s] %zu", sgbuf, act, &g->status[spos], g->count);
 	}
@@ -572,10 +547,11 @@ static int loop(void)
 		openlog(ident, log_opts, LOG_DAEMON);
 		setlogmask(LOG_UPTO(log_level));
 
-		gotoxy((width - strlen(title)) / 2, 1);
+		gotoxy((width - strlen(title)) / 2, TITLE_ROW);
 		fprintf(stderr, "\e[1m%s\e[0m", title);
-		gotoxy(0, 3);
+		gotoxy(0, HEADING_ROW);
 		fprintf(stderr, "\e[7m%-31s    PLOTTER%*sPACKETS      \e[0m", "SOURCE,GROUP", width - 55, " ");
+
 	}
 
 
@@ -637,7 +613,7 @@ static int loop(void)
 	}
 
 	if (foreground && !old) {
-		gotoxy(0, group_num + 4);
+		gotoxy(0, EXIT_ROW);
 		showcursor();
 		ttcooked();
 	}

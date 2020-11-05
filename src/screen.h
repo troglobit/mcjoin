@@ -24,6 +24,16 @@
 #include <termios.h>
 #endif
 
+/* Esc[2J                     - Clear screen */
+#define cls()                 fputs("\e[2J", stderr)
+/* Esc[Line;ColumnH           - Moves the cursor to the specified position (coordinates) */
+#define gotoxy(x,y)           fprintf(stderr, "\e[%d;%dH", (int)(y), (int)(x))
+/* Esc[?25l (lower case L)    - Hide Cursor */
+#define hidecursor()    if (logon()) fputs("\e[?25l", stderr)
+/* Esc[?25h (lower case H)    - Show Cursor */
+#define showcursor()    if (logon()) fputs("\e[?25h", stderr)
+
+#ifdef HAVE_TERMIOS_H
 /*
  * This flag is used on *BSD when calling tcsetattr() to prevent it
  * from changing speed, duplex, parity.  GNU says we should use the
@@ -35,16 +45,6 @@
 #define TCSASOFT 0
 #endif
 
-/* Esc[2J                     - Clear screen */
-#define cls()                 fputs("\e[2J", stderr)
-/* Esc[Line;ColumnH           - Moves the cursor to the specified position (coordinates) */
-#define gotoxy(x,y)           fprintf(stderr, "\e[%d;%dH", (int)(y), (int)(x))
-/* Esc[?25l (lower case L)    - Hide Cursor */
-#define hidecursor()    if (logon()) fputs("\e[?25l", stderr)
-/* Esc[?25h (lower case H)    - Show Cursor */
-#define showcursor()    if (logon()) fputs("\e[?25h", stderr)
-
-#ifdef HAVE_TERMIOS_H
 int ttraw    (void);
 int ttcooked (void);
 int ttwidth  (void);

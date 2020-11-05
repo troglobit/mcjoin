@@ -19,6 +19,8 @@
 
 #include <syslog.h>
 
+#define LOG_MAX  3
+
 #define DEBUG(fmt, args...) do { logit(LOG_DEBUG,  fmt "\n", ##args); } while (0)
 #define ERROR(fmt, args...) do { logit(LOG_ERR,    fmt "\n", ##args); } while (0)
 #define PRINT(fmt, args...) do { logit(LOG_NOTICE, fmt "\n", ##args); } while (0)

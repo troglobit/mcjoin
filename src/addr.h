@@ -25,9 +25,6 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 
-#define STATUS_HISTORY 256
-#define STATUS_POS     (STATUS_HISTORY - 2)
-
 #ifndef IN_LINKLOCAL
 #define IN_LINKLOCALNETNUM 0xa9fe0000
 #define IN_LINKLOCAL(addr) ((addr & IN_CLASSB_NET) == IN_LINKLOCALNETNUM)
@@ -41,9 +38,14 @@
 #define IN_ZERONET(addr) ((addr & IN_CLASSA_NET) == 0)
 #endif
 
-/* From The Practice of Programming, by Kernighan and Pike */
-#ifndef NELEMS
-#define NELEMS(array) (sizeof(array) / sizeof(array[0]))
+/* RFC3542: Advanced Socket API.  For OS that don't have it yet */
+#ifndef IPV6_RECVPKTINFO
+#define IPV6_RECVPKTINFO IPV6_PKTINFO
+#endif
+
+/* Linux use SOL_IP and everyone else (*BSD & SVR4) use IPPROTO_IP */
+#ifndef SOL_IP
+#define SOL_IP IPPROTO_IP
 #endif
 
 #ifdef AF_INET6
@@ -52,21 +54,6 @@
 #define INET_ADDRSTR_LEN  INET_ADDRSTRLEN
 #endif
 typedef struct sockaddr_storage inet_addr_t;
-
-/* Group info */
-struct gr {
-	int          sd;
-	size_t       count;
-	size_t       seq;
-	size_t       gaps;
-	char        *source;
-	char        *group;
-	inet_addr_t  src;
-	inet_addr_t  grp;	/* to */
-
-	char         status[STATUS_HISTORY];
-	size_t       spin;
-};
 
 const char *inet_address(inet_addr_t *ss, char *buf, size_t len);
 socklen_t   inet_addrlen(inet_addr_t *ss);
