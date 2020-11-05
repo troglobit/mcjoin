@@ -29,9 +29,9 @@
 /* Esc[Line;ColumnH           - Moves the cursor to the specified position (coordinates) */
 #define gotoxy(x,y)           fprintf(stderr, "\e[%d;%dH", (int)(y), (int)(x))
 /* Esc[?25l (lower case L)    - Hide Cursor */
-#define hidecursor()    if (logon()) fputs("\e[?25l", stderr)
+#define hidecursor()          fputs("\e[?25l", stderr)
 /* Esc[?25h (lower case H)    - Show Cursor */
-#define showcursor()    if (logon()) fputs("\e[?25h", stderr)
+#define showcursor()          fputs("\e[?25h", stderr)
 
 #ifdef HAVE_TERMIOS_H
 /*

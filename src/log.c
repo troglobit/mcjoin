@@ -26,11 +26,6 @@ int log_level  = LOG_NOTICE;
 int log_syslog = 0;
 int log_opts   = LOG_NDELAY | LOG_PID;
 
-int logon(void)
-{
-	return log_level == INTERNAL_NOPRI || log_syslog;
-}
-
 int loglvl(const char *level)
 {
 	int i;

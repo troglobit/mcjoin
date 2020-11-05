@@ -29,7 +29,6 @@ extern int log_level;
 extern int log_syslog;
 extern int log_opts;
 
-int logon(void);
 int loglvl(const char *level);
 int logit(int prio, char *fmt, ...);
 
