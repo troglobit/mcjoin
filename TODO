@@ -1,0 +1,10 @@
+
+- gaps/dupes/reordering detection by checking seq n:o
+- add `-J MSEC` for addning MSEC jitter to sender
+- adjustable source port?
+- seqno start
+- countdown to next packet
+- when running with new ui, logging currently goes to syslog.
+  With curses in place it would be nice if new ui was in a
+  separate window, and status messages went in a separate
+  little box at the bottom ...
