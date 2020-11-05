@@ -809,14 +809,16 @@ int main(int argc, char *argv[])
 	 */
 	for (i = optind; i < argc; i++) {
 		char *pos, *group, *source = NULL;
+		char buf[INET_ADDRSTR_LEN + 1];
 		int j, num = 1;
 
-		group = argv[i];
-		pos = strchr(group, '+');
+		strcpy(buf, argv[i]);
+		pos = strchr(buf, '+');
 		if (pos) {
 			*pos = 0;
 			num = atoi(&pos[1]);
 		}
+		group = buf;
 
 		pos = strchr(group, ',');
 		if (pos) {
@@ -854,6 +856,7 @@ int main(int argc, char *argv[])
 				ptr = &sin->sin_addr;
 			}
 
+			DEBUG("Converting family %d group %s to ptr %p, num :%d ... ", family, group, ptr, num);
 			if (!inet_pton(family, group, ptr)) {
 				ERROR("%s is not a valid multicast group", group);
 				return usage(1);
@@ -881,7 +884,8 @@ int main(int argc, char *argv[])
 				len = sizeof(*sin);
 			}
 
-			inet_ntop(family, ptr, group, len);
+			inet_ntop(family, ptr, buf, len);
+			group = buf;
 		}
 	}
 
