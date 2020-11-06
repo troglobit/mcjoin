@@ -152,8 +152,8 @@ int logit(int prio, char *fmt, ...)
 			if (strlen(fmt) < 2)
 				return -1; /* Too short for this mode, skip */
 
-			for (i = LOG_MAX - 1; i > 0; i--)
-				strcpy(log_buf[i], log_buf[i - 1]);
+			for (i = 0; i < LOG_MAX; i++)
+				strcpy(log_buf[i], log_buf[i + 1]);
 
 			now = time(NULL);
 			snow = ctime(&now);
