@@ -262,7 +262,7 @@ static int join_group(struct gr *sg)
 	if (sg->source)
 		inet_address(&sg->src, src, sizeof(src));
 	inet_address(&sg->grp, grp, sizeof(grp));
-	DEBUG("Joining group (%s,%s) on iface %s, sd: %d", src, grp, iface, sd);
+	PRINT("Joining multicast group (%s,%s) on iface %s, ifindex: %d, sd: %d", src, grp, iface, ifindex, sd);
 
 	if (setsockopt(sd, proto, op, arg, len)) {
 		ERROR("Failed %s group (%s,%s) on sd %d ... %d: %s",
