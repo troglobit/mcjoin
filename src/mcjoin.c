@@ -500,10 +500,16 @@ static ssize_t recv_mcast(int id)
 static void show_stats(void)
 {
 	if (join) {
-		int i, total_count = 0;
+		int total_count = 0;
+		size_t i, gwidth = 0;
 
-		for (i = 0; i < (int)group_num; i++) {
-			PRINT("Group %-15s received %zu packets, gaps: %zu",
+		for (i = 0; i < group_num; i++) {
+			if (strlen(groups[i].group) > gwidth)
+				gwidth = strlen(groups[i].group);
+		}
+
+		for (i = 0; i < group_num; i++) {
+			PRINT("Group %-*s received %zu packets, gaps: %zu", gwidth,
 			      groups[i].group, groups[i].count, groups[i].gaps);
 			total_count += groups[i].count;
 		}
