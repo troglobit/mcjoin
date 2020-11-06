@@ -111,10 +111,12 @@ int log_level(const char *level)
 	return 0;
 }
 
-static void display(void)
+void log_show(int signo)
 {
 	int y = LOG_ROW;
 	int i;
+
+	(void)signo;
 
 	gotoxy(0, LOG_ROW);
 	clsdn();
@@ -161,7 +163,7 @@ int logit(int prio, char *fmt, ...)
 				;
 
 			snprintf(log_buf[LOG_POS], width, "%24.24s  %s", snow, ptr);
-			display();
+			log_show(0);
 		} else {
 			FILE *fp = stdout;
 			int sync = 1;

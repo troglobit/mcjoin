@@ -91,7 +91,7 @@ static char spin(struct gr *g)
 	return act;
 }
 
-static void display(int signo)
+static void plotter_show(int signo)
 {
 	static char buf[INET_ADDRSTR_LEN] = "0.0.0.0";
 	static inet_addr_t addr = { 0 };
@@ -384,7 +384,7 @@ static void send_mcast(int signo)
 		}
 	}
 
-	display(0);
+	plotter_show(0);
 }
 
 struct in_addr *find_dstaddr(struct msghdr *msgh)
@@ -497,26 +497,19 @@ static ssize_t recv_mcast(int id)
 	return 0;
 }
 
-static int show_stats(void)
+static void show_stats(void)
 {
 	if (join) {
-		size_t i, total_count = 0;
+		int i, total_count = 0;
 
-		if (group_num > 1) {
-			PRINT("");
-			for (i = 0; i < group_num; i++) {
-				PRINT("Group %s received %zu packets, gaps: %zu",
-				      groups[i].group, groups[i].count, groups[i].gaps);
-				total_count += groups[i].count;
-			}
-		} else {
-			total_count = groups[0].count;
+		for (i = 0; i < (int)group_num; i++) {
+			PRINT("Group %-15s received %zu packets, gaps: %zu",
+			      groups[i].group, groups[i].count, groups[i].gaps);
+			total_count += groups[i].count;
 		}
 
 		PRINT("\nReceived total: %zu packets", total_count);
 	}
-
-	return 0;
 }
 
 static void timer_init(void (*cb)(int))
@@ -537,34 +530,57 @@ static void timer_init(void (*cb)(int))
 	setitimer(ITIMER_REAL, &times, NULL);
 }
 
-static int loop(void)
+static void redraw(int signo)
 {
 	const char *title;
+
+	if (signo)
+		ttsize(&width, &height);
+
+	if (sender)
+		title = "mcjoin :: sending multicast";
+	else
+		title = "mcjoin :: receiving multicast";
+
+	if (!signo) {
+		ttraw();
+		hidecursor();
+	}
+
+	cls();
+	gotoxy((width - strlen(title)) / 2, TITLE_ROW);
+	fprintf(stderr, "\e[1m%s\e[0m", title);
+	gotoxy(0, HEADING_ROW);
+	fprintf(stderr, "\e[7m%-31s    PLOTTER%*sPACKETS      \e[0m", "SOURCE,GROUP", width - 55, " ");
+
+	gotoxy(0, LOGHEADING_ROW); /* Thu Nov  5 09:08:59 2020 */
+	fprintf(stderr, "\e[7m%-24s  LOG%*s\e[0m", "TIME", width - 29, " ");
+
+	if (signo) {
+		plotter_show(signo);
+		log_show(signo);
+	}
+}
+
+static int loop(void)
+{
 	int rc = 0;
 	size_t i;
 
-	if (sender) {
-		title = "mcjoin :: sending multicast";
+	if (sender)
 		timer_init(send_mcast);
-	} else {
-		title = "mcjoin :: receiving multicast";
-		timer_init(display);
-	}
+	else
+		timer_init(plotter_show);
 
 	if (foreground && !old) {
-		cls();
-		ttraw();
-		hidecursor();
+		struct sigaction sa = {
+			.sa_flags   = SA_RESTART,
+			.sa_handler = redraw,
+		};
+		sigaction(SIGWINCH, &sa, NULL);
 
-		gotoxy((width - strlen(title)) / 2, TITLE_ROW);
-		fprintf(stderr, "\e[1m%s\e[0m", title);
-		gotoxy(0, HEADING_ROW);
-		fprintf(stderr, "\e[7m%-31s    PLOTTER%*sPACKETS      \e[0m", "SOURCE,GROUP", width - 55, " ");
-
-		gotoxy(0, LOGHEADING_ROW); /* Thu Nov  5 09:08:59 2020 */
-		fprintf(stderr, "\e[7m%-24s  LOG%*s\e[0m", "TIME", width - 29, " ");
+		redraw(0);
 	}
-
 
 	while (join && running) {
 		for (i = 0; i < group_num; i++) {
@@ -626,16 +642,15 @@ static int loop(void)
 	}
 
 	DEBUG("Leaving main loop");
-error:	if (foreground && !old) {
+	show_stats();
+error:
+	if (foreground && !old) {
 		gotoxy(0, EXIT_ROW);
 		showcursor();
 		ttcooked();
 	}
 
-	if (rc)
-		return rc;
-
-	return show_stats();
+	return rc;
 }
 
 static void exit_loop(int signo)

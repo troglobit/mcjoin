@@ -27,11 +27,13 @@
 #define ERROR(fmt, args...) do { logit(LOG_ERR,    fmt "\n", ##args); } while (0)
 #define PRINT(fmt, args...) do { logit(LOG_NOTICE, fmt "\n", ##args); } while (0)
 
-int log_init(int fg, char *ident);
-int log_exit(void);
+int  log_init  (int fg, char *ident);
+int  log_exit  (void);
 
-int log_level(const char *level);
+int  log_level (const char *level);
 
-int logit(int prio, char *fmt, ...);
+void log_show  (int signo);
+
+int  logit     (int prio, char *fmt, ...);
 
 #endif /* MCJOIN_LOG_H_ */
