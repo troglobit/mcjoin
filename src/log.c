@@ -147,7 +147,7 @@ int logit(int prio, char *fmt, ...)
 			char *ptr;
 			int i;
 
-			if (strlen(fmt) < 1)
+			if (strlen(fmt) < 2)
 				return -1; /* Too short for this mode, skip */
 
 			for (i = LOG_MAX - 1; i > 0; i--)
