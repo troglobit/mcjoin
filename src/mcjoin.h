@@ -28,7 +28,7 @@
 #define SEQ_KEY         "count: "
 #define FREQ_KEY        "freq: "
 
-#define STATUS_HISTORY  256
+#define STATUS_HISTORY  1024
 #define STATUS_POS      (STATUS_HISTORY - 2)
 
 /* Positions on screen for ui */
