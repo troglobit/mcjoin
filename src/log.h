@@ -21,7 +21,7 @@
 #include "mcjoin.h"
 
 #define LOG_MAX  (height - (int)LOG_ROW < 1 ? 1 : height - (int)LOG_ROW)
-#define LOG_POS  (LOG_MAX - 1)
+#define LOG_POS  (log_max - 1)
 
 #define DEBUG(fmt, args...) do { logit(LOG_DEBUG,  fmt "\n", ##args); } while (0)
 #define ERROR(fmt, args...) do { logit(LOG_ERR,    fmt "\n", ##args); } while (0)

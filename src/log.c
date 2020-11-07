@@ -33,6 +33,7 @@ char **log_buf;			/* Ring buffer of LOG_MAX entries of width length */
 static int log_prio   = LOG_NOTICE;
 static int log_syslog = 0;
 static int log_ui     = 0;
+static int log_max    = 0;
 static int log_opts   = LOG_NDELAY | LOG_PID;
 
 int log_init(int fg, char *ident)
@@ -43,11 +44,12 @@ int log_init(int fg, char *ident)
 		if (old)
 			return 0;
 
-		log_buf = calloc(LOG_MAX, sizeof(char *));
+		log_max = LOG_MAX;
+		log_buf = calloc(log_max, sizeof(char *));
 		if (!log_buf)
 			return -1;
 
-		for (i = 0; i < LOG_MAX; i++) {
+		for (i = 0; i < log_max; i++) {
 			log_buf[i] = calloc(width, sizeof(char));
 			if (!log_buf[i]) {
 				while (i)
@@ -74,7 +76,7 @@ int log_exit(void)
 	if (!foreground) {
 		int i;
 
-		for (i = 0; i < LOG_MAX; i++)
+		for (i = 0; i < log_max; i++)
 			free(log_buf[i]);
 		if (log_buf)
 			free(log_buf);
@@ -121,7 +123,7 @@ void log_show(int signo)
 	gotoxy(0, LOG_ROW);
 	clsdn();
 
-	for (i = 0; i < LOG_MAX; i++) {
+	for (i = 0; i < log_max; i++) {
 		if (y >= height)
 			break;
 
@@ -152,7 +154,7 @@ int logit(int prio, char *fmt, ...)
 			if (strlen(fmt) < 2)
 				return -1; /* Too short for this mode, skip */
 
-			for (i = 0; i < LOG_MAX; i++)
+			for (i = 0; i < LOG_POS; i++)
 				strcpy(log_buf[i], log_buf[i + 1]);
 
 			now = time(NULL);
