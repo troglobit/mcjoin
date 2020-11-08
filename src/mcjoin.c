@@ -141,8 +141,6 @@ static void plotter_show(int signo)
 	if (swidth > STATUS_HISTORY)
 		swidth = STATUS_HISTORY;
 	spos = STATUS_HISTORY - swidth;
-	if (spos < 0)
-		spos = 0;
 
 	for (i = 0; i < group_num; i++) {
 		struct gr *g = &groups[i];
