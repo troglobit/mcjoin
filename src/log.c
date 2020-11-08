@@ -192,9 +192,6 @@ int logit(int prio, char *fmt, ...)
 			char *ptr;
 			int i;
 
-			if (strlen(fmt) < 2)
-				return -1; /* Too short for this mode, skip */
-
 			for (i = 0; i < LOG_POS; i++)
 				strlcpy(log_buf[i], log_buf[i + 1], log_width);
 
