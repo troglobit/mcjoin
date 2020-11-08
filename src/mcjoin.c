@@ -524,12 +524,12 @@ static ssize_t recv_mcast(int id)
 static void show_stats(void)
 {
 	if (join) {
-		int total_count = 0;
-		size_t i, gwidth = 0;
+		size_t i, total_count = 0;
+		int gwidth = 0;
 
 		for (i = 0; i < group_num; i++) {
-			if (strlen(groups[i].group) > gwidth)
-				gwidth = strlen(groups[i].group);
+			if ((int)strlen(groups[i].group) > gwidth)
+				gwidth = (int)strlen(groups[i].group);
 		}
 
 		for (i = 0; i < group_num; i++) {
@@ -760,7 +760,7 @@ int main(int argc, char *argv[])
 		case 'b':
 			bytes = (size_t)atoi(optarg);
 			if (bytes > BUFSZ) {
-				ERROR("Too long payload, max %zu bytes", BUFSZ);
+				ERROR("Too long payload, max %d bytes", BUFSZ);
 				return 1;
 			}
 			break;
