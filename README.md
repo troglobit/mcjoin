@@ -5,8 +5,8 @@ m c j o i n - tiny multicast testing tool
 [mcjoin(1)](https://man.troglobit.com/man1/mcjoin.1.html) is a simple
 and easy-to-use tool to test IPv4 and IPv6 multicast, featuring:
 
-- an optional multicast generator (server)
-- an end device that can act as a data sink (client)
+- a multicast generator (server)
+- a multicast data sink (client)
 - support for join/send to one or more groups
 - support for both any source and source specific multicast:
   - ASM (*,G)
