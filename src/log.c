@@ -93,6 +93,9 @@ int log_level(const char *level)
 {
 	int i;
 
+	if (!level)
+		return log_prio;
+
 	for (i = 0; prioritynames[i].c_name; i++) {
 		size_t len = MIN(strlen(prioritynames[i].c_name), strlen(level));
 
