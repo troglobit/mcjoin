@@ -1,7 +1,7 @@
 SUBDIRS           = src
 dist_man1_MANS    = mcjoin.1
-doc_DATA          = README.md LICENSE mcjoin-send.jpg mcjoin-recv.jpg
-EXTRA_DIST        = README.md LICENSE ChangeLog.md mcjoin-send.jpg mcjoin-recv.jpg
+doc_DATA          = README.md LICENSE doc/mcjoin-send.jpg doc/mcjoin-recv.jpg
+EXTRA_DIST        = README.md LICENSE ChangeLog.md doc/mcjoin-send.jpg doc/mcjoin-recv.jpg
 
 package:
 	@debuild -uc -us -B --lintian-opts --profile debian -i -I --show-overrides
