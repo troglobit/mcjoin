@@ -277,12 +277,6 @@ static int join_group(struct gr *sg)
 		      src, grp, "joining", sd, errno, strerror(errno));
 		goto error;
 	}
-#if 0
-	if (sg->source)
-		PRINT("Joined source,group %s,%s on %s ...", sg->source, sg->group, iface);
-	else
-		PRINT("Joined group %s on %s ...", sg->group, iface);
-#endif
 	sg->sd = sd;
 
 	return 0;
@@ -505,7 +499,8 @@ static ssize_t recv_mcast(int id)
 	      groups[id].count, getpid(), pid, groups[id].group, seq, buf);
 
 	if (strcmp(dst, groups[id].group)) {
-		ERROR("Packet for group %s received on wrong socket, expected group %s.", dst, groups[id].group);
+		ERROR("Packet for group %s received on wrong socket, expected group %s.",
+		      dst, groups[id].group);
 		return -1;
 	}
 
@@ -516,7 +511,6 @@ static ssize_t recv_mcast(int id)
 	groups[id].seq = seq + 1; /* Next expected sequence number */
 	groups[id].count++;
 	groups[id].status[STATUS_POS] = '.'; /* XXX: Use increasing dot size for more hits? */
-//	progress();
 
 	return 0;
 }

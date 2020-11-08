@@ -45,7 +45,7 @@ int ttraw(void)
 	newtty.c_iflag |= IGNBRK;
 	newtty.c_iflag &= ~(BRKINT | PARMRK | INLCR | IGNCR | ICRNL | IXON);
 	newtty.c_oflag &= ~OPOST;
-	newtty.c_lflag &= ~(ECHO | ECHONL | ICANON | IEXTEN);//ISIG
+	newtty.c_lflag &= ~(ECHO | ECHONL | ICANON | IEXTEN);
 
 	if (tcsetattr(0, TCSASOFT | TCSADRAIN, &newtty) == -1) {
 		printf("can't tcsetattr\n");
