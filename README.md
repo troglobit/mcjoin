@@ -37,10 +37,10 @@ interface, in this example only an ipv6 address is available.
 
 ![mcjoin sender](mcjoin-send.jpg)
 
-by default, mcjoin uses the simple ipv4 group 225.1.2.3 (which is very
-easy to spot also when translated to mac multicast, RFC1112). however,
-for testing purposes you may want to instead use the `MCAST_TEST_NET`
-from RFC5771, `233.252.0.0/24`, or possibly test group `232.43.211.234`,
+by default, mcjoin uses the ipv4 group 225.1.2.3 (which is very easy to
+spot also when translated to mac multicast, [RFC1112][]). however, for
+testing purposes you may want to instead use the `MCAST_TEST_NET` from
+[RFC5771][], `233.252.0.0/24`, or possibly test group `232.43.211.234`,
 UDP port `4321`, as defined in [this IETF draft][1].
 
 for testing IPv6 you can use ff2e::42.  for ipv6 groups the ipv6 address
@@ -223,7 +223,9 @@ this requires `automake` and `autoconf` to be installed on your system.
 
 
 [1]:               http://tools.ietf.org/html/draft-ietf-mboned-ssmping-08
+[RFC1112]:         https://tools.ietf.org/html/rfc1112
 [RFC3678]:         https://tools.ietf.org/html/rfc3678
+[RFC5771]:         https://tools.ietf.org/html/rfc5771
 [Travis]:          https://travis-ci.org/troglobit/mcjoin
 [Travis Status]:   https://travis-ci.org/troglobit/mcjoin.png?branch=master
 [Coverity Scan]:   https://scan.coverity.com/projects/9108
