@@ -37,6 +37,10 @@ of the outbound interface will be used.
 usage
 -----
 
+without any arguments `mcjoin` defaults to act as a receiver, performing
+an IPv4 ASM join (*,G) of group `225.1.2.3`, UDP port `1234`.  to act as
+a sender of the same group and port, add `-s` to the command line.
+
 ```
     $ mcjoin -h
     
