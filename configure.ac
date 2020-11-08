@@ -40,8 +40,8 @@ case $host_os in
 	# -D_BSD_SOURCE Use functions derived from 4.3 BSD Unix rather than POSIX.1
 	#               In GLIBC >= v2.20 this is replaced with -D_DEFAULT_SOURCE,
 	#               but to build on older GLIBC systems we now need both ...
-	CFLAGS="-std=gnu99"
-	CPPFLAGS="-D_GNU_SOURCE"
+	CFLAGS="-O2 -g -std=gnu99"
+	CPPFLAGS="-D_GNU_SOURCE -D_FORTIFY_SOURCE=2"
 	;;
     *)
         ;;
