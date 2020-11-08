@@ -884,7 +884,7 @@ int main(int argc, char *argv[])
 		char buf[INET_ADDRSTR_LEN + 1];
 		int j, num = 1;
 
-		strcpy(buf, argv[i]);
+		strlcpy(buf, argv[i], sizeof(buf));
 		pos = strchr(buf, '+');
 		if (pos) {
 			*pos = 0;

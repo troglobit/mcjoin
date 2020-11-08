@@ -70,6 +70,7 @@ static int log_prio   = LOG_NOTICE;
 static int log_syslog = 0;
 static int log_ui     = 0;
 static int log_max    = 0;
+static int log_width  = 0;
 static int log_opts   = LOG_NDELAY | LOG_PID;
 
 int log_init(int fg, char *ident)
@@ -81,12 +82,13 @@ int log_init(int fg, char *ident)
 			return 0;
 
 		log_max = LOG_MAX;
+		log_width = width;
 		log_buf = calloc(log_max, sizeof(char *));
 		if (!log_buf)
 			return -1;
 
 		for (i = 0; i < log_max; i++) {
-			log_buf[i] = calloc(width, sizeof(char));
+			log_buf[i] = calloc(log_width, sizeof(char));
 			if (!log_buf[i]) {
 				while (i)
 					free(log_buf[--i]);
@@ -194,7 +196,7 @@ int logit(int prio, char *fmt, ...)
 				return -1; /* Too short for this mode, skip */
 
 			for (i = 0; i < LOG_POS; i++)
-				strcpy(log_buf[i], log_buf[i + 1]);
+				strlcpy(log_buf[i], log_buf[i + 1], log_width);
 
 			now = time(NULL);
 			snow = ctime(&now);
