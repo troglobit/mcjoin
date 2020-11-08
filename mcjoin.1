@@ -14,7 +14,7 @@
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
-.Dd March 8, 2020
+.Dd November 8, 2020
 .Dt MCJOIN 1
 .Os
 .Sh NAME
@@ -127,7 +127,7 @@ In this setup one system joins the group
 .Ar 225.1.2.3
 waiting for packets to arrive, and the other end starts sending packets
 to the same group.  To verify routing of multicast, make sure to add the
-.Ar -t TTL
+.Fl t Ar TTL
 option to the sender since the default TTL is 1 and every router
 (simplified) decrements the TTL.
 .Pp
