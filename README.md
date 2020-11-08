@@ -66,7 +66,7 @@ usage
 the `SOURCE` argument is optional, but when used it must be of the same
 address family as the group.  to join multiple groups, either list them
 all on the command line, separated with space, or use the `+NUM` syntax.
-at the moment max 250 groups can be joined.
+at the moment max 2048 groups can be joined.
 
 
 troubleshooting
