@@ -190,9 +190,15 @@ static int alloc_socket(inet_addr_t group)
 	if (proto == IPPROTO_IPV6) {
 		if (setsockopt(sd, IPPROTO_IPV6, IPV6_RECVPKTINFO, &val, sizeof(val)))
 			ERROR("Failed enabling IPV6_RECVPKTINFO: %s", strerror(errno));
+#ifdef IPV6_MULTICAST_ALL
+		val = 0;
+		if (setsockopt(sd, proto, IPV6_MULTICAST_ALL, &val, sizeof(val)))
+			ERROR("Failed disabling IP_MULTICAST_ALL: %s", strerror(errno));
+#endif
 	}
 #endif
 	else {
+		val = 1;
 #if defined(IP_PKTINFO) || !defined(IP_RECVDSTADDR)
 		if (setsockopt(sd, SOL_IP, IP_PKTINFO, &val, sizeof(val)))
 			ERROR("Failed enabling IP_PKTINFO: %s", strerror(errno));
