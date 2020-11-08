@@ -20,14 +20,21 @@ multicast.  it features:
 example
 -------
 
+this is a fairly odd example, joining multiple ipv6 asm groups and a
+single ipv4 ssm group. the purpose is only to show that it's posible.
+
 ![mcjoin receiver](mcjoin-recv.png)
+
+the sender needs to have ipv6 (and ipv4) address on the egressing
+interface, in this example only an ipv6 address is available.
 
 ![mcjoin sender](mcjoin-send.png)
 
-
-for testing purposes you may want to use the `MCAST_TEST_NET` from
-RFC5771, `233.252.0.0/24`, or possibly test group `232.43.211.234`, UDP
-port `4321`, as defined in [this IETF draft][1].
+by default, mcjoin uses the simple ipv4 group 225.1.2.3 (which is very
+easy to spot also when translated to mac multicast, RFC1112). however,
+for testing purposes you may want to instead use the `MCAST_TEST_NET`
+from RFC5771, `233.252.0.0/24`, or possibly test group `232.43.211.234`,
+UDP port `4321`, as defined in [this IETF draft][1].
 
 for testing IPv6 you can use ff2e::42.  for ipv6 groups the ipv6 address
 of the outbound interface will be used.
