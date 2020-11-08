@@ -22,12 +22,12 @@ example
 this is a fairly odd example, joining multiple ipv6 asm groups and a
 single ipv4 ssm group. the purpose is only to show that it's posible.
 
-![mcjoin receiver](mcjoin-recv.png)
+![mcjoin receiver](mcjoin-recv.jpg)
 
 the sender needs to have ipv6 (and ipv4) address on the egressing
 interface, in this example only an ipv6 address is available.
 
-![mcjoin sender](mcjoin-send.png)
+![mcjoin sender](mcjoin-send.jpg)
 
 by default, mcjoin uses the simple ipv4 group 225.1.2.3 (which is very
 easy to spot also when translated to mac multicast, RFC1112). however,
