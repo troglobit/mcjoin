@@ -270,7 +270,7 @@ static int join_group(struct gr *sg)
 	if (sg->source)
 		inet_address(&sg->src, src, sizeof(src));
 	inet_address(&sg->grp, grp, sizeof(grp));
-	PRINT("Joining multicast group (%s,%s) on iface %s, ifindex: %d, sd: %d", src, grp, iface, ifindex, sd);
+	PRINT("Joining (%s,%s) on %s, ifindex: %d, sd: %d", src, grp, iface, ifindex, sd);
 
 	if (setsockopt(sd, proto, op, arg, len)) {
 		ERROR("Failed %s group (%s,%s) on sd %d ... %d: %s",
@@ -310,15 +310,15 @@ static int send_socket(int family)
 		return -1;
 	}
 
-	PRINT("Sending IPv%s multicast on iface %s addr %s ifindex %d",
-	      family == AF_INET ? "4" : "6", iface,
-	      inet_address(&addr, buf, sizeof(buf)), ifindex);
-
 	sd = socket(family, SOCK_DGRAM, 0);
 	if (sd < 0) {
 		ERROR("Failed opening socket(): %s", strerror(errno));
 		return -1;
 	}
+
+	PRINT("Sending IPv%s multicast on %s addr, %s ifindex: %d, sd: %d",
+	      family == AF_INET ? "4" : "6", iface,
+	      inet_address(&addr, buf, sizeof(buf)), ifindex, sd);
 
 	if (family == AF_INET) {
 		struct ip_mreqn imr = { .imr_ifindex = ifindex };
