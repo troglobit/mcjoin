@@ -13,8 +13,7 @@ multicast.  it features:
 - IPv4
 - IPv6
 
-> the latest release is always available from GitHub at  
-> https://github.com/troglobit/mcjoin/releases
+> latest release available here: https://github.com/troglobit/mcjoin/releases
 
 
 example
