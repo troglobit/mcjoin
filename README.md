@@ -20,23 +20,10 @@ multicast.  it features:
 example
 -------
 
-```shell
-sender$ mcjoin -s
-^C
-sender$
-```
+![mcjoin receiver](mcjoin-recv.png)
 
-without any arguments `mcjoin` defaults to an IPv4 ASM (*,G) join of
-`225.1.2.3`, UDP port `1234`.  see the usage section below for more
-help.
+![mcjoin sender](mcjoin-send.png)
 
-```shell
-receiver$ mcjoin
-joined group 225.1.2.3 on eth0 ...
-..................................................................^C
-Received total: 66 packets
-receiver$
-```
 
 for testing purposes you may want to use the `MCAST_TEST_NET` from
 RFC5771, `233.252.0.0/24`, or possibly test group `232.43.211.234`, UDP
