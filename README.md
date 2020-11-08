@@ -2,18 +2,17 @@ m c j o i n - tiny multicast testing tool
 =========================================
 [![Travis Status][]][Travis] [![Coverity Status][]][Coverity Scan]
 
-`mcjoin` is a very simple and easy-to-use tool to test IPv4 and IPv6
-multicast.  it features:
+[mcjoin(1)](https://man.troglobit.com/man1/mcjoin.1.html) is a simple
+and easy-to-use tool to test IPv4 and IPv6 multicast, featuring:
 
 - an optional multicast generator (server)
 - an end device that can act as a data sink (client)
-- can join or send to one or more groups
-- supports both any source and source specific multicast:
+- support for join/send to one or more groups
+- support for both any source and source specific multicast:
   - ASM (*,G)
   - SSM (S,G)
-- IPv4
-- IPv6
-- runs on:
+- support for both IPv4 & IPv6
+- support for the following operating systems:
   - Linux (GLIBC, musl libc)
   - FreeBSD
   - Apple macOS
