@@ -303,10 +303,16 @@ static int send_socket(int family)
 	if (ifindex <= 0) {
 		if (!iface[0])
 			ERROR("No outbound interface available, use `-i IFNAME`.");
-		else
-			ERROR("Interface %s has no IPv%s address yet, rc %d: %s",
-			      iface, family == AF_INET ? "4" : "6",
-			      ifindex, strerror(errno));
+		else {
+			char msg[80];
+
+			snprintf(msg, sizeof(msg), "Interface %s has no IPv%s address yet",
+				 iface, family == AF_INET ? "4" : "6");
+			if (log_level(NULL) == LOG_DEBUG && errno != EINTR)
+				ERROR("%s, rc %d: %s", msg, ifindex, strerror(errno));
+			else
+				ERROR("%s.", msg);
+		}
 		return -1;
 	}
 
