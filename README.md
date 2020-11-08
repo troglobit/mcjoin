@@ -17,6 +17,9 @@ and easy-to-use tool to test IPv4 and IPv6 multicast, featuring:
   - FreeBSD
   - Apple macOS
   - OpenSolaris/Illumos
+- no support for the following due to lack of [RFC3678][] support:
+  - NetBSD
+  - OpenBSD
 
 > latest release available here: https://github.com/troglobit/mcjoin/releases
 
@@ -220,6 +223,7 @@ this requires `automake` and `autoconf` to be installed on your system.
 
 
 [1]:               http://tools.ietf.org/html/draft-ietf-mboned-ssmping-08
+[RFC3678]:         https://tools.ietf.org/html/rfc3678
 [Travis]:          https://travis-ci.org/troglobit/mcjoin
 [Travis Status]:   https://travis-ci.org/troglobit/mcjoin.png?branch=master
 [Coverity Scan]:   https://scan.coverity.com/projects/9108
