@@ -13,7 +13,11 @@ multicast.  it features:
   - SSM (S,G)
 - IPv4
 - IPv6
-- runs on Linux, FreeBSD, and Apple macOS
+- runs on:
+  - Linux (GLIBC, musl libc)
+  - FreeBSD
+  - Apple macOS
+  - OpenSolaris/Illumos
 
 > latest release available here: https://github.com/troglobit/mcjoin/releases
 

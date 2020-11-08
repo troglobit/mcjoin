@@ -13,7 +13,9 @@ and spot gaps in real-time.
 - Revert to tar.gz for distribution tarballs
 - Support for adjusting payload length, 42 -> 1648
 - Support for adjusting packet send/poll rate
-- Support for figuring out default interface on *BSD and macOS
+- Support for macOS
+- Support for OpenSolaris/Illumos, e.g. OmniOS
+- Support for figuring out default interface on *BSD, Illumos, and macOS
 - Support for using old UI using `-o` flag
 - Support any source port in (S,G) joins
 - Greatly improved IPv6 support, portability and multiple groups
