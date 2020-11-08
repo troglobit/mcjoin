@@ -7,11 +7,13 @@ multicast.  it features:
 
 - an optional multicast generator (server)
 - an end device that can act as a data sink (client)
-- supports joining one or more groups:
-  - ASM (*,G) support
-  - SSM (S,G) support
+- can join or send to one or more groups
+- supports both any source and source specific multicast:
+  - ASM (*,G)
+  - SSM (S,G)
 - IPv4
 - IPv6
+- runs on Linux, FreeBSD, and Apple macOS
 
 > latest release available here: https://github.com/troglobit/mcjoin/releases
 
@@ -20,7 +22,7 @@ example
 -------
 
 this is a fairly odd example, joining multiple ipv6 asm groups and a
-single ipv4 ssm group. the purpose is only to show that it's posible.
+single ipv4 ssm group. the purpose is only to show that it's possible.
 
 ![mcjoin receiver](mcjoin-recv.jpg)
 
