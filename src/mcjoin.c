@@ -546,6 +546,7 @@ static void timer_init(void (*cb)(int))
 
 static void redraw(int signo)
 {
+	const char *howto = "ctrl-c to exit";
 	const char *title;
 
 	if (signo)
@@ -564,6 +565,8 @@ static void redraw(int signo)
 	cls();
 	gotoxy((width - strlen(title)) / 2, TITLE_ROW);
 	fprintf(stderr, "\e[1m%s\e[0m", title);
+	gotoxy((width - strlen(howto)) / 2, HOSTDATE_ROW);
+	fprintf(stderr, "\e[2m%s\e[0m", howto);
 	gotoxy(0, HEADING_ROW);
 	fprintf(stderr, "\e[7m%-31s    PLOTTER%*sPACKETS      \e[0m", "SOURCE,GROUP", width - 55, " ");
 
