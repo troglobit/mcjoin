@@ -14,6 +14,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
+#include "config.h"
+
 #define SYSLOG_NAMES
 #include <ctype.h>
 #include <errno.h>
@@ -22,13 +24,47 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#ifdef HAVE_UTILITY_H
+#include <utility.h>		/* MIN() SYSV */
+#else
 #include <sys/param.h>		/* MIN() */
+#endif
 
 #include "log.h"
 #include "mcjoin.h"
 #include "screen.h"
 
 char **log_buf;			/* Ring buffer of LOG_MAX entries of width length */
+
+#ifdef SYSV			/* Only SVR4, the BSD's and Linux have it */
+#define INTERNAL_INVPRI 0x00	/* Value to indicate no priority in f_pmask */
+#define INTERNAL_NOPRI  0x10	/* the "no priority" priority */
+				/* mark "facility" */
+#define INTERNAL_ALLPRI 0xFF   /* Value to indicate all priorities in f_pmask */
+#define INTERNAL_MARK   LOG_MAKEPRI(LOG_NFACILITIES, 0)
+
+typedef struct _code {
+	char	*c_name;
+	int	 c_val;
+} CODE;
+
+CODE prioritynames[] = {
+	{ "alert",	LOG_ALERT },
+	{ "crit",	LOG_CRIT },
+	{ "debug",	LOG_DEBUG },
+	{ "emerg",	LOG_EMERG },
+	{ "err",	LOG_ERR },
+	{ "error",	LOG_ERR },		/* DEPRECATED */
+	{ "info",	LOG_INFO },
+	{ "none",	INTERNAL_NOPRI },	/* INTERNAL */
+	{ "notice",	LOG_NOTICE },
+	{ "panic",	LOG_EMERG },		/* DEPRECATED */
+	{ "warn",	LOG_WARNING },		/* DEPRECATED */
+	{ "warning",	LOG_WARNING },
+	{ "*",		INTERNAL_ALLPRI },	/* INTERNAL */
+	{ NULL,		-1 }
+};
+#endif /* SYSV */
 
 static int log_prio   = LOG_NOTICE;
 static int log_syslog = 0;

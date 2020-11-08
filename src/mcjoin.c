@@ -18,6 +18,7 @@
 
 #include "config.h"
 
+#include <arpa/inet.h>		/* inet_pton() on Solaris */
 #include <errno.h>
 #include <getopt.h>
 #include <libgen.h>
@@ -29,6 +30,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <sys/socket.h>
 #include <sys/resource.h>
 
 #include "addr.h"
@@ -327,13 +329,23 @@ static int send_socket(int family)
 	      inet_address(&addr, buf, sizeof(buf)), ifindex, sd);
 
 	if (family == AF_INET) {
+#ifdef HAVE_STRUCT_IP_MREQN_IMR_IFINDEX
 		struct ip_mreqn imr = { .imr_ifindex = ifindex };
+#else
+		struct sockaddr_in *sin = (struct sockaddr_in *)&addr;
+		struct in_addr ina = sin->sin_addr;
+#endif
 
 		if (setsockopt(sd, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl)))
 			ERROR("Failed setting IP_MULTICAST_TTL: %s", strerror(errno));
 
+#ifdef HAVE_STRUCT_IP_MREQN_IMR_IFINDEX
 		if (setsockopt(sd, IPPROTO_IP, IP_MULTICAST_IF, &imr, sizeof(imr)))
 			ERROR("Failed setting IP_MULTICAST_IF: %s", strerror(errno));
+#else
+		if (setsockopt(sd, IPPROTO_IP, IP_MULTICAST_IF, &ina, sizeof(ina)))
+			ERROR("Failed setting IP_MULTICAST_IF: %s", strerror(errno));
+#endif
 	}
 #ifdef AF_INET6
 	else {

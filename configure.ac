@@ -11,10 +11,40 @@ AC_PROG_INSTALL
 
 AC_HEADER_STDC
 
-AC_CHECK_HEADERS([termios.h])
+AC_CHECK_HEADERS([termios.h utility.h])
 AC_CHECK_MEMBERS([struct sockaddr_storage.ss_len], , ,
 [
 #include <sys/socket.h>
 ])
+AC_CHECK_MEMBERS([struct ip_mreqn.imr_ifindex], , ,
+[
+#include <netinet/in.h>
+])
+
+# Check build host, differnt for each operating system
+AC_CANONICAL_HOST
+
+case $host_os in
+    dragonfly*)
+	CPPFLAGS="-I../include/dragonfly"
+	;;
+    netbsd*)
+        CPPFLAGS="$CPPFLAGS -D_OPENBSD_SOURCE"
+        ;;
+    solaris*)
+	CPPFLAGS="-DSYSV -D_XPG4_2 -D__EXTENSIONS__"
+	LIBS="-lsocket -lnsl"
+	;;
+    linux*)
+	# -D_GNU_SOURCE Use GNU extensions, where possible (GLIBC)
+	# -D_BSD_SOURCE Use functions derived from 4.3 BSD Unix rather than POSIX.1
+	#               In GLIBC >= v2.20 this is replaced with -D_DEFAULT_SOURCE,
+	#               but to build on older GLIBC systems we now need both ...
+	CFLAGS="-std=gnu99"
+	CPPFLAGS="-D_GNU_SOURCE"
+	;;
+    *)
+        ;;
+esac
 
 AC_OUTPUT
