@@ -114,14 +114,17 @@ emphasis added:
 > messages only from the groups that have been explicitly joined (for
 > example via the IP_ADD_MEMBERSHIP option) on this particular socket.
 
+the same applies to `ipv6(7)`, although the `IPV6_MULTICAST_ALL` socket
+option has only existed since Linux 4.20.
+
 hence, by default all multicast applications in UNIX will receive all
 multicast frames from all groups joined by all other applications on
 the same system ...
 
 ... which IMO is a weird default since multicast by default is opt-in,
-not opt-out, which is what POSIX makes it.  OK, may it's not mandated by
-POSIX, and (unregulated) multicast is akin to broadcast, but still!  I
-bet most developer's don't know about this.
+not opt-out, which is what POSIX makes it.  OK, maybe it's not mandated
+by POSIX, and (unregulated) multicast is akin to broadcast, but still!
+I bet most developer's don't know about this.
 
 
 testing on the same machine
