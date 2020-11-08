@@ -56,7 +56,8 @@ a sender of the same group and port, add `-s` to the command line.
 ```
     $ mcjoin -h
     
-    Usage: mcjoin [-dhjsv] [-c COUNT] [-i IFACE] [-p PORT] [-r SEC] [-t TTL] [-w SEC]
+    Usage: mcjoin [-dhjosv] [-c COUNT] [-f MSEC] [-i IFACE] [-l LEVEL]
+                  [-p PORT] [-r SEC] [-t TTL] [-w SEC]
                   [[SOURCE,]GROUP0 .. [SOURCE,]GROUPN | [SOURCE,]GROUP+NUM]
     
     Options:

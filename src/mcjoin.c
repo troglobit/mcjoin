@@ -699,8 +699,8 @@ static int usage(int code)
 	if (!iface[0])
 		ifdefault(iface, sizeof(iface));
 
-	printf("Usage: %s [-dhjsv] [-c COUNT] [-i IFACE] [-l LEVEL] [-p PORT] [-r SEC]\n"
-	       "              [-t TTL] [-w SEC]\n"
+	printf("Usage: %s [-dhjosv] [-c COUNT] [-f MSEC ][-i IFACE] [-l LEVEL] [-p PORT]\n"
+	       "              [-r SEC] [-t TTL] [-w SEC]\n"
 	       "              [[SOURCE,]GROUP0 .. [SOURCE,]GROUPN | [SOURCE,]GROUP+NUM]\n"
 	       "Options:\n"
 	       "  -b BYTES    Payload in bytes over IP/UDP header (42 bytes), default: 100\n"
