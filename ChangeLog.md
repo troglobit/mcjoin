@@ -3,14 +3,20 @@ ChangeLog
 
 All notable changes to the project are documented in this file.
 
-[v2.7][] - 2020-10-25
+[v2.7][] - 2020-11-08
 ---------------------
 
+New user interface, inspired by mtr.  Easier to track multiple streams
+and spot gaps in real-time.
+
 - Adjust ulimit so we can open enough sockets to send/receive multicast
-- Change back to tar.gz for distribution tarballs
+- Revert to tar.gz for distribution tarballs
 - Support for adjusting payload length, 42 -> 1648
-- Support for figuring out default interface on *BSD
-- Allow any source port in (S,G) joins
+- Support for adjusting packet send/poll rate
+- Support for figuring out default interface on *BSD and macOS
+- Support for using old UI using `-o` flag
+- Support any source port in (S,G) joins
+- Greatly improved IPv6 support, portability and multiple groups
 - Fix #8: Handle IPv6 being disabled, per group and per socket
 - Fix #9: No feedback on receiver when using mcjoin as sender
 - Fix #10: Calculate and show gaps in received groups

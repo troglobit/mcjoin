@@ -1,13 +1,18 @@
-mcjoin (2.7) unstable; urgency=medium
+mcjoin (2.7) stable; urgency=medium
 
+  * Update maintainer last name
   * Increase ulimit to be able match max multicast groups
+  * New user interface, inspired by mtr
+  * Support for using old UI using `-o` flag
   * Support for adjusting payload length, 42 -> 1648
+  * Support for adjusting packet send/poll rate
   * Allow any source port in (S,G) joins
+  * Greatly improved IPv6 support, e.g., join multiple groups
   * Fix #8: Handle IPv6 being disabled, per group and per socket
   * Fix #9: No feedback on receiver when using mcjoin as sender
   * Fix #10: Calculate and show gaps in received groups
 
- -- Joachim Wiberg <troglobit@gmail.com>  Sat, 24 Oct 2020 19:56:42 +0200
+ -- Joachim Wiberg <troglobit@gmail.com>  Sun, 08 Nov 2020 13:00:46 +0100
 
 mcjoin (2.6) stable; urgency=medium
 
