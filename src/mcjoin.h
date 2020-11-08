@@ -17,6 +17,7 @@
 #ifndef MCJOIN_H_
 #define MCJOIN_H_
 
+#include "config.h"
 #include "addr.h"
 #include "log.h"
 
@@ -67,5 +68,9 @@ extern int foreground;
 extern size_t group_num;
 
 extern int daemonize(void);
+
+#ifndef HAVE_STRLCPY
+size_t strlcpy(char *dst, const char *src, size_t len);
+#endif
 
 #endif /* MCJOIN_H_ */

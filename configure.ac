@@ -21,6 +21,10 @@ AC_CHECK_MEMBERS([struct ip_mreqn.imr_ifindex], , ,
 #include <netinet/in.h>
 ])
 
+# Check for usually missing API's
+AC_REPLACE_FUNCS([strlcpy])
+AC_CONFIG_LIBOBJ_DIR([lib])
+
 # Check build host, differnt for each operating system
 AC_CANONICAL_HOST
 
