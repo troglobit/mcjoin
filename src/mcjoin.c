@@ -150,7 +150,7 @@ static void plotter_show(int signo)
 		act = spin(g);
 
 		snprintf(sgbuf, sizeof(sgbuf), "%s,%s", g->source ? g->source : "*", g->group);
-		fprintf(stderr, "%-31s  %c [%s] %zu", sgbuf, act, &g->status[spos], g->count);
+		fprintf(stderr, "%-31s  %c [%s] %13zu", sgbuf, act, &g->status[spos], g->count);
 	}
 
 	update();
@@ -578,7 +578,7 @@ static void redraw(int signo)
 	gotoxy((width - strlen(howto)) / 2, HOSTDATE_ROW);
 	fprintf(stderr, "\e[2m%s\e[0m", howto);
 	gotoxy(0, HEADING_ROW);
-	fprintf(stderr, "\e[7m%-31s    PLOTTER%*sPACKETS      \e[0m", "SOURCE,GROUP", width - 55, " ");
+	fprintf(stderr, "\e[7m%-31s    PLOTTER%*s      PACKETS\e[0m", "SOURCE,GROUP", width - 55, " ");
 
 	gotoxy(0, LOGHEADING_ROW); /* Thu Nov  5 09:08:59 2020 */
 	fprintf(stderr, "\e[7m%-24s  LOG%*s\e[0m", "TIME", width - 29, " ");
