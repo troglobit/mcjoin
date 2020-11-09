@@ -18,6 +18,8 @@
 #define MCJOIN_H_
 
 #include "config.h"
+#include <signal.h>
+
 #include "addr.h"
 #include "log.h"
 
@@ -65,12 +67,39 @@ extern int old;
 extern int width;
 extern int height;
 extern int foreground;
+
+extern int need4;
+extern int need6;
+
+extern char iface[];
+
+extern int period;
+extern size_t bytes;
+extern size_t count;
+extern unsigned char ttl;
+
 extern size_t group_num;
+extern struct gr groups[];
 
-extern int daemonize(void);
+extern volatile sig_atomic_t running;
 
+extern void timer_init(void (*cb)(int));
+extern void plotter_show(int signo);
+
+/* strlcpy.c */
 #ifndef HAVE_STRLCPY
 size_t strlcpy(char *dst, const char *src, size_t len);
 #endif
+
+/* daemonize.c */
+extern int  daemonize     (void);
+
+/* receiver.c */
+extern void receiver_init (void);
+extern int  receiver      (int restart, int count);
+
+/* sender.c */
+extern void sender_init   (void);
+extern int  sender        (void);
 
 #endif /* MCJOIN_H_ */

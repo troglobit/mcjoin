@@ -42,8 +42,6 @@
 int old = 0;
 int join = 1;
 int debug = 0;
-int sender = 0;
-int running = 1;
 int foreground = 1;
 
 /* Global data */
@@ -64,7 +62,10 @@ size_t group_num = 0;
 struct gr groups[MAX_NUM_GROUPS];
 
 char iface[IFNAMSIZ + 1];
-int num_joins = 0;
+
+volatile sig_atomic_t running = 1;
+volatile sig_atomic_t winch   = 0;
+
 
 /* prepare next iteration */
 static void update(void)
@@ -93,7 +94,7 @@ static char spin(struct gr *g)
 	return act;
 }
 
-static void plotter_show(int signo)
+void plotter_show(int signo)
 {
 	static char buf[INET_ADDRSTR_LEN] = "0.0.0.0";
 	static inet_addr_t addr = { 0 };
@@ -156,365 +157,6 @@ static void plotter_show(int signo)
 	update();
 }
 
-
-static int alloc_socket(inet_addr_t group)
-{
-	inet_addr_t ina = { 0 };
-	int sd, val, proto;
-
-	ina.ss_family = group.ss_family;
-	inet_addr_set_port(&ina, inet_addr_get_port(&group));
-
-#ifdef AF_INET6
-	if (group.ss_family == AF_INET6)
-		proto = IPPROTO_IPV6;
-	else
-#endif
-		proto = IPPROTO_IP;
-
-	sd = socket(group.ss_family, SOCK_DGRAM, IPPROTO_UDP);
-	if (sd < 0) {
-		ERROR("Failed opening socket(): %s", strerror(errno));
-		return -1;
-	}
-
-	val = 1;
-#ifdef SO_REUSEPORT
-	if (setsockopt(sd, SOL_SOCKET, SO_REUSEPORT, &val, sizeof(val)))
-		ERROR("Failed enabling SO_REUSEPORT: %s", strerror(errno));
-#endif
-	if (setsockopt(sd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val)))
-		ERROR("Failed enabling SO_REUSEADDR: %s", strerror(errno));
-
-#ifdef AF_INET6
-	if (proto == IPPROTO_IPV6) {
-		if (setsockopt(sd, IPPROTO_IPV6, IPV6_RECVPKTINFO, &val, sizeof(val)))
-			ERROR("Failed enabling IPV6_RECVPKTINFO: %s", strerror(errno));
-#ifdef IPV6_MULTICAST_ALL
-		val = 0;
-		if (setsockopt(sd, proto, IPV6_MULTICAST_ALL, &val, sizeof(val)))
-			ERROR("Failed disabling IP_MULTICAST_ALL: %s", strerror(errno));
-#endif
-	}
-#endif
-	else {
-		val = 1;
-#if defined(IP_PKTINFO) || !defined(IP_RECVDSTADDR)
-		if (setsockopt(sd, SOL_IP, IP_PKTINFO, &val, sizeof(val)))
-			ERROR("Failed enabling IP_PKTINFO: %s", strerror(errno));
-#elif defined(IP_RECVDSTADDR)
-		if (setsockopt(sd, proto, IP_RECVDSTADDR, &val, sizeof(val)))
-			ERROR("Failed enabling IP_RECVDSTADDR: %s", strerror(errno));
-#endif
-#ifdef IP_MULTICAST_ALL
-		val = 0;
-		if (setsockopt(sd, proto, IP_MULTICAST_ALL, &val, sizeof(val)))
-			ERROR("Failed disabling IP_MULTICAST_ALL: %s", strerror(errno));
-#endif
-	}
-
-	if (bind(sd, (struct sockaddr *)&ina, inet_addrlen(&ina))) {
-		ERROR("Failed binding to socket: %s", strerror(errno));
-		close(sd);
-		return -1;
-	}
-
-	return sd;
-}
-
-static int join_group(struct gr *sg)
-{
-	struct group_source_req gsr;
-	struct group_req gr;
-	char src[INET_ADDRSTR_LEN] = "*";
-	char grp[INET_ADDRSTR_LEN];
-	size_t len;
-	void *arg;
-	int ifindex;
-	int sd, op, proto;
-
-	/* Index port with id if IP_MULTICAST_ALL fails */
-	sd = alloc_socket(sg->grp);
-	if (sd < 0)
-		return 1;
-
-	ifindex = if_nametoindex(iface);
-	if (!ifindex) {
-		ERROR("invalid interface: %s", iface);
-		goto error;
-	}
-	DEBUG("Added iface %s, idx %d", iface, ifindex);
-
-#ifdef AF_INET6
-	if (sg->grp.ss_family == AF_INET6)
-		proto = IPPROTO_IPV6;
-	else
-#endif
-		proto = IPPROTO_IP;
-
-	if (sg->source) {
-		gsr.gsr_interface  = ifindex;
-		gsr.gsr_source     = sg->src;
-		gsr.gsr_group      = sg->grp;
-		op                 = MCAST_JOIN_SOURCE_GROUP;
-		arg                = &gsr;
-		len                = sizeof(gsr);
-	} else {
-		gr.gr_interface    = ifindex;
-		gr.gr_group        = sg->grp;
-		op                 = MCAST_JOIN_GROUP;
-		arg                = &gr;
-		len                = sizeof(gr);
-	}
-
-	if (sg->source)
-		inet_address(&sg->src, src, sizeof(src));
-	inet_address(&sg->grp, grp, sizeof(grp));
-	PRINT("Joining (%s,%s) on %s, ifindex: %d, sd: %d", src, grp, iface, ifindex, sd);
-
-	if (setsockopt(sd, proto, op, arg, len)) {
-		ERROR("Failed %s group (%s,%s) on sd %d ... %d: %s",
-		      src, grp, "joining", sd, errno, strerror(errno));
-		goto error;
-	}
-	sg->sd = sd;
-
-	return 0;
-
-error:
-	close(sd);
-	return 1;
-}
-
-static int send_socket(int family)
-{
-	inet_addr_t addr;
-	char buf[INET_ADDRSTR_LEN];
-	int ifindex;
-	int sd;
-
-	ifindex = ifinfo(iface, &addr, family);
-	if (ifindex <= 0) {
-		if (!iface[0])
-			ERROR("No outbound interface available, use `-i IFNAME`.");
-		else {
-			char msg[80];
-
-			snprintf(msg, sizeof(msg), "Interface %s has no IPv%s address yet",
-				 iface, family == AF_INET ? "4" : "6");
-			if (log_level(NULL) == LOG_DEBUG && errno != EINTR)
-				ERROR("%s, rc %d: %s", msg, ifindex, strerror(errno));
-			else
-				ERROR("%s.", msg);
-		}
-		return -1;
-	}
-
-	sd = socket(family, SOCK_DGRAM, 0);
-	if (sd < 0) {
-		ERROR("Failed opening socket(): %s", strerror(errno));
-		return -1;
-	}
-
-	PRINT("Sending IPv%s multicast on %s addr, %s ifindex: %d, sd: %d",
-	      family == AF_INET ? "4" : "6", iface,
-	      inet_address(&addr, buf, sizeof(buf)), ifindex, sd);
-
-	if (family == AF_INET) {
-#ifdef HAVE_STRUCT_IP_MREQN_IMR_IFINDEX
-		struct ip_mreqn imr = { .imr_ifindex = ifindex };
-#else
-		struct sockaddr_in *sin = (struct sockaddr_in *)&addr;
-		struct in_addr ina = sin->sin_addr;
-#endif
-
-		if (setsockopt(sd, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl)))
-			ERROR("Failed setting IP_MULTICAST_TTL: %s", strerror(errno));
-
-#ifdef HAVE_STRUCT_IP_MREQN_IMR_IFINDEX
-		if (setsockopt(sd, IPPROTO_IP, IP_MULTICAST_IF, &imr, sizeof(imr)))
-			ERROR("Failed setting IP_MULTICAST_IF: %s", strerror(errno));
-#else
-		if (setsockopt(sd, IPPROTO_IP, IP_MULTICAST_IF, &ina, sizeof(ina)))
-			ERROR("Failed setting IP_MULTICAST_IF: %s", strerror(errno));
-#endif
-	}
-#ifdef AF_INET6
-	else {
-		int hops = ttl;
-
-		if (setsockopt(sd, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &hops, sizeof(hops)))
-			ERROR("Failed setting IPV6_MULTICAST_HOPS: %s", strerror(errno));
-
-		if (setsockopt(sd, IPPROTO_IPV6, IPV6_MULTICAST_IF, &ifindex, sizeof(ifindex)))
-			ERROR("Failed setting IPV6_MULTICAST_IF: %s", strerror(errno));
-	}
-#endif
-	if (bind(sd, (struct sockaddr *)&addr, inet_addrlen(&addr)) == -1) {
-		ERROR("Failed binding socket to %s", buf);
-		close(sd);
-		return -1;
-	}
-
-	return sd;
-}
-
-static void send_mcast(int signo)
-{
-	static int sd4 = -1;
-	static int sd6 = -1;
-	char buf[BUFSZ] = { 0 };
-	size_t i;
-
-	if (sd4 == -1 && need4)
-		sd4 = send_socket(AF_INET);
-#ifdef AF_INET6
-	if (sd6 == -1 && need6)
-		sd6 = send_socket(AF_INET6);
-#endif
-
-	/* Need at least one socket to send any packet */
-	if (sd4 < 0 && sd6 < 0)
-		exit(1);
-
-	for (i = 0; i < group_num; i++) {
-		struct sockaddr *dest = (struct sockaddr *)&groups[i].grp;
-		socklen_t len = inet_addrlen(&groups[i].grp);
-		int sd = groups[i].grp.ss_family == AF_INET ? sd4 : sd6;
-
-		if (sd < 0) {
-			DEBUG("Skipping group %s, no available %s socket.  No address on interface?",
-			      groups[i].group, groups[i].grp.ss_family == AF_INET ? "IPv4" : "IPv6");
-			continue;
-		}
-
-		snprintf(buf, sizeof(buf), "%s%u, MC group %s ... %s%zu, %s%d",
-			 MAGIC_KEY, getpid(), groups[i].group,
-			 SEQ_KEY, groups[i].seq++,
-			 FREQ_KEY, period / 1000);
-		DEBUG("Sending packet on signal %d, msg: %s", signo, buf);
-		if (sendto(sd, buf, bytes, 0, dest, len) < 0) {
-			ERROR("Failed sending mcast packet: %s", strerror(errno));
-			groups[i].status[STATUS_POS] = 'E';
-		} else {
-			groups[i].count++;
-			groups[i].status[STATUS_POS] = '.';
-		}
-	}
-
-	plotter_show(0);
-}
-
-struct in_addr *find_dstaddr(struct msghdr *msgh)
-{
-	struct cmsghdr *cmsg;
-
-	for (cmsg = CMSG_FIRSTHDR(msgh); cmsg; cmsg = CMSG_NXTHDR(msgh, cmsg)) {
-#if defined(IP_PKTINFO) || !defined(IP_RECVDSTADDR)
-		if (cmsg->cmsg_level == SOL_IP &&
-		    cmsg->cmsg_type == IP_PKTINFO)
-			return &((struct in_pktinfo *)CMSG_DATA(cmsg))->ipi_addr;
-#elif defined(IP_RECVDSTADDR)
-		if (cmsg->cmsg_level == IPPROTO_IP &&
-		    cmsg->cmsg_type == IP_RECVDSTADDR)
-			return (struct in_addr *)CMSG_DATA(cmsg);
-#endif
-	}
-
-	return NULL;
-}
-
-struct in6_addr *find_dstaddr6(struct msghdr *msgh)
-{
-	struct cmsghdr *cmsg;
-
-	for (cmsg = CMSG_FIRSTHDR(msgh); cmsg; cmsg = CMSG_NXTHDR(msgh, cmsg)) {
-#if defined(IPV6_PKTINFO)
-		if (cmsg->cmsg_level == IPPROTO_IPV6 &&
-		    cmsg->cmsg_type == IPV6_PKTINFO)
-			return &((struct in6_pktinfo *)CMSG_DATA(cmsg))->ipi6_addr;
-#endif
-	}
-
-	return NULL;
-}
-
-/*
- * rcvmsg() wrapper which uses out-of-band info to verify expected
- * destination address (multicast group)
- */
-static ssize_t recv_mcast(int id)
-{
-	struct sockaddr_storage src;
-	struct in_addr *dstaddr;
-	struct in6_addr *dstaddr6;
-	struct msghdr msgh;
-	struct iovec iov[1];
-	char addr[INET6_ADDRSTRLEN];
-	char cmbuf[0x100];
-	char buf[BUFSZ];
-	const char *dst;
-	size_t seq = 0;
-	ssize_t bytes;
-	int pid = 0;
-	char *ptr;
-
-	iov[0].iov_base = buf;
-	iov[0].iov_len  = sizeof(buf);
-
-	memset(&msgh, 0, sizeof(msgh));
-	msgh.msg_name       = &src;
-	msgh.msg_namelen    = sizeof(src);
-	msgh.msg_iov        = iov;
-	msgh.msg_iovlen     = NELEMS(iov);
-	msgh.msg_control    = cmbuf;
-	msgh.msg_controllen = sizeof(cmbuf);
-
-	bytes = recvmsg(groups[id].sd, &msgh, MSG_DONTWAIT);
-	if (bytes < 0)
-		return -1;
-
-	dstaddr = find_dstaddr(&msgh);
-	if (dstaddr)
-		dst = inet_ntop(AF_INET, dstaddr, addr, sizeof(addr));
-#ifdef AF_INET6
-	else {
-		dstaddr6 = find_dstaddr6(&msgh);
-		if (!dstaddr6)
-			return -1;
-
-		dst = inet_ntop(AF_INET6, dstaddr6, addr, sizeof(addr));
-	}
-#endif
-
-	buf[bytes] = 0;
-	ptr = strstr(buf, MAGIC_KEY);
-	if (ptr)
-		pid = atoi(ptr + strlen(MAGIC_KEY));
-	ptr = strstr(buf, SEQ_KEY);
-	if (ptr)
-		seq = atoi(ptr + strlen(SEQ_KEY));
-
-	DEBUG("Count %5zu, our PID %d, sender PID %d, group %s, seq: %zu, msg: %s",
-	      groups[id].count, getpid(), pid, groups[id].group, seq, buf);
-
-	if (strcmp(dst, groups[id].group)) {
-		ERROR("Packet for group %s received on wrong socket, expected group %s.",
-		      dst, groups[id].group);
-		return -1;
-	}
-
-	if (groups[id].seq != seq) {
-		DEBUG("group seq %zu vs seq %zu", groups[id].seq, seq);
-		groups[id].gaps++;
-	}
-	groups[id].seq = seq + 1; /* Next expected sequence number */
-	groups[id].count++;
-	groups[id].status[STATUS_POS] = '.'; /* XXX: Use increasing dot size for more hits? */
-
-	return 0;
-}
-
 static void show_stats(void)
 {
 	if (join) {
@@ -536,7 +178,7 @@ static void show_stats(void)
 	}
 }
 
-static void timer_init(void (*cb)(int))
+void timer_init(void (*cb)(int))
 {
 	struct sigaction sa = {
 		.sa_flags = SA_RESTART,
@@ -559,10 +201,15 @@ static void redraw(int signo)
 	const char *howto = "ctrl-c to exit";
 	const char *title;
 
-	if (signo)
-		ttsize(&width, &height);
+	if (old || !foreground)
+		return;
 
-	if (sender)
+	if (signo) {
+		ttsize(&width, &height);
+		winch = 0;
+	}
+
+	if (!join)
 		title = "mcjoin :: sending multicast";
 	else
 		title = "mcjoin :: receiving multicast";
@@ -589,88 +236,40 @@ static void redraw(int signo)
 	}
 }
 
+static void sigwinch_cb(int signo)
+{
+	(void)signo;
+	winch = 1;
+}
+
 static int loop(void)
 {
+	struct sigaction sa = {
+		.sa_flags   = SA_RESTART,
+		.sa_handler = sigwinch_cb,
+	};
 	int rc = 0;
-	size_t i;
 
-	if (sender)
-		timer_init(send_mcast);
+	sigaction(SIGWINCH, &sa, NULL);
+	if (!join)
+		sender_init();
 	else
-		timer_init(plotter_show);
-
-	if (foreground && !old) {
-		struct sigaction sa = {
-			.sa_flags   = SA_RESTART,
-			.sa_handler = redraw,
-		};
-		sigaction(SIGWINCH, &sa, NULL);
-
-		redraw(0);
-	}
-
-	while (join && running) {
-		for (i = 0; i < group_num; i++) {
-			if (join_group(&groups[i])) {
-				rc = 1;
-				goto error;
-			}
-		}
-
-		while (running) {
-			struct pollfd pfd[MAX_NUM_GROUPS];
-			int ret;
-
-			/* One group per socket */
-			for (i = 0; i < group_num; i++) {
-				pfd[i].fd = groups[i].sd;
-				pfd[i].events = POLLIN;
-				pfd[i].revents = 0;
-			}
-
-			ret = poll(pfd, group_num, restart ? restart * 1000 : -1);
-			if (ret <= 0) {
-				if (ret < 0 || !restart)
-					continue;
-
-				for (i = 0; i < group_num; i++) {
-					close(groups[i].sd);
-					groups[i].sd = 0;
-					num_joins = 0;
-				}
-				break;
-			}
-
-			for (i = 0; i < group_num; i++) {
-				if (pfd[i].revents)
-					recv_mcast(i);
-			}
-
-			if (count > 0) {
-				size_t total = count * group_num;
-
-				for (i = 0; i < group_num; i++)
-					total -= groups[i].count;
-
-				if (total <= 0) {
-					running = 0;
-					break;
-				}
-			}
-		}
-	}
+		receiver_init();
 
 	while (running) {
-		pause();	/* Let signal handler(s) do their job */
-		if (count > 0) {
-			if (!--count)
-				break;
-		}
+		redraw(winch);
+
+		if (!join)
+			rc = sender();
+		else
+			rc = receiver(restart, count);
 	}
 
-	DEBUG("Leaving main loop");
-	show_stats();
-error:
+	if (!rc) {
+		DEBUG("Leaving main loop");
+		show_stats();
+	}
+
 	if (foreground && !old) {
 		gotoxy(0, EXIT_ROW);
 		showcursor();
@@ -696,7 +295,7 @@ static int usage(int code)
 	       "              [[SOURCE,]GROUP0 .. [SOURCE,]GROUPN | [SOURCE,]GROUP+NUM]\n"
 	       "Options:\n"
 	       "  -b BYTES    Payload in bytes over IP/UDP header (42 bytes), default: 100\n"
-	       "  -c COUNT    Stop sending/receiving after COUNT number of packets\n"
+	       "  -c COUNT    Stop sending/receiving after COUNT number of packets (per group)\n"
 	       "  -d          Run as daemon in background, output except progress to syslog\n"
 	       "  -f MSEC     Frequency, poll/send every MSEC milliseoncds, default: %d\n"
 	       "  -h          This help text\n"
@@ -814,8 +413,7 @@ int main(int argc, char *argv[])
 			break;
 
 		case 's':
-			sender = 1;
-			join--;
+			join = 0;
 			break;
 
 		case 't':
