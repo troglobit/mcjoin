@@ -274,13 +274,15 @@ void receiver_init(void)
 
 int receiver(int restart, int count)
 {
+	static int done = 0;
 	int rc = 0;
 	size_t i;
 
-	for (i = 0; i < group_num; i++) {
+	for (i = 0; i < group_num && !done; i++) {
 		if (join_group(&groups[i]))
 			return 1;
 	}
+	done = 1;
 
 	while (running) {
 		struct pollfd pfd[MAX_NUM_GROUPS];
@@ -294,17 +296,20 @@ int receiver(int restart, int count)
 
 		rc = poll(pfd, group_num, restart ? restart * 1000 : -1);
 		if (rc <= 0) {
-			if (rc < 0 || !restart) {
-				rc = 0;
-				continue;
+			if (rc == 0) {
+				for (i = 0; i < group_num; i++) {
+					close(groups[i].sd);
+					groups[i].sd = 0;
+					num_joins = 0;
+				}
+				done = 0;
 			}
 
-			for (i = 0; i < group_num; i++) {
-				close(groups[i].sd);
-				groups[i].sd = 0;
-				num_joins = 0;
-			}
-			break;
+			rc = 0;
+			if (winch)
+				break;
+
+			continue;
 		}
 
 		for (i = 0; i < group_num; i++) {
