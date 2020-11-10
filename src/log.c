@@ -199,7 +199,7 @@ int logit(int prio, char *fmt, ...)
 			snow = ctime(&now);
 
 			vsnprintf(buf, sizeof(buf), fmt, ap);
-			for (ptr = buf; *ptr && isspace(*ptr); ptr++)
+			for (ptr = buf; *ptr && isspace((int)*ptr); ptr++)
 				;
 
 			snprintf(log_buf[LOG_POS], width, "%24.24s  %s", snow, ptr);
