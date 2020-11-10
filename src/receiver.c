@@ -272,43 +272,27 @@ void receiver_init(void)
 	timer_init(plotter_show);
 }
 
-int receiver(int restart, int count)
+int receiver(int count)
 {
-	static int done = 0;
+	struct pollfd pfd[MAX_NUM_GROUPS];
 	int rc = 0;
 	size_t i;
 
-	for (i = 0; i < group_num && !done; i++) {
+	for (i = 0; i < group_num; i++) {
 		if (join_group(&groups[i]))
 			return 1;
 	}
-	done = 1;
 
-	while (running) {
-		struct pollfd pfd[MAX_NUM_GROUPS];
+	for (i = 0; i < group_num; i++) {
+		pfd[i].fd = groups[i].sd;
+		pfd[i].events = POLLIN;
+		pfd[i].revents = 0;
+	}
 
-		/* One group per socket */
-		for (i = 0; i < group_num; i++) {
-			pfd[i].fd = groups[i].sd;
-			pfd[i].events = POLLIN;
-			pfd[i].revents = 0;
-		}
-
-		rc = poll(pfd, group_num, restart ? restart * 1000 : -1);
+	while (running && !winch) {
+		rc = poll(pfd, group_num, -1);
 		if (rc <= 0) {
-			if (rc == 0) {
-				for (i = 0; i < group_num; i++) {
-					close(groups[i].sd);
-					groups[i].sd = 0;
-					num_joins = 0;
-				}
-				done = 0;
-			}
-
 			rc = 0;
-			if (winch)
-				break;
-
 			continue;
 		}
 

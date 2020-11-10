@@ -46,7 +46,6 @@ int foreground = 1;
 
 /* Global data */
 int period = 100000;		/* 100 msec in micro seconds*/
-int restart = 0;
 int width = 80;
 int height = 24;
 size_t bytes = 100;
@@ -262,7 +261,7 @@ static int loop(void)
 		if (!join)
 			rc = sender();
 		else
-			rc = receiver(restart, count);
+			rc = receiver(count);
 	}
 
 	if (!rc) {
@@ -304,7 +303,6 @@ static int usage(int code)
 	       "  -l LEVEL    Set log level; none, notice*, debug\n"
 	       "  -o          Old (plain/ordinary) output, no fancy progress bars\n"
 	       "  -p PORT     UDP port number to send/listen to, default: %d\n"
-	       "  -r SEC      Do a join/leave every SEC seconds (backwards compat. option)\n"
 	       "  -s          Act as sender, sends packets to select groups, default: no\n"
 	       "  -t TTL      TTL to use when sending multicast packets, default: 1\n"
 	       "  -v          Display program version\n"
@@ -348,7 +346,7 @@ int main(int argc, char *argv[])
 		memset(&groups[i], 0, sizeof(groups[0]));
 
 	ident = progname(argv[0]);
-	while ((c = getopt(argc, argv, "b:c:df:hi:jl:op:r:st:vw:")) != EOF) {
+	while ((c = getopt(argc, argv, "b:c:df:hi:jl:op:st:vw:")) != EOF) {
 		switch (c) {
 		case 'b':
 			bytes = (size_t)atoi(optarg);
@@ -403,13 +401,6 @@ int main(int argc, char *argv[])
 			port = atoi(optarg);
 			if (port < 1024 && geteuid())
 				ERROR("Must be root to use privileged ports (< 1024)");
-			break;
-
-		case 'r':
-			restart = atoi(optarg);
-			DEBUG("RESTART: %d", restart);
-			if (restart < 1)
-				restart = 1;
 			break;
 
 		case 's':

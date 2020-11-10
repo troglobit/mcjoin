@@ -97,7 +97,7 @@ extern int  daemonize     (void);
 
 /* receiver.c */
 extern void receiver_init (void);
-extern int  receiver      (int restart, int count);
+extern int  receiver      (int count);
 
 /* sender.c */
 extern void sender_init   (void);

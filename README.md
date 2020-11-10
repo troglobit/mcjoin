@@ -59,7 +59,7 @@ a sender of the same group and port, add `-s` to the command line.
     $ mcjoin -h
     
     Usage: mcjoin [-dhjosv] [-c COUNT] [-f MSEC] [-i IFACE] [-l LEVEL]
-                  [-p PORT] [-r SEC] [-t TTL] [-w SEC]
+                  [-p PORT] [-t TTL] [-w SEC]
                   [[SOURCE,]GROUP0 .. [SOURCE,]GROUPN | [SOURCE,]GROUP+NUM]
     
     Options:
@@ -72,7 +72,6 @@ a sender of the same group and port, add `-s` to the command line.
       -l LEVEL    Set log level; none, notice*, debug
       -o          Old (plain/ordinary) output, no fancy progress bars
       -p PORT     UDP port number to listen to, default: 1234
-      -r SEC      Do a join/leave every SEC seconds (backwards compat. option)
       -s          Act as sender, sends packets to select groups
       -t TTL      TTL to use when sending multicast packets, default 1
       -v          Display program version

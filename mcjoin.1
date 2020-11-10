@@ -29,7 +29,6 @@
 .Op Fl i Ar IFNAME
 .Op Fl l Ar LEVEL
 .Op Fl p Ar PORT
-.Op Fl r Ar SEC
 .Op Fl t Ar TTL
 .Op Fl w Ar SEC
 .Op Ar [SOURCE,]GROUP0 .. [SOURCE,]GROUPN | [SOURCE,]GROUP+NUM
@@ -102,9 +101,6 @@ Old (plain/ordinary/original) output, no fancy progress bars
 UDP port number to send/listen to, default: 1234
 .It Fl s
 Act as sender, sends packets to select groups, 1/100 msec, default: no
-.It Fl r Ar SEC
-Do leave/join repeatedly every SEC seconds.  Should not be needed
-anymore, kept for backwards compatibility
 .It Fl t Ar TTL
 TTL to use when sending multicast packets, default: 1
 .It Fl v
