@@ -8,11 +8,12 @@ mcjoin (2.7) stable; urgency=medium
   * Support for adjusting packet send/poll rate
   * Allow any source port in (S,G) joins
   * Greatly improved IPv6 support, e.g., join multiple groups
+  * Dropped `-r SEC` option, not needed anymore and was misleading
   * Fix #8: Handle IPv6 being disabled, per group and per socket
   * Fix #9: No feedback on receiver when using mcjoin as sender
   * Fix #10: Calculate and show gaps in received groups
 
- -- Joachim Wiberg <troglobit@gmail.com>  Sun, 08 Nov 2020 13:00:46 +0100
+ -- Joachim Wiberg <troglobit@gmail.com>  Tue, 10 Nov 2020 08:23:15 +0100
 
 mcjoin (2.6) stable; urgency=medium
 

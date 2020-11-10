@@ -3,7 +3,7 @@ ChangeLog
 
 All notable changes to the project are documented in this file.
 
-[v2.7][] - 2020-11-08
+[v2.7][] - 2020-11-10
 ---------------------
 
 New user interface, inspired by mtr.  Easier to track multiple streams
@@ -19,6 +19,7 @@ and spot gaps in real-time.
 - Support for using old UI using `-o` flag
 - Support any source port in (S,G) joins
 - Greatly improved IPv6 support, portability and multiple groups
+- Dropped `-r SEC` option, not needed anymore and was misleading
 - Fix #8: Handle IPv6 being disabled, per group and per socket
 - Fix #9: No feedback on receiver when using mcjoin as sender
 - Fix #10: Calculate and show gaps in received groups
