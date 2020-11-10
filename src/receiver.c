@@ -267,9 +267,18 @@ static ssize_t recv_mcast(int id)
 	return 0;
 }
 
-void receiver_init(void)
+int receiver_init(void)
 {
+	size_t i;
+
 	timer_init(plotter_show);
+
+	for (i = 0; i < group_num; i++) {
+		if (join_group(&groups[i]))
+			return 1;
+	}
+
+	return 0;
 }
 
 int receiver(int count)
@@ -277,11 +286,6 @@ int receiver(int count)
 	struct pollfd pfd[MAX_NUM_GROUPS];
 	int rc = 0;
 	size_t i;
-
-	for (i = 0; i < group_num; i++) {
-		if (join_group(&groups[i]))
-			return 1;
-	}
 
 	for (i = 0; i < group_num; i++) {
 		pfd[i].fd = groups[i].sd;

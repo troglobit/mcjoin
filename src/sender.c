@@ -145,9 +145,11 @@ static void send_mcast(int signo)
 	plotter_show(0);
 }
 
-void sender_init(void)
+int sender_init(void)
 {
 	timer_init(send_mcast);
+
+	return 0;
 }
 
 int sender(void)

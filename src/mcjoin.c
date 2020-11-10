@@ -247,15 +247,15 @@ static int loop(void)
 		.sa_flags   = SA_RESTART,
 		.sa_handler = sigwinch_cb,
 	};
-	int rc = 0;
+	int rc;
 
 	sigaction(SIGWINCH, &sa, NULL);
 	if (!join)
-		sender_init();
+		rc = sender_init();
 	else
-		receiver_init();
+		rc = receiver_init();
 
-	while (running) {
+	while (!rc && running) {
 		redraw(winch);
 
 		if (!join)

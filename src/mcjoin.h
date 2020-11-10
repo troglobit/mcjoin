@@ -93,14 +93,14 @@ size_t strlcpy(char *dst, const char *src, size_t len);
 #endif
 
 /* daemonize.c */
-extern int  daemonize     (void);
+extern int daemonize     (void);
 
 /* receiver.c */
-extern void receiver_init (void);
-extern int  receiver      (int count);
+extern int receiver_init (void);
+extern int receiver      (int count);
 
 /* sender.c */
-extern void sender_init   (void);
-extern int  sender        (void);
+extern int sender_init   (void);
+extern int sender        (void);
 
 #endif /* MCJOIN_H_ */
