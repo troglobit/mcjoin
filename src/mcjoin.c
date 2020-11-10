@@ -337,7 +337,6 @@ int main(int argc, char *argv[])
 		.sa_handler = exit_loop,
 	};
 	struct rlimit rlim;
-	extern int optind;
 	size_t ilen;
 	int wait = 0;
 	int i, c;
