@@ -63,7 +63,7 @@ struct gr groups[MAX_NUM_GROUPS];
 char iface[IFNAMSIZ + 1];
 
 volatile sig_atomic_t running = 1;
-volatile sig_atomic_t winch   = 0;
+volatile sig_atomic_t winchg  = 0;
 
 
 /* prepare next iteration */
@@ -205,7 +205,7 @@ static void redraw(int signo)
 
 	if (signo) {
 		ttsize(&width, &height);
-		winch = 0;
+		winchg = 0;
 	}
 
 	if (!join)
@@ -238,7 +238,7 @@ static void redraw(int signo)
 static void sigwinch_cb(int signo)
 {
 	(void)signo;
-	winch = 1;
+	winchg = 1;
 }
 
 static int loop(void)
@@ -256,7 +256,7 @@ static int loop(void)
 		rc = receiver_init();
 
 	while (!rc && running) {
-		redraw(winch);
+		redraw(winchg);
 
 		if (!join)
 			rc = sender();

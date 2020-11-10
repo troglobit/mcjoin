@@ -82,7 +82,7 @@ extern size_t group_num;
 extern struct gr groups[];
 
 extern volatile sig_atomic_t running;
-extern volatile sig_atomic_t winch;
+extern volatile sig_atomic_t winchg;
 
 extern void timer_init(void (*cb)(int));
 extern void plotter_show(int signo);

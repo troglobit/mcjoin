@@ -293,7 +293,7 @@ int receiver(int count)
 		pfd[i].revents = 0;
 	}
 
-	while (running && !winch) {
+	while (running && !winchg) {
 		rc = poll(pfd, group_num, -1);
 		if (rc <= 0) {
 			rc = 0;
