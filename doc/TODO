@@ -1,5 +1,7 @@
 TODOs in no particular order.
 
+- Add Ctrl-L support to refresh display when garbled, e.g. kernel output on embedded device
+- Screen does not restore to cooked state if exiting due to no IP on interface yet
 - Fix plotter artefacts, that look like packet loss, while resizing window.
   Likely needs a big refactor to unify the update timer and the socket poll()
   in the receiver.  Best course of action would be to add a proper event lib.
