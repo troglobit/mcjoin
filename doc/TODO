@@ -1,6 +1,16 @@
 TODOs in no particular order.
 
+- Show uptime/runtime above clock, useful when using -f odd-num
 - Add Ctrl-L support to refresh display when garbled, e.g. kernel output on embedded device
+- Improve plotter output by adding special characters for dupes, gaps, and delays.
+  Gaps in stream are shown as ' ' (space), but we don't know why they happen.
+  We could insert, as the next char after the gap, the reason, like this:
+
+        ............  normal flow moving left
+	....:.......  dupes, same seqno
+        ..... X.....  lost (gap) packet
+        ..... _.....  delayed packet
+
 - Screen does not restore to cooked state if exiting due to no IP on interface yet
 - Fix plotter artefacts, that look like packet loss, while resizing window.
   Likely needs a big refactor to unify the update timer and the socket poll()
@@ -9,6 +19,7 @@ TODOs in no particular order.
 - Fix IPv4 + IPv6 address validator in addr.c, see XXX
 - Add option to also log to syslog when running with new ui, not just log window on screen
 - gaps/dupes/reordering detection by checking seq n:o
+- option to show summary of gaps/dupes/bytes in log every 10 sec or so
 - add `-J MSEC` for addning MSEC jitter to sender
 - adjustable source port?
 - seqno start
