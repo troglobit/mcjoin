@@ -4,7 +4,7 @@ doc_DATA          = README.md LICENSE doc/mcjoin-send.jpg doc/mcjoin-recv.jpg
 EXTRA_DIST        = README.md LICENSE ChangeLog.md doc/mcjoin-send.jpg doc/mcjoin-recv.jpg
 
 package:
-	@debuild -uc -us -B --lintian-opts --profile debian -i -I --show-overrides
+	@debuild -uc -us -B --lintian-opts --profile debian -i -I
 
 ## Generate MD5 checksum file
 MD5 = md5sum
