@@ -99,12 +99,15 @@ static int send_socket(int family)
 	return sd;
 }
 
-static void send_mcast(int signo)
+static void send_mcast(int signo, void *arg)
 {
 	static int sd4 = -1;
 	static int sd6 = -1;
 	char buf[BUFSZ] = { 0 };
 	size_t i;
+
+	(void)signo;
+	(void)arg;
 
 	if (sd4 == -1 && need4)
 		sd4 = send_socket(AF_INET);
@@ -143,26 +146,20 @@ static void send_mcast(int signo)
 	}
 
 	plotter_show(0);
+
+	if (count > 0) {
+		if (!--count)
+			pev_exit();
+	}
 }
 
 int sender_init(void)
 {
-	timer_init(send_mcast);
+	int rc;
 
-	return 0;
-}
-
-int sender(void)
-{
-	while (running) {
-		/* Let signal handler(s) do their job */
-		pause();
-
-		if (count > 0) {
-			if (!--count)
-				running = 0;
-		}
-	}
+	rc = pev_timer_add(period, send_mcast, NULL);
+	if (rc < 0)
+		return 1;
 
 	return 0;
 }

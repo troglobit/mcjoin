@@ -267,58 +267,44 @@ static ssize_t recv_mcast(int id)
 	return 0;
 }
 
+static void receive_cb(int sd, void *arg)
+{
+	size_t i;
+
+	(void)arg;
+
+	for (i = 0; i < group_num; i++) {
+		if (groups[i].sd == sd) {
+			recv_mcast(i);
+			plotter_show(0);
+			break;
+		}
+	}
+
+	if (count > 0) {
+		size_t total = count * group_num;
+
+		for (i = 0; i < group_num; i++)
+			total -= groups[i].count;
+
+		if (total <= 0)
+			pev_exit();
+	}
+}
+
 int receiver_init(void)
 {
 	size_t i;
 
-	timer_init(plotter_show);
-
 	for (i = 0; i < group_num; i++) {
 		if (join_group(&groups[i]))
+			return 1;
+
+		if (pev_sock_add(groups[i].sd, receive_cb, NULL) == -1)
 			return 1;
 	}
 
 	return 0;
-}
-
-int receiver(int count)
-{
-	struct pollfd pfd[MAX_NUM_GROUPS];
-	int rc = 0;
-	size_t i;
-
-	for (i = 0; i < group_num; i++) {
-		pfd[i].fd = groups[i].sd;
-		pfd[i].events = POLLIN;
-		pfd[i].revents = 0;
-	}
-
-	while (running && !winchg) {
-		rc = poll(pfd, group_num, -1);
-		if (rc <= 0) {
-			rc = 0;
-			continue;
-		}
-
-		for (i = 0; i < group_num; i++) {
-			if (pfd[i].revents)
-				recv_mcast(i);
-		}
-
-		if (count > 0) {
-			size_t total = count * group_num;
-
-			for (i = 0; i < group_num; i++)
-				total -= groups[i].count;
-
-			if (total <= 0) {
-				running = 0;
-				break;
-			}
-		}
-	}
-
-	return rc;
 }
 
 /**

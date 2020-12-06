@@ -62,10 +62,6 @@ struct gr groups[MAX_NUM_GROUPS];
 
 char iface[IFNAMSIZ + 1];
 
-volatile sig_atomic_t running = 1;
-volatile sig_atomic_t winchg  = 0;
-
-
 /* prepare next iteration */
 static void update(void)
 {
@@ -177,24 +173,6 @@ static void show_stats(void)
 	}
 }
 
-void timer_init(void (*cb)(int))
-{
-	struct sigaction sa = {
-		.sa_flags = SA_RESTART,
-		.sa_handler = cb,
-	};
-	struct itimerval times;
-
-	sigaction(SIGALRM, &sa, NULL);
-
-	/* wait a bit (1 sec) for system to "stabilize" */
-	times.it_value.tv_sec     = 1;
-	times.it_value.tv_usec    = 0;
-	times.it_interval.tv_sec  = (time_t)(period / 1000000);
-	times.it_interval.tv_usec =   (long)(period % 1000000);
-	setitimer(ITIMER_REAL, &times, NULL);
-}
-
 static void redraw(int signo)
 {
 	const char *howto = "ctrl-c to exit";
@@ -203,10 +181,8 @@ static void redraw(int signo)
 	if (old || !foreground)
 		return;
 
-	if (signo) {
+	if (signo)
 		ttsize(&width, &height);
-		winchg = 0;
-	}
 
 	if (!join)
 		title = "mcjoin :: sending multicast";
@@ -235,53 +211,18 @@ static void redraw(int signo)
 	}
 }
 
-static void sigwinch_cb(int signo)
+static void sigwinch_cb(int signo, void *arg)
 {
 	(void)signo;
-	winchg = 1;
+	(void)arg;
+	redraw(1);
 }
 
-static int loop(void)
+static void exit_loop(int signo, void *arg)
 {
-	struct sigaction sa = {
-		.sa_flags   = SA_RESTART,
-		.sa_handler = sigwinch_cb,
-	};
-	int rc;
-
-	sigaction(SIGWINCH, &sa, NULL);
-	if (!join)
-		rc = sender_init();
-	else
-		rc = receiver_init();
-
-	while (!rc && running) {
-		redraw(winchg);
-
-		if (!join)
-			rc = sender();
-		else
-			rc = receiver(count);
-	}
-
-	if (!rc) {
-		DEBUG("Leaving main loop");
-		show_stats();
-	}
-
-	if (foreground && !old) {
-		gotoxy(0, EXIT_ROW);
-		showcursor();
-		ttcooked();
-	}
-
-	return rc;
-}
-
-static void exit_loop(int signo)
-{
+	(void)arg;
 	DEBUG("\nWe got signal! (signo: %d)", signo);
-	running = 0;
+	pev_exit();
 }
 
 static int usage(int code)
@@ -332,14 +273,10 @@ static char *progname(char *arg0)
 
 int main(int argc, char *argv[])
 {
-	struct sigaction sa = {
-		.sa_flags = SA_RESTART,
-		.sa_handler = exit_loop,
-	};
 	struct rlimit rlim;
 	size_t ilen;
 	int wait = 0;
-	int i, c;
+	int i, c, rc;
 
 	for (i = 0; i < MAX_NUM_GROUPS; i++)
 		memset(&groups[i], 0, sizeof(groups[0]));
@@ -584,15 +521,40 @@ int main(int argc, char *argv[])
 		groups[i].spin  = groups[i].group[strlen(groups[i].group) - 1];
 	}
 
-	/*
-	 * Shared signal handlers between sender and receiver
-	 */
-	sigaction(SIGINT,  &sa, NULL);
-	sigaction(SIGHUP,  &sa, NULL);
-	sigaction(SIGTERM, &sa, NULL);
+	pev_init();
+	pev_sig_add(SIGINT,   exit_loop, NULL);
+	pev_sig_add(SIGHUP,   exit_loop, NULL);
+	pev_sig_add(SIGTERM,  exit_loop, NULL);
+	pev_sig_add(SIGWINCH, sigwinch_cb, NULL);
 
-	return loop();
+	if (!join)
+		rc = sender_init();
+	else
+		rc = receiver_init();
+
+	if (rc) {
+		printf("Bad return code: %d\n", rc);
+		return 1;
+	}
+
+	redraw(0);
+	pev_run();
+
+	if (!rc) {
+		DEBUG("Leaving main loop");
+		show_stats();
+	}
+
+	if (foreground && !old) {
+		gotoxy(0, EXIT_ROW);
+		showcursor();
+		ttcooked();
+	}
+
+	return rc;
 }
+
+
 
 /**
  * Local Variables:

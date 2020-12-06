@@ -18,10 +18,9 @@
 #define MCJOIN_H_
 
 #include "config.h"
-#include <signal.h>
-
 #include "addr.h"
 #include "log.h"
+#include "pev.h"
 
 #define BUFSZ           1606	/* +42 => 1648 */
 #define MAX_NUM_GROUPS  2048
@@ -81,10 +80,6 @@ extern unsigned char ttl;
 extern size_t group_num;
 extern struct gr groups[];
 
-extern volatile sig_atomic_t running;
-extern volatile sig_atomic_t winchg;
-
-extern void timer_init(void (*cb)(int));
 extern void plotter_show(int signo);
 
 /* strlcpy.c */
@@ -101,6 +96,5 @@ extern int receiver      (int count);
 
 /* sender.c */
 extern int sender_init   (void);
-extern int sender        (void);
 
 #endif /* MCJOIN_H_ */
