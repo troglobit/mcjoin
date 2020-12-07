@@ -11,7 +11,6 @@ TODOs in no particular order.
         ..... X.....  lost (gap) packet
         ..... _.....  delayed packet
 
-- Screen does not restore to cooked state if exiting due to no IP on interface yet
 - Fix IPv4 + IPv6 address validator in addr.c, see XXX
 - Add option to also log to syslog when running with new ui, not just log window on screen
 - gaps/dupes/reordering detection by checking seq n:o

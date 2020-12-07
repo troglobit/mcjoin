@@ -140,7 +140,7 @@ static void send_cb(int signo, void *arg)
 
 	/* Need at least one socket to send any packet */
 	if (sd4 < 0 && sd6 < 0)
-		exit(1);
+		pev_exit(1);
 
 	for (i = 0; i < group_num; i++) {
 		struct gr *g = &groups[i];
