@@ -276,6 +276,9 @@ static void receive_cb(int sd, void *arg)
 	for (i = 0; i < group_num; i++) {
 		struct gr *g = &groups[i];
 
+		memmove(g->status, &g->status[1], STATUS_HISTORY - 1);
+		g->status[STATUS_POS] = ' ';
+
 		if (g->sd == sd) {
 			recv_mcast(g);
 			plotter_show(0);

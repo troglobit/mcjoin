@@ -129,6 +129,9 @@ static void send_mcast(int signo, void *arg)
 		dest = (struct sockaddr *)&g->grp;
 		len  = inet_addrlen(&g->grp);
 
+		memmove(g->status, &g->status[1], STATUS_HISTORY - 1);
+		g->status[STATUS_POS] = ' ';
+
 		sd = g->grp.ss_family == AF_INET ? sd4 : sd6;
 		if (sd < 0) {
 			DEBUG("Skipping group %s, no available %s socket.  No address on interface?",

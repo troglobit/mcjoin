@@ -12,10 +12,6 @@ TODOs in no particular order.
         ..... _.....  delayed packet
 
 - Screen does not restore to cooked state if exiting due to no IP on interface yet
-- Fix plotter artefacts, that look like packet loss, while resizing window.
-  Likely needs a big refactor to unify the update timer and the socket poll()
-  in the receiver.  Best course of action would be to add a proper event lib.
-  But that requires one that is portable across multiple UNIX systems.
 - Fix IPv4 + IPv6 address validator in addr.c, see XXX
 - Add option to also log to syslog when running with new ui, not just log window on screen
 - gaps/dupes/reordering detection by checking seq n:o

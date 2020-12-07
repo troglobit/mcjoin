@@ -62,19 +62,6 @@ struct gr groups[MAX_NUM_GROUPS];
 
 char iface[IFNAMSIZ + 1];
 
-/* prepare next iteration */
-static void update(void)
-{
-	size_t i;
-
-	for (i = 0; i < group_num; i++) {
-		struct gr *g = &groups[i];
-
-		memmove(g->status, &g->status[1], STATUS_HISTORY - 1);
-		g->status[STATUS_POS] = ' ';
-	}
-}
-
 static char spin(struct gr *g)
 {
 	const char *spinner = "|/-\\";
@@ -115,7 +102,6 @@ void plotter_show(int signo)
 		if (act)
 			progress();
 
-		update();
 		return;
 	}
 
@@ -148,8 +134,6 @@ void plotter_show(int signo)
 		snprintf(sgbuf, sizeof(sgbuf), "%s,%s", g->source ? g->source : "*", g->group);
 		fprintf(stderr, "%-31s  %c [%s] %13zu", sgbuf, act, &g->status[spos], g->count);
 	}
-
-	update();
 }
 
 static void show_stats(void)
