@@ -195,7 +195,7 @@ struct in6_addr *find_dstaddr6(struct msghdr *msgh)
  * rcvmsg() wrapper which uses out-of-band info to verify expected
  * destination address (multicast group)
  */
-static ssize_t recv_mcast(struct gr *g)
+static ssize_t recv_mcast(int sd, struct gr *g)
 {
 	struct sockaddr_storage src;
 	struct in_addr *dstaddr;
@@ -222,7 +222,7 @@ static ssize_t recv_mcast(struct gr *g)
 	msgh.msg_control    = cmbuf;
 	msgh.msg_controllen = sizeof(cmbuf);
 
-	bytes = recvmsg(g->sd, &msgh, MSG_DONTWAIT);
+	bytes = recvmsg(sd, &msgh, MSG_DONTWAIT);
 	if (bytes < 0)
 		return -1;
 
@@ -280,7 +280,7 @@ static void receive_cb(int sd, void *arg)
 		g->status[STATUS_POS] = ' ';
 
 		if (g->sd == sd) {
-			recv_mcast(g);
+			recv_mcast(sd, g);
 			plotter_show(0);
 			break;
 		}

@@ -99,11 +99,33 @@ static int send_socket(int family)
 	return sd;
 }
 
-static void send_mcast(int signo, void *arg)
+static void send_mcast(int sd, struct gr *g)
+{
+	char buf[BUFSZ] = { 0 };
+	struct sockaddr *dest;
+	socklen_t len;
+
+	dest = (struct sockaddr *)&g->grp;
+	len  = inet_addrlen(&g->grp);
+
+	snprintf(buf, sizeof(buf), "%s%u, MC group %s ... %s%zu, %s%d",
+		 MAGIC_KEY, getpid(), g->group,
+		 SEQ_KEY, g->seq++,
+		 FREQ_KEY, period / 1000);
+	DEBUG("Sending packet, msg: %s", buf);
+	if (sendto(sd, buf, bytes, 0, dest, len) < 0) {
+		ERROR("Failed sending mcast packet: %s", strerror(errno));
+		g->status[STATUS_POS] = 'E';
+	} else {
+		g->count++;
+		g->status[STATUS_POS] = '.';
+	}
+}
+
+static void send_cb(int signo, void *arg)
 {
 	static int sd4 = -1;
 	static int sd6 = -1;
-	char buf[BUFSZ] = { 0 };
 	size_t i;
 
 	(void)signo;
@@ -122,12 +144,7 @@ static void send_mcast(int signo, void *arg)
 
 	for (i = 0; i < group_num; i++) {
 		struct gr *g = &groups[i];
-		struct sockaddr *dest;
-		socklen_t len;
 		int sd;
-
-		dest = (struct sockaddr *)&g->grp;
-		len  = inet_addrlen(&g->grp);
 
 		memmove(g->status, &g->status[1], STATUS_HISTORY - 1);
 		g->status[STATUS_POS] = ' ';
@@ -139,18 +156,7 @@ static void send_mcast(int signo, void *arg)
 			continue;
 		}
 
-		snprintf(buf, sizeof(buf), "%s%u, MC group %s ... %s%zu, %s%d",
-			 MAGIC_KEY, getpid(), g->group,
-			 SEQ_KEY, g->seq++,
-			 FREQ_KEY, period / 1000);
-		DEBUG("Sending packet on signal %d, msg: %s", signo, buf);
-		if (sendto(sd, buf, bytes, 0, dest, len) < 0) {
-			ERROR("Failed sending mcast packet: %s", strerror(errno));
-			g->status[STATUS_POS] = 'E';
-		} else {
-			g->count++;
-			g->status[STATUS_POS] = '.';
-		}
+		send_mcast(sd, g);
 	}
 
 	plotter_show(0);
@@ -165,7 +171,7 @@ int sender_init(void)
 {
 	int rc;
 
-	rc = pev_timer_add(period, send_mcast, NULL);
+	rc = pev_timer_add(period, send_cb, NULL);
 	if (rc < 0)
 		return 1;
 
