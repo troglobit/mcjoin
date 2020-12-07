@@ -1,7 +1,7 @@
 TODOs in no particular order.
 
 - Show uptime/runtime above clock, useful when using -f odd-num
-- Add Ctrl-L support to refresh display when garbled, e.g. kernel output on embedded device
+- Disable Ctrl-Z et al.
 - Improve plotter output by adding special characters for dupes, gaps, and delays.
   Gaps in stream are shown as ' ' (space), but we don't know why they happen.
   We could insert, as the next char after the gap, the reason, like this:

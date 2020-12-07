@@ -209,6 +209,24 @@ static void exit_loop(int signo, void *arg)
 	pev_exit(0);
 }
 
+static void key_cb(int sd, void *arg)
+{
+	char ch;
+
+	(void)arg;
+	if (read(sd, &ch, sizeof(ch)) != -1) {
+		switch (ch) {
+		case 0x0c:
+			redraw(1);
+			break;
+
+		default:
+			DEBUG("Got char 0x%02x", ch);
+			break;
+		}
+	}
+}
+
 static int usage(int code)
 {
 	if (!iface[0])
@@ -510,6 +528,7 @@ int main(int argc, char *argv[])
 	pev_sig_add(SIGHUP,   exit_loop, NULL);
 	pev_sig_add(SIGTERM,  exit_loop, NULL);
 	pev_sig_add(SIGWINCH, sigwinch_cb, NULL);
+	pev_sock_add(STDIN_FILENO, key_cb, NULL);
 
 	if (!join)
 		rc = sender_init();
