@@ -195,7 +195,7 @@ struct in6_addr *find_dstaddr6(struct msghdr *msgh)
  * rcvmsg() wrapper which uses out-of-band info to verify expected
  * destination address (multicast group)
  */
-static ssize_t recv_mcast(int id)
+static ssize_t recv_mcast(struct gr *g)
 {
 	struct sockaddr_storage src;
 	struct in_addr *dstaddr;
@@ -222,7 +222,7 @@ static ssize_t recv_mcast(int id)
 	msgh.msg_control    = cmbuf;
 	msgh.msg_controllen = sizeof(cmbuf);
 
-	bytes = recvmsg(groups[id].sd, &msgh, MSG_DONTWAIT);
+	bytes = recvmsg(g->sd, &msgh, MSG_DONTWAIT);
 	if (bytes < 0)
 		return -1;
 
@@ -248,21 +248,21 @@ static ssize_t recv_mcast(int id)
 		seq = atoi(ptr + strlen(SEQ_KEY));
 
 	DEBUG("Count %5zu, our PID %d, sender PID %d, group %s, seq: %zu, msg: %s",
-	      groups[id].count, getpid(), pid, groups[id].group, seq, buf);
+	      g->count, getpid(), pid, g->group, seq, buf);
 
-	if (strcmp(dst, groups[id].group)) {
+	if (strcmp(dst, g->group)) {
 		ERROR("Packet for group %s received on wrong socket, expected group %s.",
-		      dst, groups[id].group);
+		      dst, g->group);
 		return -1;
 	}
 
-	if (groups[id].seq != seq) {
-		DEBUG("group seq %zu vs seq %zu", groups[id].seq, seq);
-		groups[id].gaps++;
+	if (g->seq != seq) {
+		DEBUG("group seq %zu vs seq %zu", g->seq, seq);
+		g->gaps++;
 	}
-	groups[id].seq = seq + 1; /* Next expected sequence number */
-	groups[id].count++;
-	groups[id].status[STATUS_POS] = '.'; /* XXX: Use increasing dot size for more hits? */
+	g->seq = seq + 1; /* Next expected sequence number */
+	g->count++;
+	g->status[STATUS_POS] = '.'; /* XXX: Use increasing dot size for more hits? */
 
 	return 0;
 }
@@ -274,8 +274,10 @@ static void receive_cb(int sd, void *arg)
 	(void)arg;
 
 	for (i = 0; i < group_num; i++) {
-		if (groups[i].sd == sd) {
-			recv_mcast(i);
+		struct gr *g = &groups[i];
+
+		if (g->sd == sd) {
+			recv_mcast(g);
 			plotter_show(0);
 			break;
 		}
