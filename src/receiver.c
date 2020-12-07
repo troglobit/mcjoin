@@ -293,7 +293,7 @@ static void receive_cb(int sd, void *arg)
 			total -= groups[i].count;
 
 		if (total <= 0)
-			pev_exit();
+			pev_exit(0);
 	}
 }
 

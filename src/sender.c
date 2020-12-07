@@ -163,7 +163,7 @@ static void send_cb(int signo, void *arg)
 
 	if (count > 0) {
 		if (!--count)
-			pev_exit();
+			pev_exit(0);
 	}
 }
 

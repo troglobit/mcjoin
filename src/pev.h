@@ -14,12 +14,14 @@ int pev_init       (void);
 
 /*
  * Call this from a callback to exit the event loop.
+ * The status is what is returned from pev_run().
  */
-int pev_exit       (void);
+int pev_exit       (int status);
 
 /*
  * The event loop itself.  Call after pev_init() and all the signal,
- * socket, or timer callbacks have been created.
+ * socket, or timer callbacks have been created.  Returns the status
+ * given to pev_exit().
  */
 int pev_run        (void);
 

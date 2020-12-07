@@ -206,7 +206,7 @@ static void exit_loop(int signo, void *arg)
 {
 	(void)arg;
 	DEBUG("\nWe got signal! (signo: %d)", signo);
-	pev_exit();
+	pev_exit(0);
 }
 
 static int usage(int code)
@@ -522,7 +522,7 @@ int main(int argc, char *argv[])
 	}
 
 	redraw(0);
-	pev_run();
+	rc = pev_run();
 
 	if (!rc) {
 		DEBUG("Leaving main loop");

@@ -43,6 +43,7 @@ static int events[2];
 static int max_fdnum = -1;
 static int id = 1;
 static int running;
+static int status;
 
 static struct pev *pev_new  (int type, void (*cb)(int, void *), void *arg);
 static struct pev *pev_find (int type, int signo);
@@ -469,7 +470,7 @@ int pev_init(void)
 	return sig_init() || timer_init();
 }
 
-int pev_exit(void)
+int pev_exit(int rc)
 {
 	struct pev *entry;
 
@@ -480,6 +481,7 @@ int pev_exit(void)
 		entry->active = 0;
 
 	running = 0;
+	status = rc;
 
 	return sig_exit() || timer_exit();
 }
@@ -516,7 +518,7 @@ int pev_run(void)
 	}
 	pev_cleanup();
 
-	return 0;
+	return status;
 }
 
 /**
