@@ -121,27 +121,32 @@ static void send_mcast(int signo, void *arg)
 		exit(1);
 
 	for (i = 0; i < group_num; i++) {
-		struct sockaddr *dest = (struct sockaddr *)&groups[i].grp;
-		socklen_t len = inet_addrlen(&groups[i].grp);
-		int sd = groups[i].grp.ss_family == AF_INET ? sd4 : sd6;
+		struct gr *g = &groups[i];
+		struct sockaddr *dest;
+		socklen_t len;
+		int sd;
 
+		dest = (struct sockaddr *)&g->grp;
+		len  = inet_addrlen(&g->grp);
+
+		sd = g->grp.ss_family == AF_INET ? sd4 : sd6;
 		if (sd < 0) {
 			DEBUG("Skipping group %s, no available %s socket.  No address on interface?",
-			      groups[i].group, groups[i].grp.ss_family == AF_INET ? "IPv4" : "IPv6");
+			      g->group, g->grp.ss_family == AF_INET ? "IPv4" : "IPv6");
 			continue;
 		}
 
 		snprintf(buf, sizeof(buf), "%s%u, MC group %s ... %s%zu, %s%d",
-			 MAGIC_KEY, getpid(), groups[i].group,
-			 SEQ_KEY, groups[i].seq++,
+			 MAGIC_KEY, getpid(), g->group,
+			 SEQ_KEY, g->seq++,
 			 FREQ_KEY, period / 1000);
 		DEBUG("Sending packet on signal %d, msg: %s", signo, buf);
 		if (sendto(sd, buf, bytes, 0, dest, len) < 0) {
 			ERROR("Failed sending mcast packet: %s", strerror(errno));
-			groups[i].status[STATUS_POS] = 'E';
+			g->status[STATUS_POS] = 'E';
 		} else {
-			groups[i].count++;
-			groups[i].status[STATUS_POS] = '.';
+			g->count++;
+			g->status[STATUS_POS] = '.';
 		}
 	}
 
