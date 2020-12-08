@@ -78,12 +78,6 @@ static char spin(struct gr *g)
 
 void plotter_show(int signo)
 {
-	static char buf[INET_ADDRSTR_LEN] = "0.0.0.0";
-	static inet_addr_t addr = { 0 };
-	static char hostname[80];
-	static int once = 1;
-	time_t now;
-	char *snow;
 	int swidth;
 	int spos;
 	char act = 0;
@@ -104,20 +98,6 @@ void plotter_show(int signo)
 
 		return;
 	}
-
-	if (once) {
-		once = 0;
-		gethostname(hostname, sizeof(hostname));
-		ifinfo(iface, &addr, AF_UNSPEC);
-		inet_address(&addr, buf, sizeof(buf));
-	}
-
-	now = time(NULL);
-	snow = ctime(&now);
-	gotoxy(0, HOSTDATE_ROW);
-	fprintf(stderr, "%s (%s@%s)", hostname, buf, iface);
-	gotoxy(width - strlen(snow) + 2, HOSTDATE_ROW);
-	fputs(snow, stderr);
 
 	swidth = width - 50;
 	if (swidth > STATUS_HISTORY)
@@ -225,6 +205,30 @@ static void key_cb(int sd, void *arg)
 			break;
 		}
 	}
+}
+
+static void clock_cb(int signo, void *arg)
+{
+	char buf[INET_ADDRSTR_LEN] = "0.0.0.0";
+	inet_addr_t addr = { 0 };
+	char hostname[80];
+	time_t now;
+	char *snow;
+
+	(void)signo;
+	(void)arg;
+
+	gethostname(hostname, sizeof(hostname));
+	ifinfo(iface, &addr, AF_UNSPEC);
+	inet_address(&addr, buf, sizeof(buf));
+
+	now = time(NULL);
+	snow = ctime(&now);
+	gotoxy(0, HOSTDATE_ROW);
+	fprintf(stderr, "%s (%s@%s)", hostname, buf, iface);
+	gotoxy(width - strlen(snow) + 2, HOSTDATE_ROW);
+	fputs(snow, stderr);
+
 }
 
 static int usage(int code)
@@ -529,6 +533,7 @@ int main(int argc, char *argv[])
 	pev_sig_add(SIGTERM,  exit_loop, NULL);
 	pev_sig_add(SIGWINCH, sigwinch_cb, NULL);
 	pev_sock_add(STDIN_FILENO, key_cb, NULL);
+	pev_timer_add(1000000, clock_cb, NULL);
 
 	if (!join)
 		rc = sender_init();
