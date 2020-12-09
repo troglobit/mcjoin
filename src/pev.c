@@ -248,12 +248,12 @@ static struct pev *timer_compare(struct pev *a, struct pev *b)
 	if (b->type != PEV_TIMER || !b->active)
 		return a;
 
-	if (a->timeout.tv_sec <= b->timeout.tv_sec) {
-		if (a->timeout.tv_nsec <= b->timeout.tv_nsec)
-			return a;
+	if (a->timeout.tv_sec < b->timeout.tv_sec)
+		return a;
 
-		return b;
-	}
+	if (a->timeout.tv_sec == b->timeout.tv_sec &&
+	    a->timeout.tv_nsec <= b->timeout.tv_nsec)
+		return a;
 
 	return b;
 }
@@ -276,21 +276,26 @@ static int timer_start(struct timespec *now)
 		it.it_value.tv_sec -= 1;
 		it.it_value.tv_usec = 1000000 + it.it_value.tv_usec;
 	}
+
+	/* Sanity check resulting timeout, prevent disabling timer */
 	if (it.it_value.tv_sec < 0)
 		it.it_value.tv_sec = 0;
+	if (it.it_value.tv_sec == 0 && it.it_value.tv_usec < 1)
+		it.it_value.tv_usec = 1;
 
 	return setitimer(ITIMER_REAL, &it, NULL);
 }
 
-static int timer_expired(struct pev *t, struct timespec *now)
+static int timer_expired(struct pev *entry, struct timespec *now)
 {
-	if (t->type != PEV_TIMER)
+	if (entry->type != PEV_TIMER || !entry->active)
 		return 0;
 
-	if (t->timeout.tv_sec < now->tv_sec)
+	if (entry->timeout.tv_sec < now->tv_sec)
 		return 1;
 
-	if (t->timeout.tv_sec == now->tv_sec && t->timeout.tv_nsec <= now->tv_nsec)
+	if (entry->timeout.tv_sec == now->tv_sec &&
+	    entry->timeout.tv_nsec <= now->tv_nsec)
 		return 1;
 
 	return 0;
@@ -315,8 +320,8 @@ static void timer_run(int signo, void *arg)
 		entry->timeout.tv_sec  = now.tv_sec + sec;
 		entry->timeout.tv_nsec = now.tv_nsec + (usec * 1000);
 		if (entry->timeout.tv_nsec > 1000000000) {
-			entry->timeout.tv_nsec = entry->timeout.tv_nsec % 1000000000;
-			entry->timeout.tv_sec += entry->timeout.tv_nsec / 1000000000;
+			entry->timeout.tv_sec++;
+			entry->timeout.tv_nsec -= 1000000000;
 		}
 
 		if (signo && entry->cb)
@@ -352,18 +357,14 @@ int pev_timer_add(int period, void (*cb)(int, void *), void *arg)
 		return -1;
 
 	entry->period = period;
+	entry->active++;
 
 	return entry->id;
 }
 
 int pev_timer_del(int id)
 {
-	int rc;
-
-	rc = pev_sock_del(id);
-	timer_run(0, NULL);
-
-	return rc;
+	return pev_sock_del(id);
 }
 
 /******************************* GENERIC ******************************/
@@ -486,17 +487,34 @@ int pev_exit(int rc)
 	return sig_exit() || timer_exit();
 }
 
+static void pev_check(fd_set *fds)
+{
+	struct pev *entry;
+	int trestart = 0;
+
+	sig_run();
+	sock_run(fds);
+	pev_cleanup();
+
+	for (entry = pl; entry; entry = entry->next) {
+		if (entry->type == PEV_TIMER && entry->active > 1) {
+			entry->active = 1;
+			trestart = 1;
+		}
+	}
+
+	if (trestart)
+		timer_run(0, NULL);
+}
+
 int pev_run(void)
 {
 	struct pev *entry;
 	fd_set fds;
 	int num;
 
-	timer_run(0, NULL);
-
 	while (running) {
-		sig_run();
-		sock_run(&fds);
+		pev_check(&fds);
 
 		errno = 0;
 		num = select(nfds(), &fds, NULL, NULL, NULL);
@@ -513,8 +531,6 @@ int pev_run(void)
 			if (entry->cb)
 				entry->cb(entry->sd, entry->arg);
 		}
-
-		pev_cleanup();
 	}
 	pev_cleanup();
 
