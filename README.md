@@ -63,6 +63,7 @@ a sender of the same group and port, add `-s` to the command line.
                   [[SOURCE,]GROUP0 .. [SOURCE,]GROUPN | [SOURCE,]GROUP+NUM]
     
     Options:
+      -b BYTES    Payload in bytes over IP/UDP header (42 bytes), default: 100
       -c COUNT    Stop sending/receiving after COUNT number of packets
       -d          Run as daemon in background, output except progress to syslog
       -f MSEC     Frequency, poll/send every MSEC milliseoncds, default: 100
@@ -76,7 +77,8 @@ a sender of the same group and port, add `-s` to the command line.
       -t TTL      TTL to use when sending multicast packets, default 1
       -v          Display program version
       -w SEC      Initial wait before opening sockets
-    
+      -W SEC      Timeout, in seconds, before mcjoin exits
+
     Bug report address : https://github.com/troglobit/mcjoin/issues
     Project homepage   : https://github.com/troglobit/mcjoin/
 ```
