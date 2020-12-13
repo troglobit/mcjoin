@@ -202,7 +202,7 @@ static void key_cb(int sd, void *arg)
 	}
 }
 
-static void clock_cb(int signo, void *arg)
+static void clock_cb(int period, void *arg)
 {
 	char buf[INET_ADDRSTR_LEN] = "0.0.0.0";
 	inet_addr_t addr = { 0 };
@@ -210,7 +210,7 @@ static void clock_cb(int signo, void *arg)
 	time_t now;
 	char *snow;
 
-	(void)signo;
+	(void)period;
 	(void)arg;
 
 	gethostname(hostname, sizeof(hostname));
