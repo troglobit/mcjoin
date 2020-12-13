@@ -60,13 +60,23 @@ spaces are allowed between source and group in this form.  Multiple
 .Pp
 .Nm
 does not create or send IGMP or MLD frames directly.  It only asks the
-underlying UNIX kernel for for groups from a specific interface, which
-is then converted to the appropriate wire format by the kernel.  This
+underlying UNIX kernel for groups from a specific interface, which is
+then converted to the appropriate wire format by the kernel.  This
 means, for instance, that if you want to create an IGMP v3 membership
 report on the wire that joins one group from multiple sources, you tell
 .Nm
 to join two (S,G) pairs.  The conversion to IGMP v3 report format is
 done by the kernel.
+.Pp
+On Linux systems you can change the IGMP version of an interface by, and
+thus what type of packets the kernel generates, by writing to the file
+.Pa /proc/sys/net/ipv4/conf/eth0/force_igmp_version .
+E.g., to change
+.Cm eth0
+to IGMPv2:
+.Bd -literal -offset indent
+echo 2 | sudo tee /proc/sys/net/ipv4/conf/eth0/force_igmp_version
+.Ed
 .Sh OPTIONS
 With no options given
 .Nm
