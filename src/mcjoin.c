@@ -153,11 +153,6 @@ static void redraw(int signo)
 	else
 		title = "mcjoin :: receiving multicast";
 
-	if (!signo) {
-		ttraw();
-		hidecursor();
-	}
-
 	cls();
 	gotoxy((width - strlen(title)) / 2, TITLE_ROW);
 	fprintf(stderr, "\e[1m%s\e[0m", title);
@@ -229,6 +224,7 @@ static void clock_cb(int signo, void *arg)
 	gotoxy(width - strlen(snow) + 2, HOSTDATE_ROW);
 	fputs(snow, stderr);
 
+	log_show(0);
 }
 
 static int usage(int code)
@@ -374,8 +370,10 @@ int main(int argc, char *argv[])
 			printf("Failed backgrounding: %s", strerror(errno));
 			_exit(1);
 		}
-	} else if (!old)
+	} else if (!old) {
+		setvbuf(stdout, NULL, _IONBF, 0);
 		ttsize(&width, &height);
+	}
 
 	if (wait)
 		sleep(wait);
@@ -531,9 +529,11 @@ int main(int argc, char *argv[])
 	pev_sig_add(SIGINT,   exit_loop, NULL);
 	pev_sig_add(SIGHUP,   exit_loop, NULL);
 	pev_sig_add(SIGTERM,  exit_loop, NULL);
-	pev_sig_add(SIGWINCH, sigwinch_cb, NULL);
-	pev_sock_add(STDIN_FILENO, key_cb, NULL);
-	pev_timer_add(1000000, clock_cb, NULL);
+	if (!old) {
+		pev_sig_add(SIGWINCH, sigwinch_cb, NULL);
+		pev_sock_add(STDIN_FILENO, key_cb, NULL);
+		pev_timer_add(1000000, clock_cb, NULL);
+	}
 
 	if (!join)
 		rc = sender_init();
@@ -545,18 +545,27 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	redraw(0);
-	rc = pev_run();
 
+	if (foreground && !old) {
+		ttraw();
+		hidecursor();
+	}
+
+	redraw(1);
+
+	rc = pev_run();
 	if (!rc) {
 		DEBUG("Leaving main loop");
 		show_stats();
 	}
 
-	if (foreground && !old) {
-		gotoxy(0, EXIT_ROW);
-		showcursor();
-		ttcooked();
+	if (foreground) {
+		if (!old) {
+			gotoxy(0, EXIT_ROW);
+			showcursor();
+			ttcooked();
+		} else
+			puts("");
 	}
 
 	return rc;
