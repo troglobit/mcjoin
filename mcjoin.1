@@ -31,6 +31,7 @@
 .Op Fl p Ar PORT
 .Op Fl t Ar TTL
 .Op Fl w Ar SEC
+.Op Fl W Ar SEC
 .Op Ar [SOURCE,]GROUP0 .. [SOURCE,]GROUPN | [SOURCE,]GROUP+NUM
 .Sh DESCRIPTION
 .Nm
@@ -112,6 +113,17 @@ seconds before starting anything.  Useful for scripting test systems
 that launch
 .Nm
 at boot without syncing with creation of networking
+.It Fl W Ar SEC
+Timeout, in seconds, before
+.Nm
+exits, regardless of how many packets have been received.  With this
+option
+.Nm
+exit either after
+.Ar SEC
+seconds, or after
+.Ar COUNT
+packets have been received.
 .El
 .Sh USAGE
 To verify multicast connectivity, the simplest way is to run

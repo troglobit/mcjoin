@@ -184,6 +184,15 @@ static void exit_loop(int signo, void *arg)
 	pev_exit(0);
 }
 
+static void deadline_cb(int period, void *arg)
+{
+	(void)period;
+	(void)arg;
+
+	DEBUG("\nDeadline reached, exiting.");
+	pev_exit(0);
+}
+
 static void key_cb(int sd, void *arg)
 {
 	char ch;
@@ -250,9 +259,10 @@ static int usage(int code)
 	       "  -t TTL      TTL to use when sending multicast packets, default: 1\n"
 	       "  -v          Display program version\n"
 	       "  -w SEC      Initial wait before opening sockets\n"
+	       "  -W SEC      Timeout, in seconds, before %s exits\n"
 	       "\n"
-	       "Bug report address : %-40s\n", ident, period / 1000, iface, DEFAULT_PORT,
-	       PACKAGE_BUGREPORT);
+	       "Bug report address : %-40s\n", ident, period / 1000, iface,
+	       DEFAULT_PORT, ident, PACKAGE_BUGREPORT);
 #ifdef PACKAGE_URL
 	printf("Project homepage   : %s\n", PACKAGE_URL);
 #endif
@@ -276,15 +286,16 @@ static char *progname(char *arg0)
 int main(int argc, char *argv[])
 {
 	struct rlimit rlim;
-	size_t ilen;
+	int deadline = 0;
 	int wait = 0;
 	int i, c, rc;
+	size_t ilen;
 
 	for (i = 0; i < MAX_NUM_GROUPS; i++)
 		memset(&groups[i], 0, sizeof(groups[0]));
 
 	ident = progname(argv[0]);
-	while ((c = getopt(argc, argv, "b:c:df:hi:jl:op:st:vw:")) != EOF) {
+	while ((c = getopt(argc, argv, "b:c:df:hi:jl:op:st:vw:W:")) != EOF) {
 		switch (c) {
 		case 'b':
 			bytes = (size_t)atoi(optarg);
@@ -355,6 +366,10 @@ int main(int argc, char *argv[])
 
 		case 'w':
 			wait = atoi(optarg);
+			break;
+
+		case 'W':
+			deadline = atoi(optarg);
 			break;
 
 		default:
@@ -534,6 +549,8 @@ int main(int argc, char *argv[])
 		pev_sock_add(STDIN_FILENO, key_cb, NULL);
 		pev_timer_add(1000000, clock_cb, NULL);
 	}
+	if (deadline)
+		pev_timer_add(deadline * 1000000, deadline_cb, NULL);
 
 	if (!join)
 		rc = sender_init();
