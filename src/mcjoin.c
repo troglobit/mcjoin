@@ -42,6 +42,7 @@
 int old = 0;
 int join = 1;
 int debug = 0;
+int hastty = 1;
 int foreground = 1;
 
 /* Global data */
@@ -86,6 +87,9 @@ void plotter_show(int signo)
 	(void)signo;
 
 	if (old) {
+		if (!hastty)
+			return;
+
 		for (i = 0; i < group_num; i++) {
 			struct gr *g = &groups[i];
 
@@ -386,8 +390,13 @@ int main(int argc, char *argv[])
 			_exit(1);
 		}
 	} else if (!old) {
-		setvbuf(stdout, NULL, _IONBF, 0);
-		ttsize(&width, &height);
+		if (isatty(STDOUT_FILENO)) {
+			setvbuf(stdout, NULL, _IONBF, 0);
+			ttsize(&width, &height);
+		} else {
+			hastty = 0;
+			old = 1;
+		}
 	}
 
 	if (wait)
