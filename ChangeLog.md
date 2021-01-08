@@ -3,6 +3,20 @@ ChangeLog
 
 All notable changes to the project are documented in this file.
 
+[v2.8][] - 2021-01-08
+---------------------
+
+- Detect a default interface even on systems without default route
+- Support Ctrl-L to refresh a garbled display
+- Support for a deadline timeout `-W sec`, issue #12
+- Support for redirecting output to a log file; `mcjoin -l debug > file`
+- Document reverse path filtering in Linux
+- Document how to test with older IGMP versions in Linux
+- Fix resize glitch in plotter (new event based framework)
+- Fix TTY restore on abort or abnormal exit
+- Fix #12: fully restore support for old output, `-o`
+
+
 [v2.7][] - 2020-11-10
 ---------------------
 
