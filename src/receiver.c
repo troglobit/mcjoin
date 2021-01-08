@@ -104,17 +104,18 @@ static int join_group(struct gr *sg)
 	int ifindex;
 	int sd, op, proto;
 
-	/* Index port with id if IP_MULTICAST_ALL fails */
-	sd = alloc_socket(sg->grp);
-	if (sd < 0)
-		return 1;
-
 	ifindex = if_nametoindex(iface);
 	if (!ifindex) {
-		ERROR("invalid interface: %s", iface);
-		goto error;
+		ERROR("invalid interface: %s", *iface ? iface : "(nil)");
+		return 1;
 	}
-	DEBUG("Added iface %s, idx %d", iface, ifindex);
+	DEBUG("Added iface %s, ifindex %d", iface, ifindex);
+
+	sd = alloc_socket(sg->grp);
+	if (sd < 0) {
+		DEBUG("Failed allocating socket.");
+		return 1;
+	}
 
 #ifdef AF_INET6
 	if (sg->grp.ss_family == AF_INET6)
