@@ -561,16 +561,17 @@ int main(int argc, char *argv[])
 	if (deadline)
 		pev_timer_add(deadline * 1000000, deadline_cb, NULL);
 
-	if (!join)
-		rc = sender_init();
-	else
-		rc = receiver_init();
-
-	if (rc) {
-		printf("Bad return code: %d\n", rc);
-		return 1;
+	if (!join) {
+		if ((rc = sender_init())) {
+			printf("Failed initializing sender, return code %d, aborting.\n", rc);
+			return 1;
+		}
+	} else {
+		if ((rc = receiver_init())) {
+			printf("Failed initializing receiver, return code %d, aborting.\n", rc);
+			return 1;
+		}
 	}
-
 
 	if (foreground && !old) {
 		ttraw();
