@@ -81,6 +81,40 @@ short inet_addr_get_port(inet_addr_t *ss)
 	return sin->sin_port;
 }
 
+/*
+ * Find first interface that is not loopback, but is up, has link, and
+ * multicast capable.
+ */
+static char *ifany(char *iface, size_t len)
+{
+	struct ifaddrs *ifaddr, *ifa;
+
+	if (getifaddrs(&ifaddr) == -1)
+		return NULL;
+
+	for (ifa = ifaddr; ifa; ifa = ifa->ifa_next) {
+		int ifindex;
+
+		if (!(ifa->ifa_flags & IFF_UP))
+			continue;
+
+		if (!(ifa->ifa_flags & IFF_RUNNING))
+			continue;
+
+		if (!(ifa->ifa_flags & IFF_MULTICAST))
+			continue;
+
+		ifindex = if_nametoindex(ifa->ifa_name);
+		DEBUG("Found iface %s, ifindex %d", ifa->ifa_name, ifindex);
+		strncpy(iface, ifa->ifa_name, len);
+		iface[len] = 0;
+		break;
+	}
+	freeifaddrs(ifaddr);
+
+	return iface;
+}
+
 /* The BSD's or SVR4 systems like Solaris don't have /proc/net/route */
 static char *altdefault(char *iface, size_t len)
 {
@@ -125,8 +159,13 @@ char *ifdefault(char *iface, size_t len)
 	int best = 100000, found = 0;
 
 	fp = fopen("/proc/net/route", "r");
-	if (!fp)
-		return altdefault(iface, len);
+	if (!fp) {
+		ptr = altdefault(iface, len);
+		if (!ptr)
+			goto fallback;
+
+		return ptr;
+	}
 
 	/* Skip heading */
 	ptr = fgets(buf, sizeof(buf), fp);
@@ -161,8 +200,8 @@ end:
 	fclose(fp);
 	if (found)
 		return iface;
-
-	return NULL;
+fallback:
+	return ifany(iface, len);
 }
 
 /* XXX: old IPv4-only address validation, fixme!
