@@ -93,7 +93,12 @@ troubleshooting
 ---------------
 
 the multicast producer, `mcjoin -s`, can send without a default route,
-but the sink need a default route to be able to receive the UDP stream.
+but the sink (your receiver) need a default route to be able to receive
+the UDP stream.  the sink will be able to start without an IP address or
+route, as long as the interface is UP and allows MULTICAST, the IGMP or
+MLD join frames will also be sent while you wait for an address+route,
+but the kernel will (likely) not forward any frames to mcjoin even
+though it may be arriving at the interface if you check with tcpdump.
 
 in particular, this issue will arise if you run `mcjoin` in isolated
 network namespaces in Linux.  e.g.
@@ -108,6 +113,11 @@ network namespaces in Linux.  e.g.
     ip link set eth0 up
     ip route add default via 10.0.0.1
     mcjoin
+
+you may also need to verify that your system does not have any strict
+reverse path filtering enabled.  on Linux `rp_filter` can be set to
+either 0 (no filtering) or 2 (loose filtering), the latter is the most
+common for distributions today.
 
 
 caveat
