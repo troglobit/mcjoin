@@ -141,7 +141,8 @@ OnTime AS and later at Westermo.  Based on the work by David Stevens
 and developed further by Joachim Nilsson, on his spare time.
 
 
-[UNRELEASED]: https://github.com/troglobit/mcjoin/compare/v2.7...HEAD
+[UNRELEASED]: https://github.com/troglobit/mcjoin/compare/v2.8...HEAD
+[v2.8]:       https://github.com/troglobit/mcjoin/compare/v2.7...v2.8
 [v2.7]:       https://github.com/troglobit/mcjoin/compare/v2.6...v2.7
 [v2.6]:       https://github.com/troglobit/mcjoin/compare/v2.5...v2.6
 [v2.5]:       https://github.com/troglobit/mcjoin/compare/v2.4...v2.5
