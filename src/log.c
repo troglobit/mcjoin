@@ -144,6 +144,11 @@ int log_level(const char *level)
 		return 0;
 	}
 
+	if (!isdigit(level[0])) {
+		errno = EINVAL;
+		return -1;
+	}
+
 	errno = 0;
 	i = strtol(level, NULL, 0);
 	if (errno)

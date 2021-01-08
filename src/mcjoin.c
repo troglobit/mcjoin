@@ -341,7 +341,7 @@ int main(int argc, char *argv[])
 
 		case 'l':
 			if (log_level(optarg)) {
-				ERROR("Invalid log level: %s", strerror(errno));
+				ERROR("Invalid log level: %s", optarg);
 				return 1;
 			}
 			break;
