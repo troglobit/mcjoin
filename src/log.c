@@ -71,6 +71,7 @@ static int log_syslog = 0;
 static int log_ui     = 0;
 static int log_max    = 0;
 static int log_width  = 0;
+static int log_offset = 0;
 static int log_opts   = LOG_NDELAY | LOG_PID;
 
 int log_init(int fg, char *ident)
@@ -87,6 +88,8 @@ int log_init(int fg, char *ident)
 		log_width = width;
 		if (log_width < 256)
 			log_width = 256;
+
+		log_scroll(0);	/* reset to lwh */
 
 		log_buf = calloc(log_max, sizeof(char *));
 		if (!log_buf)
@@ -164,9 +167,32 @@ int log_level(const char *level)
 	return 0;
 }
 
+/* scroll one page up/down or reset */
+void log_scroll(int updown)
+{
+	const int lwh = height - LOG_ROW; /* log window height */
+	const int bot = log_max - lwh;
+	const int top = 0;
+
+	/* reset */
+	if (updown == 0) {
+		log_offset = bot;
+		return;
+	}
+
+	/* up/down, half-page increments */
+	log_offset += updown * lwh / 2;
+
+	if (log_offset < top)
+		log_offset = top;
+	if (log_offset > bot)
+		log_offset = bot;
+
+	log_show(0);
+}
+
 void log_show(int signo)
 {
-	int lwh = height - LOG_ROW; /* log window height */
 	int y = LOG_ROW;
 	int i;
 
@@ -175,7 +201,7 @@ void log_show(int signo)
 	gotoxy(0, LOG_ROW);
 	clsdn();
 
-	for (i = log_max - lwh; i < log_max; i++) {
+	for (i = log_offset; i < log_max; i++) {
 		char line[width];
 
 		if (y >= height)

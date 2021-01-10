@@ -32,6 +32,7 @@ int  log_exit  (void);
 
 int  log_level (const char *level);
 
+void log_scroll(int updown);
 void log_show  (int signo);
 
 int  logit     (int prio, char *fmt, ...);

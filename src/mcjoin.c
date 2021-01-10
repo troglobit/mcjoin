@@ -205,15 +205,57 @@ static void deadline_cb(int period, void *arg)
 	pev_exit(0);
 }
 
+#define PG_UP 1
+#define PG_DN 2
+
+static int check_esc(int sd)
+{
+	int rc = -1;
+	char ch;
+
+	if (read(sd, &ch, sizeof(ch)) != 1 || ch != '[')
+		return -1;
+
+	if (read(sd, &ch, sizeof(ch)) != 1)
+		return -1;
+
+	if (ch == '5')
+		rc = PG_UP;
+	if (ch == '6')
+		rc = PG_DN;
+
+	if (read(sd, &ch, sizeof(ch)) != 1 || ch != '~')
+		return -1;
+
+	return rc;
+}
+
 static void key_cb(int sd, void *arg)
 {
 	char ch;
 
 	(void)arg;
+
 	if (read(sd, &ch, sizeof(ch)) != -1) {
 		switch (ch) {
-		case 0x0c:
+		case '\f':
 			redraw(1);
+			break;
+
+		case '\e':
+			switch (check_esc(sd)) {
+			case PG_UP:
+				log_scroll(-1);
+				break;
+
+			case PG_DN:
+				log_scroll(+1);
+				break;
+
+			default:
+				/* unhandled esc sequence */
+				break;
+			}
 			break;
 
 		default:
