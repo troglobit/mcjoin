@@ -258,6 +258,10 @@ static void key_cb(int sd, void *arg)
 			}
 			break;
 
+		case 'q':
+			pev_exit(0);
+			break;
+
 		default:
 			DEBUG("Got char 0x%02x", ch);
 			break;
