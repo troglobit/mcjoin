@@ -114,8 +114,9 @@ static void send_mcast(int sd, struct gr *g)
 		 FREQ_KEY, period / 1000);
 	DEBUG("Sending packet, msg: %s", buf);
 	if (sendto(sd, buf, bytes, 0, dest, len) < 0) {
-		ERROR("Failed sending mcast packet: %s", strerror(errno));
+		ERROR("Failed sending mcast to %s: %s", g->group, strerror(errno));
 		g->status[STATUS_POS] = 'E';
+		g->gaps++;
 	} else {
 		g->count++;
 		g->status[STATUS_POS] = '.';

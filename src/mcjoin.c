@@ -122,15 +122,15 @@ void plotter_show(int signo)
 
 static void show_stats(void)
 {
+	size_t i, total_count = 0;
+	int gwidth = 0;
+
+	for (i = 0; i < group_num; i++) {
+		if ((int)strlen(groups[i].group) > gwidth)
+			gwidth = (int)strlen(groups[i].group);
+	}
+
 	if (join) {
-		size_t i, total_count = 0;
-		int gwidth = 0;
-
-		for (i = 0; i < group_num; i++) {
-			if ((int)strlen(groups[i].group) > gwidth)
-				gwidth = (int)strlen(groups[i].group);
-		}
-
 		for (i = 0; i < group_num; i++) {
 			PRINT("Group %-*s received %zu packets, gaps: %zu", gwidth,
 			      groups[i].group, groups[i].count, groups[i].gaps);
@@ -138,6 +138,15 @@ static void show_stats(void)
 		}
 
 		PRINT("\nReceived total: %zu packets", total_count);
+	} else {
+		for (i = 0; i < group_num; i++) {
+			PRINT("Sent %zu packets to group %-*s errors: %d",
+			      groups[i].count, gwidth, groups[i].group,
+			      groups[i].gaps);
+			total_count += groups[i].count;
+		}
+
+		PRINT("\nSent total: %zu packets", total_count);
 	}
 }
 
