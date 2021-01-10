@@ -82,7 +82,7 @@ int log_init(int fg, char *ident)
 			return 0;
 
 		log_max = LOG_MAX;
-		log_width = width;
+		log_width = width < 256 ? 256 : width;
 		log_buf = calloc(log_max, sizeof(char *));
 		if (!log_buf)
 			return -1;
@@ -170,6 +170,8 @@ void log_show(int signo)
 	clsdn();
 
 	for (i = 0; i < log_max; i++) {
+		char line[width];
+
 		if (y >= height)
 			break;
 
@@ -177,7 +179,8 @@ void log_show(int signo)
 			continue;
 
 		gotoxy(0, y++);
-		fputs(log_buf[i], stderr);
+		strlcpy(line, log_buf[i], sizeof(line));
+		fputs(line, stderr);
 	}
 }
 
@@ -193,7 +196,7 @@ int logit(int prio, char *fmt, ...)
 		vsyslog(prio, fmt, ap);
 	else if (prio <= log_prio) {
 		if (log_ui) {
-			char buf[width];
+			char buf[log_width];
 			char *ptr;
 			int i;
 
@@ -207,7 +210,7 @@ int logit(int prio, char *fmt, ...)
 			for (ptr = buf; *ptr && isspace((int)*ptr); ptr++)
 				;
 
-			snprintf(log_buf[LOG_POS], width, "%24.24s  %s", snow, ptr);
+			snprintf(log_buf[LOG_POS], log_width, "%24.24s  %s", snow, ptr);
 			log_show(0);
 		} else {
 			FILE *fp = stdout;
