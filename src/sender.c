@@ -146,9 +146,6 @@ static void send_cb(int signo, void *arg)
 		struct gr *g = &groups[i];
 		int sd;
 
-		memmove(g->status, &g->status[1], STATUS_HISTORY - 1);
-		g->status[STATUS_POS] = ' ';
-
 		sd = g->grp.ss_family == AF_INET ? sd4 : sd6;
 		if (sd < 0) {
 			DEBUG("Skipping group %s, no available %s socket.  No address on interface?",
@@ -158,8 +155,6 @@ static void send_cb(int signo, void *arg)
 
 		send_mcast(sd, g);
 	}
-
-	plotter_show(0);
 
 	if (count > 0) {
 		if (!--count)
