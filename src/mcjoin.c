@@ -20,6 +20,7 @@
 
 #include <arpa/inet.h>		/* inet_pton() on Solaris */
 #include <errno.h>
+#include <fcntl.h>
 #include <getopt.h>
 #include <libgen.h>
 #include <poll.h>
@@ -579,9 +580,15 @@ int main(int argc, char *argv[])
 	pev_sig_add(SIGTERM,  exit_loop, NULL);
 	pev_timer_add(period, scroll_cb, NULL);
 	if (!old) {
+		int flags;
+
 		pev_sig_add(SIGWINCH, sigwinch_cb, NULL);
-		pev_sock_add(STDIN_FILENO, key_cb, NULL);
 		pev_timer_add(1000000, clock_cb, NULL);
+
+		flags = fcntl(STDIN_FILENO, F_GETFL);
+		if (flags != -1)
+			(void)fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK);
+		pev_sock_add(STDIN_FILENO, key_cb, NULL);
 	}
 	if (deadline)
 		pev_timer_add(deadline * 1000000, deadline_cb, NULL);
