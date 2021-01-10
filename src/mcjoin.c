@@ -163,10 +163,10 @@ static void redraw(int signo)
 	gotoxy((width - strlen(howto)) / 2, HOSTDATE_ROW);
 	fprintf(stderr, "\e[2m%s\e[0m", howto);
 	gotoxy(0, HEADING_ROW);
-	fprintf(stderr, "\e[7m%-31s    PLOTTER%*s      PACKETS\e[0m", "SOURCE,GROUP", width - 55, " ");
+	fprintf(stderr, "\e[7m%-31s    Plotter%*s      Packets\e[0m", "Source,Group", width - 55, " ");
 
 	gotoxy(0, LOGHEADING_ROW); /* Thu Nov  5 09:08:59 2020 */
-	fprintf(stderr, "\e[7m%-24s  LOG%*s\e[0m", "TIME", width - 29, " ");
+	fprintf(stderr, "\e[7m%-24s  Log%*s\e[0m", "Time", width - 29, " ");
 
 	if (signo) {
 		plotter_show(signo);
