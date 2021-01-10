@@ -257,7 +257,8 @@ static ssize_t recv_mcast(int sd, struct gr *g)
 		return -1;
 	}
 
-	if (g->seq != seq) {
+	/* Don't trigger gaps on first packet. */
+	if (g->seq > 0 && g->seq != seq) {
 		DEBUG("group seq %zu vs seq %zu", g->seq, seq);
 		g->gaps++;
 		g->status[STATUS_POS] = 'X';
