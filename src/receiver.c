@@ -260,10 +260,16 @@ static ssize_t recv_mcast(int sd, struct gr *g)
 	if (g->seq != seq) {
 		DEBUG("group seq %zu vs seq %zu", g->seq, seq);
 		g->gaps++;
+		g->status[STATUS_POS] = 'X';
+	} else {
+		if (g->status[STATUS_POS] == '.')
+			g->status[STATUS_POS] = ':';
+		else
+			g->status[STATUS_POS] = '.';
 	}
+
 	g->seq = seq + 1; /* Next expected sequence number */
 	g->count++;
-	g->status[STATUS_POS] = '.'; /* XXX: Use increasing dot size for more hits? */
 
 	return 0;
 }
