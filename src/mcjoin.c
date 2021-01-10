@@ -130,24 +130,22 @@ static void show_stats(void)
 			gwidth = (int)strlen(groups[i].group);
 	}
 
-	if (join) {
-		for (i = 0; i < group_num; i++) {
+	for (i = 0; i < group_num; i++) {
+		if (join)
 			PRINT("Group %-*s received %zu packets, gaps: %zu", gwidth,
 			      groups[i].group, groups[i].count, groups[i].gaps);
-			total_count += groups[i].count;
-		}
-
-		PRINT("\nReceived total: %zu packets", total_count);
-	} else {
-		for (i = 0; i < group_num; i++) {
+		else
 			PRINT("Sent %zu packets to group %-*s errors: %d",
 			      groups[i].count, gwidth, groups[i].group,
 			      groups[i].gaps);
-			total_count += groups[i].count;
-		}
 
-		PRINT("\nSent total: %zu packets", total_count);
+		total_count += groups[i].count;
 	}
+
+	if (join)
+		PRINT("\nReceived total: %zu packets", total_count);
+	else
+		PRINT("\nSent total: %zu packets", total_count);
 }
 
 static void redraw(int signo)
