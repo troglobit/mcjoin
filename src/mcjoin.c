@@ -55,6 +55,7 @@ size_t count = 0;
 int port = DEFAULT_PORT;
 unsigned char ttl = 1;
 char *ident = PACKAGE_NAME;
+time_t start;
 
 int need4 = 0;
 int need6 = 0;
@@ -121,10 +122,39 @@ void plotter_show(int signo)
 	}
 }
 
+static char *uptime(time_t up)
+{
+	static char buf[42];
+	time_t day, hour, min, sec;
+
+	day = up / (24 * 60 * 60);
+	 up = up % (24 * 60 * 60);
+
+	hour = up / (60 * 60);
+	  up = up % (60 * 60);
+
+	min = up / 60;
+	 up = up % 60;
+
+	sec = up;
+
+	if (day)
+		snprintf(buf, sizeof(buf), "%ldd %02ldh %02ldm %02lds", day, hour, min, sec);
+	else if (hour)
+		snprintf(buf, sizeof(buf), "%ldh %02ldm %02lds", hour, min, sec);
+	else if (min)
+		snprintf(buf, sizeof(buf), "%ldm %02lds", min, sec);
+	else if (sec)
+		snprintf(buf, sizeof(buf), "%lds", sec);
+
+	return buf;
+}
+
 static void show_stats(void)
 {
 	size_t i, total_count = 0;
 	int gwidth = 0;
+	time_t now;
 
 	for (i = 0; i < group_num; i++) {
 		if ((int)strlen(groups[i].group) > gwidth)
@@ -150,6 +180,9 @@ static void show_stats(void)
 		PRINT("\nReceived total: %zu packets", total_count);
 	else
 		PRINT("\nSent total: %zu packets", total_count);
+
+	now = time(NULL);
+	PRINT("Uptime: %s", uptime(now - start));
 }
 
 static void redraw(int signo)
@@ -294,8 +327,8 @@ static void clock_cb(int period, void *arg)
 	char buf[INET_ADDRSTR_LEN] = "0.0.0.0";
 	inet_addr_t addr = { 0 };
 	char hostname[80];
-	time_t now;
-	char *snow;
+	time_t now, up;
+	char *str;
 
 	(void)period;
 	(void)arg;
@@ -305,11 +338,18 @@ static void clock_cb(int period, void *arg)
 	inet_address(&addr, buf, sizeof(buf));
 
 	now = time(NULL);
-	snow = ctime(&now);
+	up = now - start;
+
 	gotoxy(0, HOSTDATE_ROW);
 	fprintf(stderr, "%s (%s@%s)", hostname, buf, iface);
-	gotoxy(width - strlen(snow) + 2, HOSTDATE_ROW);
-	fputs(snow, stderr);
+
+	str = uptime(up);
+	gotoxy(width - strlen(str) + 1, TITLE_ROW);
+	fputs(str, stderr);
+
+	str = ctime(&now);
+	gotoxy(width - strlen(str) + 2, HOSTDATE_ROW);
+	fputs(str, stderr);
 
 	log_show(0);
 }
@@ -655,6 +695,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (foreground && !old) {
+		start = time(NULL);
 		ttraw();
 		hidecursor();
 	}
