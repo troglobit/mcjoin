@@ -131,6 +131,9 @@ static void show_stats(void)
 			gwidth = (int)strlen(groups[i].group);
 	}
 
+	/* Reset log in case of user scrolling to show stats */
+	log_scroll(0);
+
 	for (i = 0; i < group_num; i++) {
 		if (join)
 			PRINT("Group %-*s received %zu packets, gaps: %zu", gwidth,
