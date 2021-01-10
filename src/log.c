@@ -82,7 +82,12 @@ int log_init(int fg, char *ident)
 			return 0;
 
 		log_max = LOG_MAX;
-		log_width = width < 256 ? 256 : width;
+		if (log_max < 100)
+			log_max = 100;
+		log_width = width;
+		if (log_width < 256)
+			log_width = 256;
+
 		log_buf = calloc(log_max, sizeof(char *));
 		if (!log_buf)
 			return -1;
@@ -161,6 +166,7 @@ int log_level(const char *level)
 
 void log_show(int signo)
 {
+	int lwh = height - LOG_ROW; /* log window height */
 	int y = LOG_ROW;
 	int i;
 
@@ -169,7 +175,7 @@ void log_show(int signo)
 	gotoxy(0, LOG_ROW);
 	clsdn();
 
-	for (i = 0; i < log_max; i++) {
+	for (i = log_max - lwh; i < log_max; i++) {
 		char line[width];
 
 		if (y >= height)
