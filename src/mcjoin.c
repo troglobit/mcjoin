@@ -136,14 +136,14 @@ void stats_show(int signo)
 
 	(void)signo;
 
-	w = width - 76;
+	w = width - 78;
 	if (w < 0)
 		w = 0;
 
 	gotoxy(0, HEADING_ROW);
-	fprintf(stderr, "\e[K\e[7m%-31s  %*s%5s %5s %5s %5s %5s %13s\e[0m",
+	fprintf(stderr, "\e[K\e[7m%-31s%*s%4s %4s %4s %4s %4s %13s %8s\e[0m",
 		"Source,Group", w, " ",
-		"Inv", "Delay", "Gaps", "Order", "Dupes", "Packets");
+		"Inv", "Del", "Gaps", "Ordr", "Dups", "Bytes", "Packets");
 
 	for (i = 0; i < group_num; i++) {
 		struct gr *g = &groups[i];
@@ -152,8 +152,8 @@ void stats_show(int signo)
 		gotoxy(0, GROUP_ROW + i);
 
 		snprintf(sgbuf, sizeof(sgbuf), "%s,%s", g->source ? g->source : "*", g->group);
-		fprintf(stderr, "\e[K%-31s  %*s%5zu %5zu %5zu %5zu %5zu %13zu", sgbuf, w, " ",
-			g->invalid, g->delayed, g->gaps, g->order, g->dupes, g->count);
+		fprintf(stderr, "\e[K%-31s%*s%4zu %4zu %4zu %4zu %4zu %13zu %8zu", sgbuf, w, " ",
+			g->invalid, g->delayed, g->gaps, g->order, g->dupes, g->bytes, g->count);
 	}
 }
 
@@ -232,8 +232,8 @@ static void show_stats(void)
 		char buf[35];
 
 		snprintf(buf, sizeof(buf), "%s,%s", g->source ? g->source : "*", g->group);
-		PRINT("%-*s: invalid %-5zu delay %-5zu gaps %-5zu reorder %-5zu dupes %-5zu packets %-13zu",
-		      len, buf, g->invalid, g->delayed, g->gaps, g->order, g->dupes, g->count);
+		PRINT("%-*s: invalid %-5zu delay %-5zu gaps %-5zu reorder %-5zu dupes %-5zu bytes %-13zu packets %-8zu",
+		      len, buf, g->invalid, g->delayed, g->gaps, g->order, g->dupes, g->bytes, g->count);
 		total_count += g->count;
 	}
 	PRINT("\nTotal: %zu packets", total_count);

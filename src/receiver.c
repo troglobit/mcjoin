@@ -309,6 +309,7 @@ static ssize_t recv_mcast(int sd, struct gr *g)
 
 	g->seqnos[STATUS_POS] = seq;
 	g->seq = seq + 1; /* Next expected sequence number */
+	g->bytes += bytes;
 	g->count++;
 
 	return 0;

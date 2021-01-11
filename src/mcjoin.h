@@ -50,6 +50,7 @@
 /* Group info */
 struct gr {
 	int          sd;
+	uint64_t     bytes;
 	size_t       count;
 	size_t       seq;
 	size_t       gaps;
