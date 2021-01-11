@@ -269,6 +269,7 @@ static int check_esc(int sd)
 
 static void key_cb(int sd, void *arg)
 {
+	static int log_pri = -1;
 	char ch;
 
 	(void)arg;
@@ -300,6 +301,15 @@ static void key_cb(int sd, void *arg)
 				duplicate ^= 1;
 				PRINT("%s (%d) seqno duplication.", duplicate ? "Enabling" : "Disabling", duplicate);
 			}
+			break;
+
+		case 'D':
+			if (log_pri == -1)
+				log_pri = log_level(NULL);
+			if (log_level(NULL) != LOG_DEBUG)
+				log_prio(LOG_DEBUG);
+			else
+				log_prio(log_pri);
 			break;
 
 		case 'q':
