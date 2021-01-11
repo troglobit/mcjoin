@@ -66,7 +66,7 @@ CODE prioritynames[] = {
 };
 #endif /* SYSV */
 
-static int log_prio   = LOG_NOTICE;
+static int log_pri   = LOG_NOTICE;
 static int log_syslog = 0;
 static int log_ui     = 0;
 static int log_max    = 0;
@@ -112,7 +112,7 @@ int log_init(int fg, char *ident)
 	log_syslog = 1;
 
 	openlog(ident, log_opts, LOG_DAEMON);
-	setlogmask(LOG_UPTO(log_prio));
+	setlogmask(LOG_UPTO(log_pri));
 
 	return 0;
 }
@@ -135,12 +135,19 @@ int log_exit(void)
 	return 0;
 }
 
+int log_prio(int pri)
+{
+	log_pri = pri;
+
+	return setlogmask(LOG_UPTO(log_pri));
+}
+
 int log_level(const char *level)
 {
 	int i;
 
 	if (!level)
-		return log_prio;
+		return log_pri;
 
 	for (i = 0; prioritynames[i].c_name; i++) {
 		size_t len = MIN(strlen(prioritynames[i].c_name), strlen(level));
@@ -148,7 +155,7 @@ int log_level(const char *level)
 		if (strncasecmp(prioritynames[i].c_name, level, len))
 			continue;
 
-		log_prio = prioritynames[i].c_val;
+		log_prio(prioritynames[i].c_val);
 		return 0;
 	}
 
@@ -162,8 +169,7 @@ int log_level(const char *level)
 	if (errno)
 		return -1;
 
-	log_prio = i;
-
+	log_prio(i);
 	return 0;
 }
 
@@ -226,7 +232,7 @@ int logit(int prio, char *fmt, ...)
 	va_start(ap, fmt);
 	if (log_syslog)
 		vsyslog(prio, fmt, ap);
-	else if (prio <= log_prio) {
+	else if (prio <= log_pri) {
 		if (log_ui) {
 			char buf[log_width];
 			char *ptr;

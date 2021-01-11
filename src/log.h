@@ -30,6 +30,7 @@
 int  log_init  (int fg, char *ident);
 int  log_exit  (void);
 
+int  log_prio  (int prio);
 int  log_level (const char *level);
 
 void log_scroll(int updown);
