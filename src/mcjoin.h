@@ -65,6 +65,7 @@ struct gr {
 extern int old;
 extern int width;
 extern int height;
+extern int duplicate;
 extern int foreground;
 
 extern int need4;

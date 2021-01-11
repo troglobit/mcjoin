@@ -44,6 +44,7 @@ int old = 0;
 int join = 1;
 int debug = 0;
 int hastty = 1;
+int duplicate = 0;		/* duplicate seqnos as sender, for testing */
 int foreground = 1;
 
 /* Global data */
@@ -291,6 +292,13 @@ static void key_cb(int sd, void *arg)
 			default:
 				/* unhandled esc sequence */
 				break;
+			}
+			break;
+
+		case 'd':
+			if (!join) {
+				duplicate ^= 1;
+				PRINT("%s (%d) seqno duplication.", duplicate ? "Enabling" : "Disabling", duplicate);
 			}
 			break;
 

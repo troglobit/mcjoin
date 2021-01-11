@@ -104,13 +104,18 @@ static void send_mcast(int sd, struct gr *g)
 	char buf[BUFSZ] = { 0 };
 	struct sockaddr *dest;
 	socklen_t len;
+	size_t seq;
 
 	dest = (struct sockaddr *)&g->grp;
 	len  = inet_addrlen(&g->grp);
 
+	seq = g->seq;
+	if (!duplicate)
+		g->seq++;
+
 	snprintf(buf, sizeof(buf), "%s%u, MC group %s ... %s%zu, %s%d",
 		 MAGIC_KEY, getpid(), g->group,
-		 SEQ_KEY, g->seq++,
+		 SEQ_KEY, seq,
 		 FREQ_KEY, period / 1000);
 	DEBUG("Sending packet, msg: %s", buf);
 	if (sendto(sd, buf, bytes, 0, dest, len) < 0) {
