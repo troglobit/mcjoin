@@ -192,6 +192,21 @@ struct in6_addr *find_dstaddr6(struct msghdr *msgh)
 	return NULL;
 }
 
+static int isdup(struct gr *g, size_t seq)
+{
+	size_t i;
+
+	for (i = 0; i <= STATUS_POS; i++) {
+		if (g->seqnos[i] == 0)
+			continue;
+
+		if (g->seqnos[i] == seq)
+			return 1;
+	}
+
+	return 0;
+}
+
 /*
  * rcvmsg() wrapper which uses out-of-band info to verify expected
  * destination address (multicast group)
@@ -245,11 +260,16 @@ static ssize_t recv_mcast(int sd, struct gr *g)
 	if (ptr)
 		pid = atoi(ptr + strlen(MAGIC_KEY));
 	ptr = strstr(buf, SEQ_KEY);
-	if (ptr)
-		seq = atoi(ptr + strlen(SEQ_KEY));
+	if (!ptr) {
+		g->invalid++;
+		g->status[STATUS_POS] = 'I';
+		g->count++;
+		return -1;
+	}
+	seq = atoi(ptr + strlen(SEQ_KEY));
 
-	DEBUG("Count %5zu, our PID %d, sender PID %d, group %s, seq: %zu, msg: %s",
-	      g->count, getpid(), pid, g->group, seq, buf);
+	DEBUG("Count %5zu, our PID %d, sender PID %d, group %s, exp. seq: %zu, recv. seq: %d, msg: %s",
+	      g->count, getpid(), pid, g->group, g->seq, seq, buf);
 
 	if (strcmp(dst, g->group)) {
 		ERROR("Packet for group %s received on wrong socket, expected group %s.",
@@ -257,18 +277,37 @@ static ssize_t recv_mcast(int sd, struct gr *g)
 		return -1;
 	}
 
-	/* Don't trigger gaps on first packet. */
 	if (g->seq > 0 && g->seq != seq) {
-		DEBUG("group seq %zu vs seq %zu", g->seq, seq);
-		g->gaps++;
-		g->status[STATUS_POS] = 'X';
+		if (seq == 0) {
+			size_t i;
+
+			/* sender restarted, clear history to prevent false dup counts */
+			for (i = 0; i < STATUS_POS; i++)
+				g->seqnos[i] = 0;
+
+			g->gaps++;
+			g->status[STATUS_POS] = ' ';
+		} else {
+			if (isdup(g, seq)) {
+				g->dupes++;
+				g->status[STATUS_POS] = ':';
+			} else if (seq < g->seq) {
+				g->order++;
+				g->status[STATUS_POS] = '<';
+			} else { /* seq > g->seq */
+				g->gaps++;
+				g->status[STATUS_POS] = ' ';
+			}
+		}
 	} else {
-		if (g->status[STATUS_POS] == '.')
-			g->status[STATUS_POS] = ':';
-		else
+		if (g->status[STATUS_POS - 1] == ' ' && g->seq > 1) {
+			g->status[STATUS_POS] = '_';
+			g->delayed++;
+		} else
 			g->status[STATUS_POS] = '.';
 	}
 
+	g->seqnos[STATUS_POS] = seq;
 	g->seq = seq + 1; /* Next expected sequence number */
 	g->count++;
 

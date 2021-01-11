@@ -79,7 +79,7 @@ int log_init(int fg, char *ident)
 	if (fg) {
 		int i;
 
-		if (old)
+		if (pres == 1)
 			return 0;
 
 		log_max = LOG_MAX;

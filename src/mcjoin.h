@@ -53,16 +53,20 @@ struct gr {
 	size_t       count;
 	size_t       seq;
 	size_t       gaps;
+	size_t       dupes;
+	size_t       order;
+	size_t       delayed;
+	size_t       invalid;
 	char        *source;
 	char        *group;
 	inet_addr_t  src;
 	inet_addr_t  grp;	/* to */
-
+	size_t       seqnos[STATUS_HISTORY]; /* for dup detection */
 	char         status[STATUS_HISTORY];
 	size_t       spin;
 };
 
-extern int old;
+extern int pres;
 extern int width;
 extern int height;
 extern int duplicate;

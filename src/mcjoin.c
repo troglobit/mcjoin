@@ -40,7 +40,7 @@
 #include "screen.h"
 
 /* Mode flags */
-int old = 0;
+int pres = 2;			/* default: new style plotter */
 int join = 1;
 int debug = 0;
 int hastty = 1;
@@ -80,32 +80,38 @@ static char spin(struct gr *g)
 	return act;
 }
 
-void plotter_show(int signo)
+void progress_show(int signo)
 {
-	int swidth;
-	int spos;
 	char act = 0;
 	size_t i;
 
 	(void)signo;
 
-	if (old) {
-		if (!hastty)
-			return;
-
-		for (i = 0; i < group_num; i++) {
-			struct gr *g = &groups[i];
-
-			if (g->status[STATUS_POS] != ' ')
-				act = g->status[STATUS_POS];
-		}
-
-		if (act)
-			progress();
-
+	if (!hastty)
 		return;
+
+	for (i = 0; i < group_num; i++) {
+		struct gr *g = &groups[i];
+
+		if (g->status[STATUS_POS] != ' ')
+			act = g->status[STATUS_POS];
 	}
 
+	if (act)
+		progress();
+}
+
+void plotter_show(int signo)
+{
+	char act = 0;
+	int swidth;
+	int spos;
+	size_t i;
+
+	(void)signo;
+
+	gotoxy(0, HEADING_ROW);
+	fprintf(stderr, "\e[K\e[7m%-31s    Plotter%*s      Packets\e[0m", "Source,Group", width - 55, " ");
 	swidth = width - 50;
 	if (swidth > STATUS_HISTORY)
 		swidth = STATUS_HISTORY;
@@ -119,7 +125,59 @@ void plotter_show(int signo)
 		act = spin(g);
 
 		snprintf(sgbuf, sizeof(sgbuf), "%s,%s", g->source ? g->source : "*", g->group);
-		fprintf(stderr, "%-31s  %c [%s] %13zu", sgbuf, act, &g->status[spos], g->count);
+		fprintf(stderr, "\e[K%-31s  %c [%s] %13zu", sgbuf, act, &g->status[spos], g->count);
+	}
+}
+
+void stats_show(int signo)
+{
+	size_t i;
+	int w;
+
+	(void)signo;
+
+	w = width - 76;
+	if (w < 0)
+		w = 0;
+
+	gotoxy(0, HEADING_ROW);
+	fprintf(stderr, "\e[K\e[7m%-31s  %*s%5s %5s %5s %5s %5s %13s\e[0m",
+		"Source,Group", w, " ",
+		"Inv", "Delay", "Gaps", "Order", "Dupes", "Packets");
+
+	for (i = 0; i < group_num; i++) {
+		struct gr *g = &groups[i];
+		char sgbuf[35];
+
+		gotoxy(0, GROUP_ROW + i);
+
+		snprintf(sgbuf, sizeof(sgbuf), "%s,%s", g->source ? g->source : "*", g->group);
+		fprintf(stderr, "\e[K%-31s  %*s%5zu %5zu %5zu %5zu %5zu %13zu", sgbuf, w, " ",
+			g->invalid, g->delayed, g->gaps, g->order, g->dupes, g->count);
+	}
+}
+
+/*
+ * Depending on presentation mode, either old-style dot progress,
+ * new-style plotter, or new stats-view.
+ */
+void present(int signo)
+{
+	switch (pres) {
+	case 1:
+		progress_show(signo);
+		break;
+
+	case 2:
+		plotter_show(signo);
+		break;
+
+	case 3:
+		stats_show(signo);
+		break;
+
+	default:
+		break;
 	}
 }
 
@@ -154,33 +212,31 @@ static char *uptime(time_t up)
 static void show_stats(void)
 {
 	size_t i, total_count = 0;
-	int gwidth = 0;
+	int len = 0;
 	time_t now;
 
 	for (i = 0; i < group_num; i++) {
-		if ((int)strlen(groups[i].group) > gwidth)
-			gwidth = (int)strlen(groups[i].group);
+		struct gr *g = &groups[i];
+		char buf[35];
+
+		snprintf(buf, sizeof(buf), "%s,%s", g->source ? g->source : "*", g->group);
+		if ((int)strlen(buf) > len)
+			len = (int)strlen(buf);
 	}
 
 	/* Reset log in case of user scrolling to show stats */
 	log_scroll(0);
 
 	for (i = 0; i < group_num; i++) {
-		if (join)
-			PRINT("Group %-*s received %zu packets, gaps: %zu", gwidth,
-			      groups[i].group, groups[i].count, groups[i].gaps);
-		else
-			PRINT("Sent %zu packets to group %-*s errors: %d",
-			      groups[i].count, gwidth, groups[i].group,
-			      groups[i].gaps);
+		struct gr *g = &groups[i];
+		char buf[35];
 
-		total_count += groups[i].count;
+		snprintf(buf, sizeof(buf), "%s,%s", g->source ? g->source : "*", g->group);
+		PRINT("%-*s: invalid %-5zu delay %-5zu gaps %-5zu reorder %-5zu dupes %-5zu packets %-13zu",
+		      len, buf, g->invalid, g->delayed, g->gaps, g->order, g->dupes, g->count);
+		total_count += g->count;
 	}
-
-	if (join)
-		PRINT("\nReceived total: %zu packets", total_count);
-	else
-		PRINT("\nSent total: %zu packets", total_count);
+	PRINT("\nTotal: %zu packets", total_count);
 
 	now = time(NULL);
 	PRINT("Uptime: %s", uptime(now - start));
@@ -191,7 +247,7 @@ static void redraw(int signo)
 	const char *howto = "ctrl-c to exit";
 	const char *title;
 
-	if (old || !foreground)
+	if (pres == 1 || !foreground)
 		return;
 
 	if (signo)
@@ -207,14 +263,12 @@ static void redraw(int signo)
 	fprintf(stderr, "\e[1m%s\e[0m", title);
 	gotoxy((width - strlen(howto)) / 2, HOSTDATE_ROW);
 	fprintf(stderr, "\e[2m%s\e[0m", howto);
-	gotoxy(0, HEADING_ROW);
-	fprintf(stderr, "\e[7m%-31s    Plotter%*s      Packets\e[0m", "Source,Group", width - 55, " ");
 
 	gotoxy(0, LOGHEADING_ROW); /* Thu Nov  5 09:08:59 2020 */
 	fprintf(stderr, "\e[7m%-24s  Log%*s\e[0m", "Time", width - 29, " ");
 
 	if (signo) {
-		plotter_show(signo);
+		present(signo);
 		log_show(signo);
 	}
 }
@@ -316,6 +370,14 @@ static void key_cb(int sd, void *arg)
 			pev_exit(0);
 			break;
 
+		case 't':
+			if (pres > 2)
+				pres--;
+			else
+				pres++;
+			present(0);
+			break;
+
 		default:
 			DEBUG("Got char 0x%02x", ch);
 			break;
@@ -330,13 +392,16 @@ static void scroll_cb(int period, void *arg)
 	(void)period;
 	(void)arg;
 
-	plotter_show(0);
+	present(0);
 
+	/* age all groups */
 	for (i = 0; i < group_num; i++) {
 		struct gr *g = &groups[i];
 
 		memmove(g->status, &g->status[1], STATUS_HISTORY - 1);
+		memmove(g->seqnos, &g->seqnos[1], (STATUS_HISTORY - 1) * sizeof(size_t));
 		g->status[STATUS_POS] = ' ';
+		g->seqnos[STATUS_POS] = 0;
 	}
 }
 
@@ -479,7 +544,7 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'o':
-			old++;
+			pres = 1;
 			break;
 
 		case 'p':
@@ -521,13 +586,13 @@ int main(int argc, char *argv[])
 			printf("Failed backgrounding: %s", strerror(errno));
 			_exit(1);
 		}
-	} else if (!old) {
+	} else if (pres > 1) {
 		if (isatty(STDOUT_FILENO)) {
 			setvbuf(stdout, NULL, _IONBF, 0);
 			ttsize(&width, &height);
 		} else {
 			hastty = 0;
-			old = 1;
+			pres = 1;
 		}
 	}
 
@@ -686,7 +751,7 @@ int main(int argc, char *argv[])
 	pev_sig_add(SIGHUP,   exit_loop, NULL);
 	pev_sig_add(SIGTERM,  exit_loop, NULL);
 	pev_timer_add(period, scroll_cb, NULL);
-	if (!old) {
+	if (pres > 1) {
 		int flags;
 
 		pev_sig_add(SIGWINCH, sigwinch_cb, NULL);
@@ -712,7 +777,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (foreground && !old) {
+	if (foreground && pres > 1) {
 		start = time(NULL);
 		ttraw();
 		hidecursor();
@@ -727,7 +792,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (foreground) {
-		if (!old) {
+		if (pres > 1) {
 			gotoxy(0, EXIT_ROW);
 			showcursor();
 			ttcooked();
