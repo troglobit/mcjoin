@@ -101,30 +101,39 @@ void progress_show(int signo)
 		progress();
 }
 
-void plotter_show(int signo)
+static int sgwidth(void)
 {
-	char act = 0;
-	int sgwidth = 0;
-	int swidth;
-	int spos;
+	int width = 0;
 	size_t i;
-
-	(void)signo;
 
 	for (i = 0; i < group_num; i++) {
 		struct gr *g = &groups[i];
 		int w;
 
 		w = snprintf(NULL, 0, "%s,%s", g->source ? g->source : "*", g->group);
-		if (w > sgwidth)
-			sgwidth = w;
+		if (w > width)
+			width = w;
 	}
-	sgwidth += 2;
+
+	return width;
+}
+
+void plotter_show(int signo)
+{
+	char act = 0;
+	int swidth;
+	int sgmax;
+	int spos;
+	size_t i;
+
+	(void)signo;
+	sgmax  = sgwidth();
+	sgmax += 2;
 
 	gotoxy(0, HEADING_ROW);
 	fprintf(stderr, "\e[K\e[7m%-*s  Plotter%*s      Packets\e[0m",
-		sgwidth, "Source,Group", width - (sgwidth + 22), " ");
-	swidth = width - (sgwidth + 17);
+		sgmax, "Source,Group", width - (sgmax + 22), " ");
+	swidth = width - (sgmax + 17);
 	if (swidth > STATUS_HISTORY)
 		swidth = STATUS_HISTORY;
 	spos = STATUS_HISTORY - swidth;
@@ -137,7 +146,7 @@ void plotter_show(int signo)
 		act = spin(g);
 
 		snprintf(sgbuf, sizeof(sgbuf), "%s,%s", g->source ? g->source : "*", g->group);
-		fprintf(stderr, "\e[K%-*s%c [%s] %13zu", sgwidth, sgbuf, act, &g->status[spos], g->count);
+		fprintf(stderr, "\e[K%-*s%c [%s] %13zu", sgmax, sgbuf, act, &g->status[spos], g->count);
 	}
 }
 
@@ -160,19 +169,22 @@ void plotbps_show(int signo)
 {
 	char act = 0;
 	int swidth;
+	int sgmax;
 	int spos;
 	size_t i;
 
 	(void)signo;
+	sgmax  = sgwidth();
+	sgmax += 2;
 
 	gotoxy(0, HEADING_ROW);
-	fprintf(stderr, "\e[K\e[7m%-31s  Plotter%*s %6s %13s %8s\e[0m",
-		"Source,Group",
-		width - 70, " ",
+	fprintf(stderr, "\e[K\e[7m%-*s  Plotter%*s %6s %13s %8s\e[0m",
+		sgmax, "Source,Group",
+		width - (sgmax + 39), " ",
 		"Rate",
 		"Bytes",
 		"Packets");
-	swidth = width - 64;
+	swidth = width - (sgmax + 33);
 	if (swidth > STATUS_HISTORY)
 		swidth = STATUS_HISTORY;
 	spos = STATUS_HISTORY - swidth;
@@ -185,25 +197,28 @@ void plotbps_show(int signo)
 		act = spin(g);
 
 		snprintf(sgbuf, sizeof(sgbuf), "%s,%s", g->source ? g->source : "*", g->group);
-		fprintf(stderr, "\e[K%-31s%c [%s] %6s %13zu %8zu", sgbuf, act, &g->status[spos],
-			rate(g->rate), g->bytes, g->count);
+		fprintf(stderr, "\e[K%-*s%c [%s] %6s %13zu %8zu", sgmax, sgbuf, act,
+			&g->status[spos], rate(g->rate), g->bytes, g->count);
 	}
 }
 
 void stats_show(int signo)
 {
+	int sgmax;
 	size_t i;
 	int w;
 
 	(void)signo;
+	sgmax  = sgwidth();
+	sgmax += 2;
 
-	w = width - 78;
+	w = width - (sgmax + 47);
 	if (w < 0)
 		w = 0;
 
 	gotoxy(0, HEADING_ROW);
-	fprintf(stderr, "\e[K\e[7m%-31s%*s%4s %4s %4s %4s %4s %13s %8s\e[0m",
-		"Source,Group", w, " ",
+	fprintf(stderr, "\e[K\e[7m%-*s%*s%4s %4s %4s %4s %4s %13s %8s\e[0m",
+		sgmax, "Source,Group", w, " ",
 		"Inv", "Del", "Gaps", "Ordr", "Dups", "Bytes", "Packets");
 
 	for (i = 0; i < group_num; i++) {
@@ -213,8 +228,9 @@ void stats_show(int signo)
 		gotoxy(0, GROUP_ROW + i);
 
 		snprintf(sgbuf, sizeof(sgbuf), "%s,%s", g->source ? g->source : "*", g->group);
-		fprintf(stderr, "\e[K%-31s%*s%4zu %4zu %4zu %4zu %4zu %13zu %8zu", sgbuf, w, " ",
-			g->invalid, g->delayed, g->gaps, g->order, g->dupes, g->bytes, g->count);
+		fprintf(stderr, "\e[K%-*s%*s%4zu %4zu %4zu %4zu %4zu %13zu %8zu", sgmax, sgbuf,
+			w, " ", g->invalid, g->delayed, g->gaps, g->order, g->dupes, g->bytes,
+			g->count);
 	}
 }
 
