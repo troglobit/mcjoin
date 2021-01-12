@@ -131,9 +131,11 @@ void plotter_show(int signo)
 	sgmax += 2;
 
 	gotoxy(0, HEADING_ROW);
-	fprintf(stderr, "\e[K\e[7m%-*s  Plotter%*s      Packets\e[0m",
-		sgmax, "Source,Group", width - (sgmax + 22), " ");
-	swidth = width - (sgmax + 17);
+	fprintf(stderr, "\e[K\e[7m%-*s  Plotter%*s %8s\e[0m",
+		sgmax, "Source,Group",
+		width - (sgmax + 18), " ",
+		"Packets");
+	swidth = width - (sgmax + 12);
 	if (swidth > STATUS_HISTORY)
 		swidth = STATUS_HISTORY;
 	spos = STATUS_HISTORY - swidth;
@@ -146,7 +148,7 @@ void plotter_show(int signo)
 		act = spin(g);
 
 		snprintf(sgbuf, sizeof(sgbuf), "%s,%s", g->source ? g->source : "*", g->group);
-		fprintf(stderr, "\e[K%-*s%c [%s] %13zu", sgmax, sgbuf, act, &g->status[spos], g->count);
+		fprintf(stderr, "\e[K%-*s%c [%s] %8zu", sgmax, sgbuf, act, &g->status[spos], g->count);
 	}
 }
 
