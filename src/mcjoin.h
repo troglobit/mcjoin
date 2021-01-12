@@ -51,6 +51,8 @@
 struct gr {
 	int          sd;
 	uint64_t     bytes;
+	uint64_t     obytes;
+	size_t       rate;
 	size_t       count;
 	size_t       seq;
 	size_t       gaps;

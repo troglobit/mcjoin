@@ -130,6 +130,55 @@ void plotter_show(int signo)
 	}
 }
 
+static char *rate(size_t bps)
+{
+	static char buf[32];
+	size_t kbps;
+
+	bps *= 8;
+	kbps = bps / 1000;
+	bps  = bps % 1000;
+
+	snprintf(buf, sizeof(buf), "%zu.%zuk", kbps, bps / 100);
+
+	return buf;
+}
+
+/* like plotter_show(), but with throughput numbers */
+void plotbps_show(int signo)
+{
+	char act = 0;
+	int swidth;
+	int spos;
+	size_t i;
+
+	(void)signo;
+
+	gotoxy(0, HEADING_ROW);
+	fprintf(stderr, "\e[K\e[7m%-31s  Plotter%*s %6s %13s %8s\e[0m",
+		"Source,Group",
+		width - 70, " ",
+		"Rate",
+		"Bytes",
+		"Packets");
+	swidth = width - 64;
+	if (swidth > STATUS_HISTORY)
+		swidth = STATUS_HISTORY;
+	spos = STATUS_HISTORY - swidth;
+
+	for (i = 0; i < group_num; i++) {
+		struct gr *g = &groups[i];
+		char sgbuf[35];
+
+		gotoxy(0, GROUP_ROW + i);
+		act = spin(g);
+
+		snprintf(sgbuf, sizeof(sgbuf), "%s,%s", g->source ? g->source : "*", g->group);
+		fprintf(stderr, "\e[K%-31s%c [%s] %6s %13zu %8zu", sgbuf, act, &g->status[spos],
+			rate(g->rate), g->bytes, g->count);
+	}
+}
+
 void stats_show(int signo)
 {
 	size_t i;
@@ -174,6 +223,10 @@ void present(int signo)
 		break;
 
 	case 3:
+		plotbps_show(signo);
+		break;
+
+	case 4:
 		stats_show(signo);
 		break;
 
@@ -372,10 +425,10 @@ static void key_cb(int sd, void *arg)
 			break;
 
 		case 't':
-			if (pres > 2)
-				pres--;
+			pres++;
+			if (pres > 4)
+				pres = 2;
 			else
-				pres++;
 			present(0);
 			break;
 
@@ -436,6 +489,24 @@ static void clock_cb(int period, void *arg)
 	fputs(str, stderr);
 
 	log_show(0);
+}
+
+static void rate_cb(int period, void *arg)
+{
+	size_t i;
+
+	period /= 1000000;	/* /sec */
+	(void)arg;
+
+	for (i = 0; i < group_num; i++) {
+		struct gr *g = &groups[i];
+		size_t rate;
+
+		rate = g->bytes - g->obytes;
+		if (rate)
+			g->rate = rate / period;
+		g->obytes = g->bytes;
+	}
 }
 
 static int usage(int code)
@@ -757,6 +828,7 @@ int main(int argc, char *argv[])
 
 		pev_sig_add(SIGWINCH, sigwinch_cb, NULL);
 		pev_timer_add(1000000, clock_cb, NULL);
+		pev_timer_add(5000000, rate_cb, NULL);
 
 		flags = fcntl(STDIN_FILENO, F_GETFL);
 		if (flags != -1)
