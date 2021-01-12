@@ -19,6 +19,7 @@
 #include "config.h"
 
 #include <arpa/inet.h>		/* inet_pton() on Solaris */
+#include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
@@ -325,9 +326,25 @@ static void show_stats(void)
 	PRINT("Uptime: %s", uptime(now - start));
 }
 
+static void prettyprint(FILE *fp, const char *str)
+{
+	fputs("\e[2m", fp);
+	while (*str) {
+		if (isupper(*str)) {
+			fputs("\e[0m\e[1m", fp);
+			fputc(*str, fp);
+			fputs("\e[0m\e[2m", fp);
+		} else
+			fputc(*str, fp);
+
+		str++;
+	}
+	fputs("\e[0m", fp);
+}
+
 static void redraw(int signo)
 {
-	const char *howto = "ctrl-c to exit";
+	const char *howto = "[Log | Toggle | Quit]";
 	const char *title;
 
 	if (pres == 1 || !foreground)
@@ -345,7 +362,7 @@ static void redraw(int signo)
 	gotoxy((width - strlen(title)) / 2, TITLE_ROW);
 	fprintf(stderr, "\e[1m%s\e[0m", title);
 	gotoxy((width - strlen(howto)) / 2, HOSTDATE_ROW);
-	fprintf(stderr, "\e[2m%s\e[0m", howto);
+	prettyprint(stderr, howto);
 
 	gotoxy(0, LOGHEADING_ROW); /* Thu Nov  5 09:08:59 2020 */
 	fprintf(stderr, "\e[7m%-24s  Log%*s\e[0m", "Time", width - 29, " ");
@@ -440,7 +457,7 @@ static void key_cb(int sd, void *arg)
 			}
 			break;
 
-		case 'D':
+		case 'l':
 			if (log_pri == -1)
 				log_pri = log_level(NULL);
 			if (log_level(NULL) != LOG_DEBUG)
