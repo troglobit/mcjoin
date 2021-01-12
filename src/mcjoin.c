@@ -153,7 +153,29 @@ void plotter_show(int signo)
 	}
 }
 
-static char *rate(size_t bps)
+static char *bytef(uint64_t num)
+{
+	static char buf[32];
+	int gb, mb, kb, b;
+
+	gb  = num / (1024 * 1024 * 1024);
+	num = num % (1024 * 1024 * 1024);
+	mb  = num / (1024 * 1024);
+	num = num % (1024 * 1024);
+	kb  = num / (1024);
+	b   = num % (1024);
+
+	if (gb)
+		snprintf(buf, sizeof(buf), "%d.%dG", gb, mb / 102);
+	else if (mb)
+		snprintf(buf, sizeof(buf), "%d.%dM", mb, kb / 102);
+	else
+		snprintf(buf, sizeof(buf), "%d.%dk", kb, b / 102);
+
+	return buf;
+}
+
+static char *ratef(size_t bps)
 {
 	static char buf[32];
 	size_t kbps;
@@ -181,13 +203,13 @@ void plotbps_show(int signo)
 	sgmax += 2;
 
 	gotoxy(0, HEADING_ROW);
-	fprintf(stderr, "\e[K\e[7m%-*s  Plotter%*s %6s %13s %8s\e[0m",
+	fprintf(stderr, "\e[K\e[7m%-*s  Plotter%*s %6s %7s %8s\e[0m",
 		sgmax, "Source,Group",
-		width - (sgmax + 39), " ",
+		width - (sgmax + 33), " ",
 		"Rate",
 		"Bytes",
 		"Packets");
-	swidth = width - (sgmax + 33);
+	swidth = width - (sgmax + 27);
 	if (swidth > STATUS_HISTORY)
 		swidth = STATUS_HISTORY;
 	spos = STATUS_HISTORY - swidth;
@@ -200,8 +222,8 @@ void plotbps_show(int signo)
 		act = spin(g);
 
 		snprintf(sgbuf, sizeof(sgbuf), "%s,%s", g->source ? g->source : "*", g->group);
-		fprintf(stderr, "\e[K%-*s%c [%s] %6s %13zu %8zu", sgmax, sgbuf, act,
-			&g->status[spos], rate(g->rate), g->bytes, g->count);
+		fprintf(stderr, "\e[K%-*s%c [%s] %6s %7s %8zu", sgmax, sgbuf, act,
+			&g->status[spos], ratef(g->rate), bytef(g->bytes), g->count);
 	}
 }
 
@@ -215,12 +237,12 @@ void stats_show(int signo)
 	sgmax  = sgwidth();
 	sgmax += 2;
 
-	w = width - (sgmax + 47);
+	w = width - (sgmax + 41);
 	if (w < 0)
 		w = 0;
 
 	gotoxy(0, HEADING_ROW);
-	fprintf(stderr, "\e[K\e[7m%-*s%*s%4s %4s %4s %4s %4s %13s %8s\e[0m",
+	fprintf(stderr, "\e[K\e[7m%-*s%*s%4s %4s %4s %4s %4s %7s %8s\e[0m",
 		sgmax, "Source,Group", w, " ",
 		"Inv", "Del", "Gaps", "Ordr", "Dups", "Bytes", "Packets");
 
@@ -231,9 +253,9 @@ void stats_show(int signo)
 		gotoxy(0, GROUP_ROW + i);
 
 		snprintf(sgbuf, sizeof(sgbuf), "%s,%s", g->source ? g->source : "*", g->group);
-		fprintf(stderr, "\e[K%-*s%*s%4zu %4zu %4zu %4zu %4zu %13zu %8zu", sgmax, sgbuf,
-			w, " ", g->invalid, g->delayed, g->gaps, g->order, g->dupes, g->bytes,
-			g->count);
+		fprintf(stderr, "\e[K%-*s%*s%4zu %4zu %4zu %4zu %4zu %7s %8zu", sgmax, sgbuf,
+			w, " ", g->invalid, g->delayed, g->gaps, g->order, g->dupes,
+			bytef(g->bytes), g->count);
 	}
 }
 
