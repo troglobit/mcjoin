@@ -104,16 +104,27 @@ void progress_show(int signo)
 void plotter_show(int signo)
 {
 	char act = 0;
+	int sgwidth = 0;
 	int swidth;
 	int spos;
 	size_t i;
 
 	(void)signo;
 
+	for (i = 0; i < group_num; i++) {
+		struct gr *g = &groups[i];
+		int w;
+
+		w = snprintf(NULL, 0, "%s,%s", g->source ? g->source : "*", g->group);
+		if (w > sgwidth)
+			sgwidth = w;
+	}
+	sgwidth += 2;
+
 	gotoxy(0, HEADING_ROW);
-	fprintf(stderr, "\e[K\e[7m%-31s  Plotter%*s      Packets\e[0m",
-		"Source,Group", width - 53, " ");
-	swidth = width - 48;
+	fprintf(stderr, "\e[K\e[7m%-*s  Plotter%*s      Packets\e[0m",
+		sgwidth, "Source,Group", width - (sgwidth + 22), " ");
+	swidth = width - (sgwidth + 17);
 	if (swidth > STATUS_HISTORY)
 		swidth = STATUS_HISTORY;
 	spos = STATUS_HISTORY - swidth;
@@ -126,7 +137,7 @@ void plotter_show(int signo)
 		act = spin(g);
 
 		snprintf(sgbuf, sizeof(sgbuf), "%s,%s", g->source ? g->source : "*", g->group);
-		fprintf(stderr, "\e[K%-31s%c [%s] %13zu", sgbuf, act, &g->status[spos], g->count);
+		fprintf(stderr, "\e[K%-*s%c [%s] %13zu", sgwidth, sgbuf, act, &g->status[spos], g->count);
 	}
 }
 
