@@ -1,21 +1,12 @@
 TODOs in no particular order.
 
-- Show uptime/runtime above clock, useful when using -f odd-num
 - Disable Ctrl-Z et al.
-- Improve plotter output by adding special characters for dupes, gaps, and delays.
-  Gaps in stream are shown as ' ' (space), but we don't know why they happen.
-  We could insert, as the next char after the gap, the reason, like this:
-
-        ............  normal flow moving left
-	....:.......  dupes, same seqno
-        ..... X.....  lost (gap) packet
-        ..... _.....  delayed packet
-
 - Fix IPv4 + IPv6 address validator in addr.c, see XXX
 - Add option to also log to syslog when running with new ui, not just log window on screen
-- gaps/dupes/reordering detection by checking seq n:o
 - option to show summary of gaps/dupes/bytes in log every 10 sec or so
 - add `-J MSEC` for addning MSEC jitter to sender
-- adjustable source port?
-- seqno start
-- countdown to next packet
+- option fo source port
+- option for seqno start
+- help view replacing log view
+- optionally show plotter if there is space, min 10 points or so
+- unicast support (3.0?), instead of groups -- multiple ports
