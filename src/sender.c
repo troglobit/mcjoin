@@ -123,6 +123,7 @@ static void send_mcast(int sd, struct gr *g)
 		g->status[STATUS_POS] = 'E';
 		g->gaps++;
 	} else {
+		g->bytes += bytes;
 		g->count++;
 		g->status[STATUS_POS] = '.';
 	}
