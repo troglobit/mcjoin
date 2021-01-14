@@ -14,7 +14,7 @@
 .\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 .\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 .\"
-.Dd November 8, 2020
+.Dd January 14, 2021
 .Dt MCJOIN 1
 .Os
 .Sh NAME
@@ -172,6 +172,30 @@ Also, like most network applications, to run properly
 needs both the loopback (lo) interface and a default route set up.  At
 least in the default (receiver) case.  In a network namespace neither of
 these are set up by default.
+.Sh INTERACTIVE
+.Nm
+can be controlled at runtime with the following keys:
+.Pp
+.Bl -tag -width Ctrl-L -compact -indent
+.It Cm d
+Toggle frame duplication
+.It Cm h
+Toggle help text
+.It Cm l
+Toggle debug log
+.It Cm q
+Quit mcjoin
+.It Cm t
+Toggle viewing modes
+.It Cm PgUp
+Scroll log view up
+.It Cm PgDn
+Scroll log view down
+.It Cm Ctrl-L
+Refresh display
+.It Cm Ctrl-C
+Quit mcjoin
+.El
 .Sh SEE ALSO
 .Xr ping 1 ,
 .Xr mgen 1 ,
@@ -181,5 +205,5 @@ Use the project's GitHub page to file bug reports, feature requests or
 patches (preferably as GitHub pull requests), or questions at
 .Aq https://github.com/troglobit/mcjoin
 .Sh AUTHORS
-Originally by David Stevens, currently maintained by Joachim Wiberg at
-GitHub.
+Originally based on an example by David Stevens, further developed and
+maintained by Joachim Wiberg at GitHub.
