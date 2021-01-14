@@ -386,9 +386,6 @@ static void redraw(int signo)
 	gotoxy((width - strlen(howto)) / 2, HOSTDATE_ROW);
 	prettyprint(stderr, howto);
 
-	gotoxy(0, LOGHEADING_ROW); /* Thu Nov  5 09:08:59 2020 */
-	fprintf(stderr, "\e[7m%-24s  Log%*s\e[0m", "Time", width - 29, " ");
-
 	if (signo) {
 		present(signo);
 		log_show(signo);
@@ -555,8 +552,6 @@ static void clock_cb(int period, void *arg)
 	str = ctime(&now);
 	gotoxy(width - strlen(str) + 2, HOSTDATE_ROW);
 	fputs(str, stderr);
-
-	log_show(0);
 }
 
 static void rate_cb(int period, void *arg)
