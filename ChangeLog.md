@@ -3,6 +3,25 @@ ChangeLog
 
 All notable changes to the project are documented in this file.
 
+
+[v2.9][] - 2021-01-14
+---------------------
+
+Multiple viewing modes, including new stats and rate/bytes view.  See
+help text for details.
+
+- Fix #11: Another presentation view, show rate/bytes + plotter
+- Fix #14: Update plotter on timer, not input, we want to see the gaps
+- Change style of headings from top style to pimctl/mroutectl style
+- Improved viewing modes and plotter characters for dupes/delay/etc.
+- Improved column sizing for better use of whitespace in narrow ttys
+- Show stats on exit
+- Support for scrolling log up/down with PgUp/PgDn
+- Support for displaying uptime, also shown on exit
+- Support for generating duplicate frames, for testing purposes
+- Support for toggling debug logs at runtime
+
+
 [v2.8][] - 2021-01-08
 ---------------------
 
@@ -141,7 +160,8 @@ OnTime AS and later at Westermo.  Based on the work by David Stevens
 and developed further by Joachim Nilsson, on his spare time.
 
 
-[UNRELEASED]: https://github.com/troglobit/mcjoin/compare/v2.8...HEAD
+[UNRELEASED]: https://github.com/troglobit/mcjoin/compare/v2.9...HEAD
+[v2.9]:       https://github.com/troglobit/mcjoin/compare/v2.8...v2.9
 [v2.8]:       https://github.com/troglobit/mcjoin/compare/v2.7...v2.8
 [v2.7]:       https://github.com/troglobit/mcjoin/compare/v2.6...v2.7
 [v2.6]:       https://github.com/troglobit/mcjoin/compare/v2.5...v2.6

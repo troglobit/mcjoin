@@ -1,4 +1,19 @@
-mcjoin (2.8) unstable; urgency=medium
+mcjoin (2.9) stable; urgency=medium
+
+  * Fix #11: Another presentation view, show rate/bytes + plotter
+  * Fix #14: Update plotter on timer, not input, we want to see the gaps
+  * Change style of headings from top style to pimctl/mroutectl style
+  * Improved viewing modes and plotter characters for dupes/delay/etc.
+  * Improved column sizing for better use of whitespace in narrow ttys
+  * Show stats on exit
+  * Support for scrolling log up/down with PgUp/PgDn
+  * Support for displaying uptime, also shown on exit
+  * Support for generating duplicate frames, for testing purposes
+  * Support for toggling debug logs at runtime
+
+ -- Joachim Wiberg <troglobit@gmail.com>  Thu, 14 Jan 2021 22:22:15 +0100
+
+mcjoin (2.8) stable; urgency=medium
 
   * Detect a default interface when system doesn't have a default route
   * Support Ctrl-L to refresh a garbled display
