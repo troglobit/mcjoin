@@ -69,6 +69,7 @@ struct gr {
 	size_t       spin;
 };
 
+extern int help;
 extern int pres;
 extern int width;
 extern int height;

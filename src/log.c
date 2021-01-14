@@ -204,6 +204,9 @@ void log_show(int signo)
 
 	(void)signo;
 
+	if (help)
+		return;
+
 	gotoxy(0, LOGHEADING_ROW); /* Thu Nov  5 09:08:59 2020 */
 	clsdn();
 	fprintf(stderr, "\e[7m%-24s  Log%*s\e[0m\n", "Time", width - 29, " ");

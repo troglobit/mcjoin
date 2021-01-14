@@ -41,6 +41,7 @@
 #include "screen.h"
 
 /* Mode flags */
+int help = 0;
 int pres = 2;			/* default: new style plotter */
 int join = 1;
 int debug = 0;
@@ -348,6 +349,50 @@ static void show_stats(void)
 	PRINT("Uptime: %s", uptime(now - start));
 }
 
+static void help_show(void)
+{
+	const char *support[] = {
+		PACKAGE_BUGREPORT,
+		"Copyright (c) 2008-2021 Joachim Wiberg",
+		NULL
+	};
+	const char *keys[] = {
+		"d - Toggle frame duplication    PgUp - Scroll log view up",
+		"h - Toggle this help text       PgDn - Scroll log view down",
+		"l - Toggle debug log          Ctrl-L - Refresh display",
+		"q - Quit mcjoin               Ctrl-C - Quit mcjoin",
+		"t - Toggle viewing modes",
+		NULL
+	};
+	int i, w = 0;
+
+	for (i = 0; keys[i]; i++) {
+		int l;
+
+		l = (int)strlen(keys[i]);
+		if (l > w)
+			w = l;
+	}
+
+	gotoxy(0, LOGHEADING_ROW);
+	clsdn();
+
+	fprintf(stderr, "\e[7mHelp%*s\e[0m\r\n", width - 4, " ");
+	fprintf(stderr, "\r\n");
+	for (i = 0; keys[i]; i++)
+		fprintf(stderr, "%*s%s\r\n", (width - w) / 2, " ", keys[i]);
+
+	fprintf(stderr, "\e[4m%*s\e[0m\r\n", width, " ");
+	w = (int)(strlen(support[0]) + strlen(support[1]) + 3);
+	if (w > width) {
+		for (i = 0; support[i]; i++) {
+			w = strlen(support[i]);
+			fprintf(stderr, "%*s%s\r\n", (width - w) / 2, " ", support[i]);
+		}
+	} else
+		fprintf(stderr, "%*s%s | %s\r\n", (width - w) / 2, " ", support[0], support[1]);
+}
+
 static void prettyprint(FILE *fp, const char *str)
 {
 	fputs("\e[2m", fp);
@@ -366,7 +411,7 @@ static void prettyprint(FILE *fp, const char *str)
 
 static void redraw(int signo)
 {
-	const char *howto = "[Log | Toggle | Quit]";
+	const char *howto = "[Help | Toggle | Quit]";
 	const char *title;
 
 	if (pres == 1 || !foreground)
@@ -388,7 +433,10 @@ static void redraw(int signo)
 
 	if (signo) {
 		present(signo);
-		log_show(signo);
+		if (help)
+			help_show();
+		else
+			log_show(signo);
 	}
 }
 
@@ -474,6 +522,14 @@ static void key_cb(int sd, void *arg)
 				duplicate ^= 1;
 				PRINT("%s (%d) seqno duplication.", duplicate ? "Enabling" : "Disabling", duplicate);
 			}
+			break;
+
+		case 'h':
+			help ^= 1;
+			if (help)
+				help_show();
+			else
+				log_show(0);
 			break;
 
 		case 'l':
