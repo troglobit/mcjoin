@@ -1,18 +1,19 @@
-### Testing with 3rd party software ###
+# Testing with 3rd party software # 
 
+## Testing with `logger` ##
 To test `mcjoin` with a 3rd party software, you can use `logger`:
 
-**On Reciver:**
+**On Receiver:**
 ````bash
 mcjoin
 ````
 
-**On Semder:**
+**On Sender:**
 ````bash
 while true; do logger -n 225.1.2.3 -P 1234 "Test message"; sleep 0.5; done
 ````
-#### Result
-Since `logger` does not send the expected packets the reciver, it will indicate error
+### Result ###
+Since `logger` does not send the expected packets the receiver, it will indicate error
 
 ````python
 Server (192.168.2.217@wlp2s0)Help | Toggle | Quit]          Sat Jan 23 22:30:14 2021
