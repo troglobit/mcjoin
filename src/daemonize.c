@@ -28,12 +28,9 @@ int daemonize(void)
 		_exit(0);
 	}
 
-	/* Starta a new session */
-	if ((rc = setsid())) {
-		if (rc == (pid_t)-1)
-			return -1;
-		_exit(0);
-	}
+	/* Start a new session */
+	if (setsid() == (pid_t)-1)
+		return -1;
 
 	/*
 	 * Old double-fork trick to prevent us from reacquiring
