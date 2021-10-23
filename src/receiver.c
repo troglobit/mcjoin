@@ -64,7 +64,7 @@ static int alloc_socket(inet_addr_t group)
 #ifdef IPV6_MULTICAST_ALL
 		val = 0;
 		if (setsockopt(sd, proto, IPV6_MULTICAST_ALL, &val, sizeof(val)))
-			ERROR("Failed disabling IP_MULTICAST_ALL: %s", strerror(errno));
+			ERROR("Failed disabling IPV6_MULTICAST_ALL: %s", strerror(errno));
 #endif
 	}
 #endif
