@@ -1,6 +1,6 @@
 m c j o i n - tiny multicast testing tool
 =========================================
-[![Travis Status][]][Travis] [![Coverity Status][]][Coverity Scan]
+[![License Badge][]][License] [![GitHub Status][]][GitHub] [![Coverity Status][]][Coverity Scan]
 
 [mcjoin(1)](https://man.troglobit.com/man1/mcjoin.1.html) is a simple
 and easy-to-use tool to test IPv4 and IPv6 multicast, featuring:
@@ -249,8 +249,10 @@ this requires `automake` and `autoconf` to be installed on your system.
 [RFC1112]:         https://tools.ietf.org/html/rfc1112
 [RFC3678]:         https://tools.ietf.org/html/rfc3678
 [RFC5771]:         https://tools.ietf.org/html/rfc5771
-[Travis]:          https://travis-ci.org/troglobit/mcjoin
-[Travis Status]:   https://travis-ci.org/troglobit/mcjoin.png?branch=master
+[License]:         https://en.wikipedia.org/wiki/ISC_license
+[License Badge]:   https://img.shields.io/badge/License-ISC-blue.svg
+[GitHub]:          https://github.com/troglobit/mcjoin/actions/workflows/build.yml/
+[GitHub Status]:   https://github.com/troglobit/mcjoin/actions/workflows/build.yml/badge.svg
 [Coverity Scan]:   https://scan.coverity.com/projects/9108
 [Coverity Status]: https://scan.coverity.com/projects/9108/badge.svg
 [buildsystem]:     https://airs.com/ian/configure/
