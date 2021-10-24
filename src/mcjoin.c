@@ -66,7 +66,7 @@ int need6 = 0;
 size_t group_num = 0;
 struct gr groups[MAX_NUM_GROUPS];
 
-char iface[IFNAMSIZ + 1];
+char iface[IFNAMSIZ];
 
 static char spin(struct gr *g)
 {
@@ -718,8 +718,7 @@ int main(int argc, char *argv[])
 				ERROR("Too long interface name, max %zd chars.", sizeof(iface) - 1);
 				return 1;
 			}
-			strncpy(iface, optarg, sizeof(iface));
-			iface[ilen] = 0;
+			strlcpy(iface, optarg, sizeof(iface));
 			DEBUG("IFACE: %s", iface);
 			break;
 

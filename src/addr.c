@@ -106,8 +106,7 @@ static char *ifany(char *iface, size_t len)
 
 		ifindex = if_nametoindex(ifa->ifa_name);
 		DEBUG("Found iface %s, ifindex %d", ifa->ifa_name, ifindex);
-		strncpy(iface, ifa->ifa_name, len);
-		iface[len] = 0;
+		strlcpy(iface, ifa->ifa_name, len);
 		break;
 	}
 	freeifaddrs(ifaddr);
@@ -134,7 +133,7 @@ static char *altdefault(char *iface, size_t len)
 		token = strtok(buf, " \t\n");
 		while (token) {
 			if (if_nametoindex(token)) {
-				strncpy(iface, token, len);
+				strlcpy(iface, token, len);
 				pclose(fp);
 
 				return iface;
@@ -187,8 +186,7 @@ char *ifdefault(char *iface, size_t len)
 			if (metric >= best)
 				continue;
 
-			strncpy(iface, ifname, len);
-			iface[len] = 0;
+			strlcpy(iface, ifname, len);
 			best = metric;
 			found = 1;
 
