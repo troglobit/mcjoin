@@ -268,7 +268,7 @@ static ssize_t recv_mcast(int sd, struct gr *g)
 	}
 	seq = atoi(ptr + strlen(SEQ_KEY));
 
-	DEBUG("Count %5zu, our PID %d, sender PID %d, group %s, exp. seq: %zu, recv. seq: %d, msg: %s",
+	DEBUG("Count %5zu, our PID %d, sender PID %d, group %s, exp. seq: %zu, recv. seq: %zu, msg: %s",
 	      g->count, getpid(), pid, g->group, g->seq, seq, buf);
 
 	if (strcmp(dst, g->group)) {
