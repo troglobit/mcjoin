@@ -156,18 +156,25 @@ static void sock_run(fd_set *fds)
 int pev_sock_add(int sd, void (*cb)(int, void *), void *arg)
 {
 	struct pev *entry;
+	int rc;
 
 	if (sd < 0) {
 		errno = EINVAL;
 		return -1;
 	}
 
+	rc = fcntl(sd, F_GETFD);
+	if (rc == -1)
+		return -1;
+	rc = fcntl(sd, F_SETFD, rc | O_CLOEXEC | O_NONBLOCK);
+	if (rc == -1)
+		return -1;
+
 	entry = pev_new(PEV_SOCK, cb, arg);
 	if (!entry)
 		return -1;
 
 	entry->sd = sd;
-	fcntl(sd, F_SETFD, fcntl(sd, F_GETFD) | O_CLOEXEC | O_NONBLOCK);
 
 	/* Keep track for select() */
 	if (sd > max_fdnum)
