@@ -640,7 +640,7 @@ static int usage(int code)
 	       "  -b BYTES    Payload in bytes over IP/UDP header (42 bytes), default: 100\n"
 	       "  -c COUNT    Stop sending/receiving after COUNT number of packets (per group)\n"
 	       "  -d          Run as daemon in background, output except progress to syslog\n"
-	       "  -f MSEC     Frequency, poll/send every MSEC milliseoncds, default: %d\n"
+	       "  -f MSEC     Frequency, poll/send every MSEC milliseconds, default: %d\n"
 	       "  -h          This help text\n"
 	       "  -i IFACE    Interface to use for sending/receiving multicast, default: %s\n"
 	       "  -j          Join groups, default unless acting as sender\n"

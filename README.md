@@ -72,7 +72,7 @@ a sender of the same group and port, add `-s` to the command line.
       -b BYTES    Payload in bytes over IP/UDP header (42 bytes), default: 100
       -c COUNT    Stop sending/receiving after COUNT number of packets
       -d          Run as daemon in background, output except progress to syslog
-      -f MSEC     Frequency, poll/send every MSEC milliseoncds, default: 100
+      -f MSEC     Frequency, poll/send every MSEC milliseconds, default: 100
       -h          This help text
       -i IFACE    Interface to use for sending/receiving multicast, default: eth0
       -j          Join groups, default unless acting as sender
