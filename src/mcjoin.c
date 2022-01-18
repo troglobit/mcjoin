@@ -968,8 +968,9 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	start = time(NULL);
+
 	if (foreground && pres > 1) {
-		start = time(NULL);
 		ttraw();
 		hidecursor();
 	}
