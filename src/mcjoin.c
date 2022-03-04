@@ -36,6 +36,7 @@
 #include <sys/resource.h>
 
 #include "addr.h"
+#include "inetaddr.h"
 #include "log.h"
 #include "mcjoin.h"
 #include "screen.h"
@@ -738,9 +739,13 @@ int main(int argc, char *argv[])
 			break;
 
 		case 'p':
-			port = atoi(optarg);
+			port = inet_port(optarg);
+			if (port < 0) {
+				ERROR("Invalid port: %s", optarg);
+				return 1;
+			}
 			if (port < 1024 && geteuid())
-				ERROR("Must be root to use privileged ports (< 1024)");
+				ERROR("Must be root to use privileged ports (< 1024) : %d", port);
 			break;
 
 		case 's':
@@ -848,7 +853,7 @@ int main(int argc, char *argv[])
 			int family;
 
 #ifdef AF_INET6
-			if (strchr(group, ':')) {
+			if (inet_ip6(group)) {
 				family = AF_INET6;
 				sin6 = (struct sockaddr_in6 *)&addr;
 				ptr = &sin6->sin6_addr;
@@ -861,7 +866,7 @@ int main(int argc, char *argv[])
 			}
 
 			DEBUG("Converting family %d group %s to ptr %p, num :%d ... ", family, group, ptr, num);
-			if (!inet_pton(family, group, ptr)) {
+			if (!inet_pton_port(family, group, ptr, NULL, 0)) {
 				ERROR("%s is not a valid multicast group", group);
 				return usage(1);
 			}
@@ -872,7 +877,7 @@ int main(int argc, char *argv[])
 
 			/* Next group ... */
 #ifdef AF_INET6
-			if (strchr(group, ':')) {
+			if (inet_ip6(group)) {
 				memcpy(&step, &sin6->sin6_addr.s6_addr[12],
 				    sizeof(step));
 				step = htonl(ntohl(step) + 1);
@@ -893,37 +898,48 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	DEBUG("group_num:%u", group_num);
 	for (i = 0; i < (int)group_num; i++) {
 #ifdef AF_INET6
-		if (strchr(groups[i].group, ':')) {
+		if (inet_ip6(groups[i].group)) {
 			struct sockaddr_in6 *grp = (struct sockaddr_in6 *)&groups[i].grp;
 			struct sockaddr_in6 *src = (struct sockaddr_in6 *)&groups[i].src;
+			char buf[INET_ADDRSTR_LEN + 1] = {0};
+			int t_port;
 
-			inet_pton(AF_INET6, groups[i].group, &grp->sin6_addr);
+			inet_pton_port(AF_INET6, groups[i].group, &grp->sin6_addr, &t_port, port);
 			grp->sin6_family = AF_INET6;
-			grp->sin6_port   = htons(port);
+			grp->sin6_port   = htons(t_port);
 
 			if (groups[i].source) {
-				inet_pton(AF_INET6, groups[i].source, &src->sin6_addr);
+				inet_pton_port(AF_INET6, groups[i].source, &src->sin6_addr, &t_port, 0);
 				src->sin6_family = AF_INET6;
-				src->sin6_port   = 0;
+				src->sin6_port   = htons(t_port);
 			}
+
+			DEBUG("IP6: <%s> grp: %s:%u", groups[i].group, inet_ntop(AF_INET6, &grp->sin6_addr, buf, sizeof(buf)), ntohs(grp->sin6_port));
+			DEBUG("IP6: <%s> src: %s:%u", groups[i].source?groups[i].source:"", inet_ntop(AF_INET6, &src->sin6_addr, buf, sizeof(buf)), ntohs(src->sin6_port));
 			need6++;
 		} else
 #endif
 		{
 			struct sockaddr_in *grp = (struct sockaddr_in *)&groups[i].grp;
 			struct sockaddr_in *src = (struct sockaddr_in *)&groups[i].src;
+			char buf[INET_ADDRSTR_LEN + 1] = {0};
+			int t_port;
 
-			inet_pton(AF_INET, groups[i].group, &grp->sin_addr);
+			inet_pton_port(AF_INET, groups[i].group, &grp->sin_addr, &t_port, port);
 			grp->sin_family = AF_INET;
-			grp->sin_port   = htons(port);
+			grp->sin_port   = htons(t_port);
 
 			if (groups[i].source) {
-				inet_pton(AF_INET, groups[i].source, &src->sin_addr);
+				inet_pton_port(AF_INET, groups[i].source, &src->sin_addr, &t_port, 0);
 				src->sin_family = AF_INET;
-				src->sin_port   = 0;
+				src->sin_port   = htons(t_port);
 			}
+
+			DEBUG("IP4: <%s> grp: %s:%u", groups[i].group, inet_ntop(AF_INET, &grp->sin_addr, buf, sizeof(buf)), ntohs(grp->sin_port));
+			DEBUG("IP4: <%s> src: %s:%u", groups[i].source?groups[i].source:"", inet_ntop(AF_INET, &src->sin_addr, buf, sizeof(buf)), ntohs(src->sin_port));
 			need4++;
 		}
 #ifdef HAVE_STRUCT_SOCKADDR_STORAGE_SS_LEN
