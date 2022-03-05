@@ -28,8 +28,8 @@
 
 static int send_socket(int family)
 {
-	inet_addr_t addr;
 	char buf[INET_ADDRSTR_LEN];
+	inet_addr_t addr;
 	int ifindex;
 	int sd;
 

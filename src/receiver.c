@@ -95,14 +95,14 @@ static int alloc_socket(inet_addr_t group)
 
 static int join_group(struct gr *sg)
 {
+	char src[INET_ADDRSTR_LEN] = "*";
+	char grp[INET_ADDRSTR_LEN] = "";
 	struct group_source_req gsr;
 	struct group_req gr;
-	char src[INET_ADDRSTR_LEN] = "*";
-	char grp[INET_ADDRSTR_LEN];
+	int sd, op, proto;
+	int ifindex;
 	size_t len;
 	void *arg;
-	int ifindex;
-	int sd, op, proto;
 
 	ifindex = if_nametoindex(iface);
 	if (!ifindex) {
@@ -214,11 +214,10 @@ static int isdup(struct gr *g, size_t seq)
 static ssize_t recv_mcast(int sd, struct gr *g)
 {
 	struct sockaddr_storage src;
-	struct in_addr *dstaddr;
-	struct in6_addr *dstaddr6;
-	struct msghdr msgh;
-	struct iovec iov[1];
 	char addr[INET6_ADDRSTRLEN];
+	struct in_addr *dstaddr;
+	struct iovec iov[1];
+	struct msghdr msgh;
 	char cmbuf[0x100];
 	char buf[BUFSZ];
 	const char *dst;
@@ -247,6 +246,8 @@ static ssize_t recv_mcast(int sd, struct gr *g)
 		dst = inet_ntop(AF_INET, dstaddr, addr, sizeof(addr));
 #ifdef AF_INET6
 	else {
+		struct in6_addr *dstaddr6;
+
 		dstaddr6 = find_dstaddr6(&msgh);
 		if (!dstaddr6)
 			return -1;
