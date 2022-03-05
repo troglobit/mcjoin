@@ -173,7 +173,7 @@ int sender_init(void)
 {
 	int rc;
 
-	rc = pev_timer_add(period, send_cb, NULL);
+	rc = pev_timer_add(0, period, send_cb, NULL);
 	if (rc < 0)
 		return 1;
 
