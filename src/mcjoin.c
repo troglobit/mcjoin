@@ -636,7 +636,8 @@ static int usage(int code)
 
 	printf("Usage: %s [-dhjosv] [-c COUNT] [-f MSEC ][-i IFACE] [-l LEVEL] [-p PORT]\n"
 	       "              [-r SEC] [-t TTL] [-w SEC]\n"
-	       "              [[SOURCE,]GROUP0 .. [SOURCE,]GROUPN | [SOURCE,]GROUP+NUM]\n"
+	       "              [[SOURCE,]GROUP0[:PORT] .. [SOURCE,]GROUPN[:PORT] |\n"
+	       "               [SOURCE,]GROUP[:PORT]+NUM]\n"
 	       "Options:\n"
 	       "  -b BYTES    Payload in bytes over IP/UDP header (42 bytes), default: 100\n"
 	       "  -c COUNT    Stop sending/receiving after COUNT number of packets (per group)\n"
@@ -647,12 +648,16 @@ static int usage(int code)
 	       "  -j          Join groups, default unless acting as sender\n"
 	       "  -l LEVEL    Set log level; none, notice*, debug\n"
 	       "  -o          Old (plain/ordinary) output, no fancy progress bars\n"
-	       "  -p PORT     UDP port number to send/listen to, default: %d\n"
+	       "  -p PORT     UDP port number to send/listen to, also possible to define\n"
+	       "              custom port per group (see above), default: %d\n"
 	       "  -s          Act as sender, sends packets to select groups, default: no\n"
 	       "  -t TTL      TTL to use when sending multicast packets, default: 1\n"
 	       "  -v          Display program version\n"
 	       "  -w SEC      Initial wait before opening sockets\n"
 	       "  -W SEC      Timeout, in seconds, before %s exits\n"
+	       "\n"
+	       "Note: IPv6 addresses can be within actual [1:2:3:::1] or have to contain\n"
+	       "      more than one ':' to be differentiated from a custom port number.\n"
 	       "\n"
 	       "Bug report address : %-40s\n", ident, period / 1000, iface,
 	       DEFAULT_PORT, ident, PACKAGE_BUGREPORT);
