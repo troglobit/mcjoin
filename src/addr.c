@@ -173,8 +173,8 @@ char *ifdefault(char *iface, size_t len)
 
 	while (fgets(buf, sizeof(buf), fp) != NULL) {
 		rc = sscanf(buf, "%16s %X %X %X %d %d %d %X %d %d %d\n",
-			   ifname, &dest, &gw, &flags, &cnt, &use, &metric,
-			   &mask, &mtu, &win, &irtt);
+			    ifname, &dest, &gw, &flags, &cnt, &use, &metric,
+			    &mask, &mtu, &win, &irtt);
 
 		if (rc < 10 || !(flags & 1)) /* IFF_UP */
 			continue;

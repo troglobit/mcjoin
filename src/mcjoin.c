@@ -295,13 +295,13 @@ static char *uptime(time_t up)
 	time_t day, hour, min, sec;
 
 	day = up / (24 * 60 * 60);
-	 up = up % (24 * 60 * 60);
+	up  = up % (24 * 60 * 60);
 
 	hour = up / (60 * 60);
-	  up = up % (60 * 60);
+	up   = up % (60 * 60);
 
 	min = up / 60;
-	 up = up % 60;
+	up  = up % 60;
 
 	sec = up;
 
@@ -551,7 +551,7 @@ static void key_cb(int sd, void *arg)
 			if (pres > 4)
 				pres = 2;
 			else
-			present(0);
+				present(0);
 			break;
 
 		default:
@@ -665,15 +665,15 @@ static int usage(int code)
 
 static char *progname(char *arg0)
 {
-       char *nm;
+	char *nm;
 
-       nm = strrchr(arg0, '/');
-       if (nm)
-	       nm++;
-       else
-	       nm = arg0;
+	nm = strrchr(arg0, '/');
+	if (nm)
+		nm++;
+	else
+		nm = arg0;
 
-       return nm;
+	return nm;
 }
 
 int main(int argc, char *argv[])
@@ -879,10 +879,10 @@ int main(int argc, char *argv[])
 #ifdef AF_INET6
 			if (inet_ip6(group)) {
 				memcpy(&step, &sin6->sin6_addr.s6_addr[12],
-				    sizeof(step));
+				       sizeof(step));
 				step = htonl(ntohl(step) + 1);
 				memcpy(&sin6->sin6_addr.s6_addr[12], &step,
-				    sizeof(step));
+				       sizeof(step));
 				len = sizeof(*sin6);
 			} else
 #endif
