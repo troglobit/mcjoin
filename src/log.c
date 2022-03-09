@@ -270,5 +270,8 @@ int logit(int prio, char *fmt, ...)
 	}
 	va_end(ap);
 
+	if (prio <= LOG_CRIT)
+		exit(1);
+
 	return rc;
 }
