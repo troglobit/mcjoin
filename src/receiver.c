@@ -32,9 +32,11 @@ static int alloc_socket(inet_addr_t group)
 {
 	inet_addr_t ina = { 0 };
 	int sd, val, proto;
+	int port;
 
 	ina.ss_family = group.ss_family;
-	inet_addr_set_port(&ina, inet_addr_get_port(&group));
+	port = inet_addr_get_port(&group);
+	inet_addr_set_port(&ina, port);
 
 #ifdef AF_INET6
 	if (group.ss_family == AF_INET6)
@@ -85,7 +87,16 @@ static int alloc_socket(inet_addr_t group)
 	}
 
 	if (bind(sd, (struct sockaddr *)&ina, inet_addrlen(&ina))) {
-		ERROR("Failed binding to socket: %s", strerror(errno));
+		switch (errno) {
+		case EPERM:
+		case EACCES:
+			if (ntohs(port) < 1024)
+				PANIC("Not root, or no capabilities, binding to privileged port %d.", ntohs(port));
+			/* fallthrough */
+		default:
+			ERROR("Failed binding to socket: %s", strerror(errno));
+			break;
+		}
 		close(sd);
 		return -1;
 	}

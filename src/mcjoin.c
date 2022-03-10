@@ -749,8 +749,6 @@ int main(int argc, char *argv[])
 				ERROR("Invalid port: %s", optarg);
 				return 1;
 			}
-			if (port < 1024 && geteuid())
-				ERROR("Must be root to use privileged ports (< 1024) : %d", port);
 			break;
 
 		case 's':
