@@ -32,12 +32,19 @@
 .Op Fl t Ar TTL
 .Op Fl w Ar SEC
 .Op Fl W Ar SEC
-.Op Ar [SOURCE,]GROUP0 .. [SOURCE,]GROUPN | [SOURCE,]GROUP+NUM
+.Op Ar [SOURCE,]GROUP0[:PORT] .. [SOURCE,]GROUPN[:PORT] | [SOURCE,]GROUP[:PORT]+NUM
 .Sh DESCRIPTION
 .Nm
 can be used to join IPv4 and IPv6 multicast groups, display progress as
 multicast packets are received, or sent when acting as sender, and also
 send multicast packets on select groups.
+.Pp
+.Bd -ragged -offset center
+.Sy Note:
+an IPv6 group with custom port must be written as
+.Ar [ADDR]:port ,
+i.e., with enclosing brackets.
+.Ed
 .Pp
 .Nm
 can help verify intended IGMP snooping functionality in layer-2 bridges
