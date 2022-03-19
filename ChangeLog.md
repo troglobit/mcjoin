@@ -4,6 +4,19 @@ ChangeLog
 All notable changes to the project are documented in this file.
 
 
+[v2.10][] - 2022-03-19
+----------------------
+
+- Project CI moved from Travis-CI to GitHub
+- Container support: `docker pull ghcr.io/troglobit/mcjoin:latest`
+- Minor bug fixes, found by Coverity Scan
+- Fix #18: optional trailing group port arguments ip4/ip6, by Adam Young
+- Fix #19: `setsid()` problem causing mcjoin to exit when daemonized,
+  regression introduced in v2.7.  Found and fixed by Foster Snowhill
+- Fix #23: fix uptime display in old output mode, by Foster Snowhill
+- Document alternative use-case, by Torstein Eide
+
+
 [v2.9][] - 2021-01-14
 ---------------------
 
@@ -160,7 +173,8 @@ OnTime AS and later at Westermo.  Based on the work by David Stevens
 and developed further by Joachim Nilsson, on his spare time.
 
 
-[UNRELEASED]: https://github.com/troglobit/mcjoin/compare/v2.9...HEAD
+[UNRELEASED]: https://github.com/troglobit/mcjoin/compare/v2.10...HEAD
+[v2.10]:      https://github.com/troglobit/mcjoin/compare/v2.9...v2.10
 [v2.9]:       https://github.com/troglobit/mcjoin/compare/v2.8...v2.9
 [v2.8]:       https://github.com/troglobit/mcjoin/compare/v2.7...v2.8
 [v2.7]:       https://github.com/troglobit/mcjoin/compare/v2.6...v2.7

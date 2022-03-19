@@ -1,3 +1,14 @@
+mcjoin (2.10) unstable; urgency=medium
+
+  * Fix #18: optional trailing group port arguments ip4/ip6, by Adam Young
+  * Fix #19: `setsid()` problem causing mcjoin to exit when daemonized,
+    regression introduced in v2.7.  Found and fixed by Foster Snowhill
+  * Fix #23: fix uptime display in old output mode, by Foster Snowhill
+  * Minor bug fixes, found by Coverity Scan
+  * Document alternative use-case, by Torstein Eide
+
+ -- Joachim Wiberg <troglobit@gmail.com>  Sat, 19 Mar 2022 08:57:50 +0100
+
 mcjoin (2.9) stable; urgency=medium
 
   * Fix #11: Another presentation view, show rate/bytes + plotter
