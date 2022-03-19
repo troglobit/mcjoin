@@ -30,14 +30,16 @@ example
 this is a fairly odd example, joining multiple ipv6 asm groups and a
 single ipv4 ssm group. the purpose is only to show that it's possible.
 
+    mcjoin ff2e::42 ff2e::43 ff2e::44 ff2e::45 225.1.2.3
+
 ![mcjoin receiver](doc/mcjoin-recv.jpg)
-`mcjoin ff2e::42 ff2e::43 ff2e::44 ff2e::45 225.1.2.3`
 
 the sender needs to have an ipv6 (and ipv4) address on the egressing
 interface. here the system only has an ipv6 address.
 
+    mcjoin -s ff2e::42
+
 ![mcjoin sender](doc/mcjoin-send.jpg)
-`mcjoin -s ff2e::42 225.1.2.3`
 
 by default, mcjoin use the ipv4 group 225.1.2.3 (which is very easy to
 spot also when translated to mac multicast, [RFC1112][]). however, for
