@@ -31,16 +31,18 @@
 #endif
 
 #ifdef AF_INET6
+/* two or more colons, assume ip6 */
 int inet_ip6(const char *ip)
 {
 	const char *cursor = ip;
 	unsigned colons = 0;
 
-	for (;NULL != (cursor = strchr(cursor, ':')); ++cursor)
-		++colons;
+	while ((cursor = strchr(cursor, ':'))) {
+		cursor++;
+		colons++;
+	}
 
-	/* two or more colons, assume ip6 */
-	return ('[' == *ip || colons > 1);
+	return '[' == *ip || colons > 1;
 }
 #endif
 
@@ -61,33 +63,39 @@ int inet_port(const char *value)
 
 int inet_pton_port(int family, const char *addr, void *ptr, int *sin_port, int def_port)
 {
-	int port = def_port, ret = 0;
+	int port = def_port, rc = -1;
 	char *t_addr;
 
-	if (NULL == addr || NULL == (t_addr = strdup(addr)))
-		return 0;
+	if (!addr) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	t_addr = strdup(addr);
+	if (!t_addr)
+		return -1;
 
 	addr = t_addr;
-	if (AF_INET6 == family) {
+	if (family == AF_INET6) {
 		/* [1fff:0:a88:85a3::ac1f]:8001 or 1fff:0:a88:85a3::ac1f */
 		if ('[' == *addr) {
 			/* optional [] enclosure. */
 			char *end_spec = strchr(++addr, ']');
 
-			if (NULL == end_spec)
-				return 0;
+			if (!end_spec)
+				goto error;
 
 			*end_spec++ = 0;
 			if (*end_spec) {
 				/* optional trailing port */
 				if (':' != *end_spec++)
-					return 0;
+					goto error;
 
-				if ((port = inet_port(end_spec)) < 0)
-					return 0;
+				port = inet_port(end_spec);
+				if (port < 0)
+					goto error;
 			}
 		}
-
 	} else {
 		/* 1.2.3.4:8001 or 1.2.3.4 */
 		char *port_spec = strchr(addr, ':');
@@ -96,17 +104,25 @@ int inet_pton_port(int family, const char *addr, void *ptr, int *sin_port, int d
 			/* optional trailing port */
 			*port_spec++ = 0;
 
-			if ((port = inet_port(port_spec)) < 0)
-				return 0;
+			port = inet_port(port_spec);
+			if (port < 0)
+				goto error;
 		}
 	}
 
-	ret = inet_pton(family, addr, ptr);
-	if (ret && sin_port)
+	rc = inet_pton(family, addr, ptr);
+	if (rc == -1 || rc == 0) {
+		rc = -1;
+		goto error;
+	}
+
+	rc = 0;
+	if (sin_port)
 		*sin_port = port;
 
+error:
 	free(t_addr);
-	return ret;
+	return rc;
 }
 
 
@@ -114,14 +130,12 @@ int inet_pton_port(int family, const char *addr, void *ptr, int *sin_port, int d
 
 #define TEST(__x)	test(__x, #__x)
 
-static void
-test(int val, const char *msg)
+static void test(int val, const char *msg)
 {
 	printf("[%s] %s\n", (val ? " OK  " : "ERROR"), msg);
 }
 
-void
-main()
+int main(void)
 {
 	union {
 		struct sockaddr_in6 ip6;
@@ -139,41 +153,43 @@ main()
 	TEST((port = inet_port("1024")) == 1024);
 	TEST((port = inet_port("65535")) == 65535);
 
-	TEST(0 == inet_pton_port(AF_INET, NULL, &addr, &port, -1));
-	TEST(0 == inet_pton_port(AF_INET, "", &addr, &port, -1));
+	TEST(-1 == inet_pton_port(AF_INET, NULL, &addr, &port, -1));
+	TEST(-1 == inet_pton_port(AF_INET, "", &addr, &port, -1));
 
-	TEST(0 == inet_pton_port(AF_INET, "1.2.3.4:", &addr, &port, -1));
-	TEST(0 == inet_pton_port(AF_INET, "1.2.3.4: ", &addr, &port, -1));
-	TEST(0 == inet_pton_port(AF_INET, "1.2.3.4:-1", &addr, &port, -1));
-	TEST(0 == inet_pton_port(AF_INET, "1.2.3.4:99999", &addr, &port, -1));
-	TEST(0 == inet_pton_port(AF_INET, "1.2.3.4:1024x", &addr, &port, -1));
+	TEST(-1 == inet_pton_port(AF_INET, "1.2.3.4:", &addr, &port, -1));
+	TEST(-1 == inet_pton_port(AF_INET, "1.2.3.4: ", &addr, &port, -1));
+	TEST(-1 == inet_pton_port(AF_INET, "1.2.3.4:-1", &addr, &port, -1));
+	TEST(-1 == inet_pton_port(AF_INET, "1.2.3.4:99999", &addr, &port, -1));
+	TEST(-1 == inet_pton_port(AF_INET, "1.2.3.4:1024x", &addr, &port, -1));
 
-	TEST(1 == inet_pton_port(AF_INET, "1.2.3.4", &addr, &port, -1) && port == -1);
-	TEST(1 == inet_pton_port(AF_INET, "1.2.3.4:1024", &addr, &port, -1) && port == 1024);
+	TEST( 0 == inet_pton_port(AF_INET, "1.2.3.4", &addr, &port, -1) && port == -1);
+	TEST( 0 == inet_pton_port(AF_INET, "1.2.3.4:1024", &addr, &port, -1) && port == 1024);
 
-	TEST(0 == inet_pton_port(AF_INET6, "0:0:0:0:0:0:0:0]:1024", &addr, &port, -1));
-	TEST(0 == inet_pton_port(AF_INET6, "[0:0:0:0:0:0:0:0:1024", &addr, &port, -1));
-	TEST(0 == inet_pton_port(AF_INET6, "[0:0:0:0:0:0:0:0] ", &addr, &port, -1));
-	TEST(0 == inet_pton_port(AF_INET6, "[0:0:0:0:0:0:0:0]:", &addr, &port, -1));
-	TEST(0 == inet_pton_port(AF_INET6, "[0:0:0:0:0:0:0:0]: ", &addr, &port, -1));
-	TEST(0 == inet_pton_port(AF_INET6, "[0:0:0:0:0:0:0:0]:1024x", &addr, &port, -1));
+	TEST(-1 == inet_pton_port(AF_INET6, "0:0:0:0:0:0:0:0]:1024", &addr, &port, -1));
+	TEST(-1 == inet_pton_port(AF_INET6, "[0:0:0:0:0:0:0:0:1024", &addr, &port, -1));
+	TEST(-1 == inet_pton_port(AF_INET6, "[0:0:0:0:0:0:0:0] ", &addr, &port, -1));
+	TEST(-1 == inet_pton_port(AF_INET6, "[0:0:0:0:0:0:0:0]:", &addr, &port, -1));
+	TEST(-1 == inet_pton_port(AF_INET6, "[0:0:0:0:0:0:0:0]: ", &addr, &port, -1));
+	TEST(-1 == inet_pton_port(AF_INET6, "[0:0:0:0:0:0:0:0]:1024x", &addr, &port, -1));
 
-	TEST(1 == inet_pton_port(AF_INET6, "0:0:0:0:0:0:0:0", &addr, &port, -1) && port == -1);
-	TEST(1 == inet_pton_port(AF_INET6, "[0:0:0:0:0:0:0:0]", &addr, &port, -1) && port == -1);
-	TEST(1 == inet_pton_port(AF_INET6, "::", &addr, &port, -1) && port == -1);
-	TEST(1 == inet_pton_port(AF_INET6, "[::]", &addr, &port, -1) && port == -1);
+	TEST(0 == inet_pton_port(AF_INET6, "0:0:0:0:0:0:0:0", &addr, &port, -1) && port == -1);
+	TEST(0 == inet_pton_port(AF_INET6, "[0:0:0:0:0:0:0:0]", &addr, &port, -1) && port == -1);
+	TEST(0 == inet_pton_port(AF_INET6, "::", &addr, &port, -1) && port == -1);
+	TEST(0 == inet_pton_port(AF_INET6, "[::]", &addr, &port, -1) && port == -1);
 
-	TEST(1 == inet_pton_port(AF_INET6, "1:0:0:0:0:0:0:8", &addr, &port, -1) && port == -1);
-	TEST(1 == inet_pton_port(AF_INET6, "1::8", &addr, &port, -1) && port == -1);
-	TEST(1 == inet_pton_port(AF_INET6, "0:0:0:0:0:FFFF:204.152.189.116", &addr, &port, -1) && port == -1);
-	TEST(1 == inet_pton_port(AF_INET6, "::ffff:204.152.189.116", &addr, &port, -1) && port == -1);
+	TEST(0 == inet_pton_port(AF_INET6, "1:0:0:0:0:0:0:8", &addr, &port, -1) && port == -1);
+	TEST(0 == inet_pton_port(AF_INET6, "1::8", &addr, &port, -1) && port == -1);
+	TEST(0 == inet_pton_port(AF_INET6, "0:0:0:0:0:FFFF:204.152.189.116", &addr, &port, -1) && port == -1);
+	TEST(0 == inet_pton_port(AF_INET6, "::ffff:204.152.189.116", &addr, &port, -1) && port == -1);
 
-	TEST(1 == inet_pton_port(AF_INET6, "[0:0:0:0:0:0:0:0]:1024", &addr, &port, -1) && port == 1024);
-	TEST(1 == inet_pton_port(AF_INET6, "[::]:1025", &addr, &port, -1) && port == 1025);
-	TEST(1 == inet_pton_port(AF_INET6, "[1:0:0:0:0:0:0:8]:1026", &addr, &port, -1) && port == 1026);
-	TEST(1 == inet_pton_port(AF_INET6, "[1::8]:1027", &addr, &port, -1) && port == 1027);
-	TEST(1 == inet_pton_port(AF_INET6, "[0:0:0:0:0:FFFF:204.152.189.116]:1028", &addr, &port, -1) && port == 1028);
-	TEST(1 == inet_pton_port(AF_INET6, "[::ffff:204.152.189.116]:1029", &addr, &port, -1) && port == 1029);
+	TEST(0 == inet_pton_port(AF_INET6, "[0:0:0:0:0:0:0:0]:1024", &addr, &port, -1) && port == 1024);
+	TEST(0 == inet_pton_port(AF_INET6, "[::]:1025", &addr, &port, -1) && port == 1025);
+	TEST(0 == inet_pton_port(AF_INET6, "[1:0:0:0:0:0:0:8]:1026", &addr, &port, -1) && port == 1026);
+	TEST(0 == inet_pton_port(AF_INET6, "[1::8]:1027", &addr, &port, -1) && port == 1027);
+	TEST(0 == inet_pton_port(AF_INET6, "[0:0:0:0:0:FFFF:204.152.189.116]:1028", &addr, &port, -1) && port == 1028);
+	TEST(0 == inet_pton_port(AF_INET6, "[::ffff:204.152.189.116]:1029", &addr, &port, -1) && port == 1029);
+
+	return 0;
 }
 
 #endif	/*INETADDR_MAIN*/

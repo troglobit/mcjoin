@@ -869,7 +869,7 @@ int main(int argc, char *argv[])
 			}
 
 			DEBUG("Converting family %d group %s to ptr %p, num :%d ... ", family, group, ptr, num);
-			if (!inet_pton_port(family, group, ptr, NULL, 0)) {
+			if (inet_pton_port(family, group, ptr, NULL, 0)) {
 				ERROR("%s is not a valid multicast group", group);
 				return usage(1);
 			}
