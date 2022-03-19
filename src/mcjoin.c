@@ -901,7 +901,6 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	DEBUG("group_num:%u", group_num);
 	for (i = 0; i < (int)group_num; i++) {
 #ifdef AF_INET6
 		if (inet_ip6(groups[i].group)) {
