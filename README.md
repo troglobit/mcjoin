@@ -30,18 +30,12 @@ example
 this is a fairly odd example, joining multiple ipv6 asm groups and a
 single ipv4 ssm group. the purpose is only to show that it's possible.
 
-````Bash
-mcjoin ff2e::42 ff2e::43 ff2e::44 ff2e::45 225.1.2.3
-````
-
-![mcjoin receiver](doc/mcjoin-recv.jpg)
+![mcjoin receiver](doc/mcjoin-recv.jpg)*Figure 1: `mcjoin ff2e::42 ff2e::43 ff2e::44 ff2e::45 225.1.2.3`*
 
 the sender needs to have ipv6 (and ipv4) address on the egressing
 interface, in this example only an ipv6 address is available.
-````Bash
-mcjoin -s ff2e::42
-````
-![mcjoin sender](doc/mcjoin-send.jpg)
+
+![mcjoin sender](doc/mcjoin-send.jpg)*Figure 2: `mcjoin -s ff2e::42`*
 
 by default, mcjoin uses the ipv4 group 225.1.2.3 (which is very easy to
 spot also when translated to mac multicast, [RFC1112][]). however, for
@@ -61,7 +55,6 @@ without any arguments `mcjoin` defaults to act as a receiver, performing
 an IPv4 ASM join (*,G) of group `225.1.2.3`, UDP port `1234`.  to act as
 a sender of the same group and port, add `-s` to the command line.
 
-```
     $ mcjoin -h
     
     Usage: mcjoin [-dhjosv] [-c COUNT] [-f MSEC] [-i IFACE] [-l LEVEL]
@@ -87,7 +80,6 @@ a sender of the same group and port, add `-s` to the command line.
 
     Bug report address : https://github.com/troglobit/mcjoin/issues
     Project homepage   : https://github.com/troglobit/mcjoin/
-```
 
 the `SOURCE` argument is optional, but when used it must be of the same
 address family as the group.  to join multiple groups, either list them
