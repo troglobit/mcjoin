@@ -784,6 +784,7 @@ int main(int argc, char *argv[])
 			printf("Failed backgrounding: %s", strerror(errno));
 			_exit(1);
 		}
+		pres = 0;
 	} else if (pres > 1) {
 		if (isatty(STDOUT_FILENO)) {
 			setvbuf(stdout, NULL, _IONBF, 0);
