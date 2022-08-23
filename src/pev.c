@@ -22,7 +22,7 @@ struct pev {
 
 	int id;
 	char type;
-	char active;
+	signed char active;
 
 	union {
 		int sd;
