@@ -4,6 +4,13 @@ ChangeLog
 All notable changes to the project are documented in this file.
 
 
+[v2.11][] - 2022-08-23
+----------------------
+
+- Fix issue with spurious timer expiry on Aarch64 (Arm64)
+- Fix #26: sender takes 100% CPU usage in daemon mode
+
+
 [v2.10][] - 2022-03-19
 ----------------------
 
@@ -173,7 +180,8 @@ OnTime AS and later at Westermo.  Based on the work by David Stevens
 and developed further by Joachim Nilsson, on his spare time.
 
 
-[UNRELEASED]: https://github.com/troglobit/mcjoin/compare/v2.10...HEAD
+[UNRELEASED]: https://github.com/troglobit/mcjoin/compare/v2.11...HEAD
+[v2.11]:      https://github.com/troglobit/mcjoin/compare/v2.10...v2.11
 [v2.10]:      https://github.com/troglobit/mcjoin/compare/v2.9...v2.10
 [v2.9]:       https://github.com/troglobit/mcjoin/compare/v2.8...v2.9
 [v2.8]:       https://github.com/troglobit/mcjoin/compare/v2.7...v2.8
