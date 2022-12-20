@@ -822,7 +822,7 @@ int main(int argc, char *argv[])
 	 */
 	for (i = optind; i < argc; i++) {
 		char *pos, *group, *source = NULL;
-		char buf[INET_ADDRSTR_LEN + 1];
+		char buf[2 * INET_ADDRSTR_LEN + 11];
 		int j, num = 1;
 
 		strlcpy(buf, argv[i], sizeof(buf));
