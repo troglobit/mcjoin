@@ -689,9 +689,6 @@ int main(int argc, char *argv[])
 	int i, c, rc;
 	size_t ilen;
 
-	for (i = 0; i < MAX_NUM_GROUPS; i++)
-		memset(&groups[i], 0, sizeof(groups[0]));
-
 	ident = progname(argv[0]);
 	while ((c = getopt(argc, argv, "b:c:df:hi:jl:op:st:vw:W:")) != EOF) {
 		switch (c) {
@@ -776,8 +773,10 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (optind == argc)
+	if (optind == argc) {
+		memset(&groups[group_num], 0, sizeof(groups[0]));
 		groups[group_num++].group = strdup(DEFAULT_GROUP);
+	}
 
 	if (!foreground) {
 		if (daemonize()) {
@@ -876,6 +875,7 @@ int main(int argc, char *argv[])
 			}
 
 			DEBUG("Adding (S,G) %s,%s to list ...", source ?: "*", group);
+			memset(&groups[group_num], 0, sizeof(groups[0]));
 			groups[group_num].source  = source;
 			groups[group_num++].group = strdup(group);
 
