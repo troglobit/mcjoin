@@ -689,9 +689,6 @@ int main(int argc, char *argv[])
 	int i, c, rc;
 	size_t ilen;
 
-	for (i = 0; i < MAX_NUM_GROUPS; i++)
-		memset(&groups[i], 0, sizeof(groups[0]));
-
 	ident = progname(argv[0]);
 	while ((c = getopt(argc, argv, "b:c:df:hi:jl:op:st:vw:W:")) != EOF) {
 		switch (c) {
