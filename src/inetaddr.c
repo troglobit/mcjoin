@@ -76,6 +76,7 @@ int inet_pton_port(int family, const char *addr, void *ptr, int *sin_port, int d
 		return -1;
 
 	addr = t_addr;
+#ifdef AF_INET6
 	if (family == AF_INET6) {
 		/* [1fff:0:a88:85a3::ac1f]:8001 or 1fff:0:a88:85a3::ac1f */
 		if ('[' == *addr) {
@@ -96,7 +97,9 @@ int inet_pton_port(int family, const char *addr, void *ptr, int *sin_port, int d
 					goto error;
 			}
 		}
-	} else {
+	} else
+#endif
+	{
 		/* 1.2.3.4:8001 or 1.2.3.4 */
 		char *port_spec = strchr(addr, ':');
 
