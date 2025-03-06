@@ -38,7 +38,7 @@ const char *inet_address(inet_addr_t *ss, char *buf, size_t len)
 	return inet_ntop(AF_INET, &sin->sin_addr, buf, len);
 }
 
-socklen_t inet_addrlen(inet_addr_t *ss)
+socklen_t inet_addrlen(const inet_addr_t *ss)
 {
 #ifdef AF_INET6
 	if (ss->ss_family == AF_INET6)

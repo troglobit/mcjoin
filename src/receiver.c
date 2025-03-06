@@ -204,7 +204,7 @@ struct in6_addr *find_dstaddr6(struct msghdr *msgh)
 	return NULL;
 }
 
-static int isdup(struct gr *g, size_t seq)
+static int isdup(const struct gr *g, size_t seq)
 {
 	size_t i;
 
@@ -233,10 +233,10 @@ static ssize_t recv_mcast(int sd, struct gr *g)
 	char cmbuf[0x100];
 	char buf[BUFSZ];
 	const char *dst;
+	const char *ptr;
 	size_t seq = 0;
 	ssize_t bytes;
 	int pid = 0;
-	char *ptr;
 
 	iov[0].iov_base = buf;
 	iov[0].iov_len  = sizeof(buf);

@@ -228,9 +228,9 @@ void log_show(int signo)
 
 int logit(int prio, char *fmt, ...)
 {
+	const char *snow;
 	va_list ap;
 	time_t now;
-	char *snow;
 	int rc = 0;
 
 	va_start(ap, fmt);

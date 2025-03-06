@@ -65,7 +65,7 @@ static int send_socket(int family)
 #ifdef HAVE_STRUCT_IP_MREQN_IMR_IFINDEX
 		struct ip_mreqn imr = { .imr_ifindex = ifindex };
 #else
-		struct sockaddr_in *sin = (struct sockaddr_in *)&addr;
+		const struct sockaddr_in *sin = (struct sockaddr_in *)&addr;
 		struct in_addr ina = sin->sin_addr;
 #endif
 

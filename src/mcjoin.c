@@ -580,8 +580,8 @@ static void clock_cb(int period, void *arg)
 	char buf[INET_ADDRSTR_LEN] = "0.0.0.0";
 	inet_addr_t addr = { 0 };
 	char hostname[80];
+	const char *str;
 	time_t now, up;
-	char *str;
 
 	(void)period;
 	(void)arg;
