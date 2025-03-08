@@ -256,7 +256,7 @@ int logit(int prio, char *fmt, ...)
 			log_show(0);
 		} else {
 			FILE *fp = stdout;
-			int sync = 1;
+			int sync = 0;
 
 			if (prio <= LOG_ERR) {
 				fp = stderr;
