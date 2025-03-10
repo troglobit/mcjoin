@@ -105,17 +105,17 @@ void progress_show(int signo)
 static int sgwidth(void)
 {
 	struct gr *g;
-	int width = 0;
+	int wmax = 0;
 
 	TAILQ_FOREACH(g, &groups, entry) {
 		int w;
 
 		w = snprintf(NULL, 0, "%s,%s", g->source ? g->source : "*", g->group);
-		if (w > width)
-			width = w;
+		if (w > wmax)
+			wmax = w;
 	}
 
-	return width;
+	return wmax;
 }
 
 void plotter_show(int signo)
