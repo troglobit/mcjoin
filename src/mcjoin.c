@@ -121,7 +121,6 @@ static int sgwidth(void)
 void plotter_show(int signo)
 {
 	struct gr *g;
-	char act = 0;
 	int swidth;
 	int sgmax;
 	int spos;
@@ -143,6 +142,7 @@ void plotter_show(int signo)
 
 	TAILQ_FOREACH(g, &groups, entry) {
 		char sgbuf[35];
+		char act = 0;
 
 		gotoxy(0, GROUP_ROW + i++);
 		act = spin(g);
@@ -192,7 +192,6 @@ static char *ratef(size_t bps)
 void plotbps_show(int signo)
 {
 	struct gr *g;
-	char act = 0;
 	int swidth;
 	int sgmax;
 	int spos;
@@ -216,6 +215,7 @@ void plotbps_show(int signo)
 
 	TAILQ_FOREACH(g, &groups, entry) {
 		char sgbuf[35];
+		char act = 0;
 
 		gotoxy(0, GROUP_ROW + i++);
 		act = spin(g);
