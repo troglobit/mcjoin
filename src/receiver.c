@@ -347,7 +347,7 @@ static void receive_cb(int sd, void *arg)
 		TAILQ_FOREACH(g, &groups, entry)
 			total -= g->count;
 
-		if (total <= 0)
+		if (total == 0)
 			pev_exit(0);
 	}
 }
