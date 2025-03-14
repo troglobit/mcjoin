@@ -130,13 +130,13 @@ static void send_mcast(int sd, struct gr *g)
 	}
 }
 
-static void send_cb(int signo, void *arg)
+static void send_cb(int id, void *arg)
 {
 	struct gr *g;
 	static int sd4 = -1;
 	static int sd6 = -1;
 
-	(void)signo;
+	(void)id;
 	(void)arg;
 
 	if (sd4 == -1 && need4)

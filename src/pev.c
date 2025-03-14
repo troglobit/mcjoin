@@ -30,11 +30,13 @@ struct pev {
 		struct {
 			int timeout;
 			int period;
+			int gettime;
 			struct timespec expiry;
 		};
 	};
 
 	void (*cb)(int, void *);
+	void (*cb_del)(void *);
 	void *arg;
 };
 
@@ -97,6 +99,21 @@ int pev_sig_del(int id)
 	return pev_sock_del(id);
 }
 
+int pev_sig_set_cb_del(int id, void (*cb)(void *))
+{
+	struct pev *entry;
+
+	entry = pev_find(PEV_SIG, id);
+	if (!entry) {
+		errno = ENOENT;
+		return -1;
+	}
+
+	entry->cb_del = cb;
+
+	return 0;
+}
+
 /******************************* SOCKETS ******************************/
 
 static int nfds(void)
@@ -107,14 +124,21 @@ static int nfds(void)
 static void sock_run(fd_set *fds)
 {
 	struct pev *entry;
+	int fdmax = 0;
 
 	FD_ZERO(fds);
 	for (entry = pl; entry; entry = entry->next) {
 		if (entry->type != PEV_SOCK)
 			continue;
 
+		if (entry->sd > fdmax)
+			fdmax = entry->sd;
+
 		FD_SET(entry->sd, fds);
 	}
+
+	if (fdmax)
+		max_fdnum = fdmax;
 }
 
 int pev_sock_add(int sd, void (*cb)(int, void *), void *arg)
@@ -140,10 +164,6 @@ int pev_sock_add(int sd, void (*cb)(int, void *), void *arg)
 
 	entry->sd = sd;
 
-	/* Keep track for select() */
-	if (sd > max_fdnum)
-		max_fdnum = sd;
-
 	return entry->id;
 }
 
@@ -156,6 +176,9 @@ int pev_sock_del(int id)
 			/* Mark for deletion and issue a new run */
 			entry->active = 0;
 			sig_handler(0);
+
+			if (entry->cb_del)
+				entry->cb_del(entry->arg);
 
 			return 0;
 		}
@@ -188,7 +211,7 @@ int pev_sock_open(int domain, int type, int proto, void (*cb)(int, void *), void
 
 int pev_sock_close(int sd)
 {
-	struct pev *entry;
+	const struct pev *entry;
 
 	entry = pev_find(PEV_SOCK, sd);
 	if (!entry)
@@ -198,6 +221,22 @@ int pev_sock_close(int sd)
 	close(sd);
 
 	return 0;
+}
+
+int pev_sock_set_cb_del(int id, void (*cb)(void *))
+{
+	struct pev *entry;
+
+	for (entry = pl; entry; entry = entry->next) {
+		if (entry->id == id) {
+			entry->cb_del = cb;
+
+			return 0;
+		}
+	}
+
+	errno = ENOENT;
+	return -1;
 }
 
 /******************************* TIMERS *******************************/
@@ -229,7 +268,7 @@ static struct pev *timer_compare(struct pev *a, struct pev *b)
 	return b;
 }
 
-static int timer_start(struct timespec *now)
+static int timer_start(const struct timespec *now)
 {
 	struct itimerval it = { 0 };
 	struct pev *next, *entry;
@@ -257,7 +296,7 @@ static int timer_start(struct timespec *now)
 	return setitimer(ITIMER_REAL, &it, NULL);
 }
 
-static int timer_expired(struct pev *entry, struct timespec *now)
+static int timer_expired(const struct pev *entry, const struct timespec *now)
 {
 	if (entry->type != PEV_TIMER || entry->active < 1)
 		return 0;
@@ -298,8 +337,10 @@ static void timer_run(int signo, void *arg)
 
 		if (signo && entry->cb) {
 			entry->timeout = 0;
+			entry->gettime = timeout;
+			entry->cb(entry->id, entry->arg);
+			entry->gettime = 0;
 
-			entry->cb(timeout, entry->arg);
 			if (!entry->period && !entry->timeout) {
 				entry->active = -1;
 				continue;
@@ -386,6 +427,8 @@ int pev_timer_get(int id)
 		if (entry->id != id)
 			continue;
 
+		if (entry->gettime)
+			return entry->gettime;
 		if (entry->timeout)
 			return entry->timeout;
 
@@ -394,6 +437,11 @@ int pev_timer_get(int id)
 
 	errno = ENOENT;
 	return -1;
+}
+
+int pev_timer_set_cb_del(int id, void (*cb)(void *))
+{
+	return pev_sock_set_cb_del(id, cb);
 }
 
 /******************************* GENERIC ******************************/
@@ -539,9 +587,10 @@ int pev_run(void)
 {
 	struct pev *entry, *next;
 	fd_set fds;
-	int num;
 
 	while (running) {
+		int num;
+
 		pev_check(&fds);
 
 		errno = 0;

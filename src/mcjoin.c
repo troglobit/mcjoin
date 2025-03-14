@@ -451,9 +451,9 @@ static void exit_loop(int signo, void *arg)
 	pev_exit(0);
 }
 
-static void deadline_cb(int period, void *arg)
+static void deadline_cb(int id, void *arg)
 {
-	(void)period;
+	(void)id;
 	(void)arg;
 
 	DEBUG("\nDeadline reached, exiting.");
@@ -557,11 +557,11 @@ static void key_cb(int sd, void *arg)
 	}
 }
 
-static void scroll_cb(int period, void *arg)
+static void scroll_cb(int id, void *arg)
 {
 	struct gr *g;
 
-	(void)period;
+	(void)id;
 	(void)arg;
 
 	present(0);
@@ -575,7 +575,7 @@ static void scroll_cb(int period, void *arg)
 	}
 }
 
-static void clock_cb(int period, void *arg)
+static void clock_cb(int id, void *arg)
 {
 	char buf[INET_ADDRSTR_LEN] = "0.0.0.0";
 	inet_addr_t addr = { 0 };
@@ -583,7 +583,7 @@ static void clock_cb(int period, void *arg)
 	const char *str;
 	time_t now, up;
 
-	(void)period;
+	(void)id;
 	(void)arg;
 
 	gethostname(hostname, sizeof(hostname));
@@ -605,11 +605,12 @@ static void clock_cb(int period, void *arg)
 	fputs(str, stderr);
 }
 
-static void rate_cb(int period, void *arg)
+static void rate_cb(int id, void *arg)
 {
+	int freq = pev_timer_get(id);
 	struct gr *g;
 
-	period /= 1000000;	/* /sec */
+	freq /= 1000000;	/* /sec */
 	(void)arg;
 
 	TAILQ_FOREACH(g, &groups, entry) {
@@ -617,7 +618,7 @@ static void rate_cb(int period, void *arg)
 
 		rate = g->bytes - g->obytes;
 		if (rate)
-			g->rate = rate / period;
+			g->rate = rate / freq;
 		g->obytes = g->bytes;
 	}
 }
