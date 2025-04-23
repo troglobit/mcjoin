@@ -635,7 +635,7 @@ static int usage(int code)
 		ifdefault(iface, sizeof(iface));
 
 	printf("Usage: %s [-dhjosv] [-c COUNT] [-f MSEC ][-i IFACE] [-l LEVEL] [-p PORT]\n"
-	       "              [-r SEC] [-t TTL] [-w SEC]\n"
+	       "              [-t TTL] [-w SEC]\n"
 	       "              [[SOURCE,]GROUP0[:PORT] .. [SOURCE,]GROUPN[:PORT] |\n"
 	       "               [SOURCE,]GROUP[:PORT]+NUM]\n"
 	       "Options:\n"
