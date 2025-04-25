@@ -17,6 +17,8 @@
 #ifndef MCJOIN_H_
 #define MCJOIN_H_
 
+#include <sys/queue.h>
+
 #include "config.h"
 #include "addr.h"
 #include "log.h"
@@ -67,6 +69,7 @@ struct gr {
 	size_t       seqnos[STATUS_HISTORY]; /* for dup detection */
 	char         status[STATUS_HISTORY];
 	size_t       spin;
+	TAILQ_ENTRY(gr) entry;
 };
 
 extern int help;
@@ -87,7 +90,6 @@ extern size_t count;
 extern unsigned char ttl;
 
 extern size_t group_num;
-extern struct gr groups[];
 
 extern void plotter_show(int signo);
 

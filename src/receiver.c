@@ -27,6 +27,7 @@
 #include "mcjoin.h"
 
 int num_joins = 0;
+extern TAILQ_HEAD(, gr) groups;
 
 static int alloc_socket(inet_addr_t group)
 {
@@ -329,13 +330,11 @@ static ssize_t recv_mcast(int sd, struct gr *g)
 
 static void receive_cb(int sd, void *arg)
 {
-	size_t i;
+	struct gr *g;
 
 	(void)arg;
 
-	for (i = 0; i < group_num; i++) {
-		struct gr *g = &groups[i];
-
+	TAILQ_FOREACH(g, &groups, entry) {
 		if (g->sd == sd) {
 			recv_mcast(sd, g);
 			break;
@@ -345,8 +344,8 @@ static void receive_cb(int sd, void *arg)
 	if (count > 0) {
 		size_t total = count * group_num;
 
-		for (i = 0; i < group_num; i++)
-			total -= groups[i].count;
+		TAILQ_FOREACH(g, &groups, entry)
+			total -= g->count;
 
 		if (total <= 0)
 			pev_exit(0);
@@ -355,13 +354,13 @@ static void receive_cb(int sd, void *arg)
 
 int receiver_init(void)
 {
-	size_t i;
+	struct gr *g;
 
-	for (i = 0; i < group_num; i++) {
-		if (join_group(&groups[i]))
+	TAILQ_FOREACH(g, &groups, entry) {
+		if (join_group(g))
 			return 1;
 
-		if (pev_sock_add(groups[i].sd, receive_cb, NULL) == -1)
+		if (pev_sock_add(g->sd, receive_cb, NULL) == -1)
 			return 1;
 	}
 

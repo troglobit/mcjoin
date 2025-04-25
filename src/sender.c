@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+extern TAILQ_HEAD(, gr) groups;
 
 static int send_socket(int family)
 {
@@ -131,9 +132,9 @@ static void send_mcast(int sd, struct gr *g)
 
 static void send_cb(int signo, void *arg)
 {
+	struct gr *g;
 	static int sd4 = -1;
 	static int sd6 = -1;
-	size_t i;
 
 	(void)signo;
 	(void)arg;
@@ -149,8 +150,7 @@ static void send_cb(int signo, void *arg)
 	if (sd4 < 0 && sd6 < 0)
 		pev_exit(1);
 
-	for (i = 0; i < group_num; i++) {
-		struct gr *g = &groups[i];
+	TAILQ_FOREACH(g, &groups, entry) {
 		int sd;
 
 		sd = g->grp.ss_family == AF_INET ? sd4 : sd6;

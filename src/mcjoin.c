@@ -65,7 +65,7 @@ int need4 = 0;
 int need6 = 0;
 
 size_t group_num = 0;
-struct gr groups[MAX_NUM_GROUPS];
+TAILQ_HEAD(tailhead, gr) groups;
 
 char iface[IFNAMSIZ];
 
@@ -85,17 +85,15 @@ static char spin(struct gr *g)
 
 void progress_show(int signo)
 {
+	struct gr *g;
 	char act = 0;
-	size_t i;
 
 	(void)signo;
 
 	if (!hastty)
 		return;
 
-	for (i = 0; i < group_num; i++) {
-		struct gr *g = &groups[i];
-
+	TAILQ_FOREACH(g, &groups, entry) {
 		if (g->status[STATUS_POS] != ' ')
 			act = g->status[STATUS_POS];
 	}
@@ -106,11 +104,10 @@ void progress_show(int signo)
 
 static int sgwidth(void)
 {
+	struct gr *g;
 	int width = 0;
-	size_t i;
 
-	for (i = 0; i < group_num; i++) {
-		struct gr *g = &groups[i];
+	TAILQ_FOREACH(g, &groups, entry) {
 		int w;
 
 		w = snprintf(NULL, 0, "%s,%s", g->source ? g->source : "*", g->group);
@@ -123,11 +120,12 @@ static int sgwidth(void)
 
 void plotter_show(int signo)
 {
+	struct gr *g;
 	char act = 0;
 	int swidth;
 	int sgmax;
 	int spos;
-	size_t i;
+	size_t i = 0;
 
 	(void)signo;
 	sgmax  = sgwidth();
@@ -143,11 +141,10 @@ void plotter_show(int signo)
 		swidth = STATUS_HISTORY;
 	spos = STATUS_HISTORY - swidth;
 
-	for (i = 0; i < group_num; i++) {
-		struct gr *g = &groups[i];
+	TAILQ_FOREACH(g, &groups, entry) {
 		char sgbuf[35];
 
-		gotoxy(0, GROUP_ROW + i);
+		gotoxy(0, GROUP_ROW + i++);
 		act = spin(g);
 
 		snprintf(sgbuf, sizeof(sgbuf), "%s,%s", g->source ? g->source : "*", g->group);
@@ -194,11 +191,12 @@ static char *ratef(size_t bps)
 /* like plotter_show(), but with throughput numbers */
 void plotbps_show(int signo)
 {
+	struct gr *g;
 	char act = 0;
 	int swidth;
 	int sgmax;
 	int spos;
-	size_t i;
+	size_t i = 0;
 
 	(void)signo;
 	sgmax  = sgwidth();
@@ -216,11 +214,10 @@ void plotbps_show(int signo)
 		swidth = STATUS_HISTORY;
 	spos = STATUS_HISTORY - swidth;
 
-	for (i = 0; i < group_num; i++) {
-		struct gr *g = &groups[i];
+	TAILQ_FOREACH(g, &groups, entry) {
 		char sgbuf[35];
 
-		gotoxy(0, GROUP_ROW + i);
+		gotoxy(0, GROUP_ROW + i++);
 		act = spin(g);
 
 		snprintf(sgbuf, sizeof(sgbuf), "%s,%s", g->source ? g->source : "*", g->group);
@@ -231,8 +228,9 @@ void plotbps_show(int signo)
 
 void stats_show(int signo)
 {
+	struct gr *g;
 	int sgmax;
-	size_t i;
+	size_t i = 0;
 	int w;
 
 	(void)signo;
@@ -248,11 +246,10 @@ void stats_show(int signo)
 		sgmax, "Source,Group", w, " ",
 		"Inv", "Del", "Gaps", "Ordr", "Dups", "Bytes", "Packets");
 
-	for (i = 0; i < group_num; i++) {
-		struct gr *g = &groups[i];
+	TAILQ_FOREACH(g, &groups, entry) {
 		char sgbuf[35];
 
-		gotoxy(0, GROUP_ROW + i);
+		gotoxy(0, GROUP_ROW + i++);
 
 		snprintf(sgbuf, sizeof(sgbuf), "%s,%s", g->source ? g->source : "*", g->group);
 		fprintf(stderr, "\e[K%-*s%*s%4zu %4zu %4zu %4zu %4zu %7s %8zu", sgmax, sgbuf,
@@ -319,12 +316,12 @@ static char *uptime(time_t up)
 
 static void show_stats(void)
 {
-	size_t i, total_count = 0;
+	struct gr *g;
+	size_t total_count = 0;
 	int len = 0;
 	time_t now;
 
-	for (i = 0; i < group_num; i++) {
-		struct gr *g = &groups[i];
+	TAILQ_FOREACH(g, &groups, entry) {
 		char buf[35];
 
 		snprintf(buf, sizeof(buf), "%s,%s", g->source ? g->source : "*", g->group);
@@ -335,8 +332,7 @@ static void show_stats(void)
 	/* Reset log in case of user scrolling to show stats */
 	log_scroll(0);
 
-	for (i = 0; i < group_num; i++) {
-		struct gr *g = &groups[i];
+	TAILQ_FOREACH(g, &groups, entry) {
 		char buf[35];
 
 		snprintf(buf, sizeof(buf), "%s,%s", g->source ? g->source : "*", g->group);
@@ -563,7 +559,7 @@ static void key_cb(int sd, void *arg)
 
 static void scroll_cb(int period, void *arg)
 {
-	size_t i;
+	struct gr *g;
 
 	(void)period;
 	(void)arg;
@@ -571,9 +567,7 @@ static void scroll_cb(int period, void *arg)
 	present(0);
 
 	/* age all groups */
-	for (i = 0; i < group_num; i++) {
-		struct gr *g = &groups[i];
-
+	TAILQ_FOREACH(g, &groups, entry) {
 		memmove(g->status, &g->status[1], STATUS_HISTORY - 1);
 		memmove(g->seqnos, &g->seqnos[1], (STATUS_HISTORY - 1) * sizeof(size_t));
 		g->status[STATUS_POS] = ' ';
@@ -613,13 +607,12 @@ static void clock_cb(int period, void *arg)
 
 static void rate_cb(int period, void *arg)
 {
-	size_t i;
+	struct gr *g;
 
 	period /= 1000000;	/* /sec */
 	(void)arg;
 
-	for (i = 0; i < group_num; i++) {
-		struct gr *g = &groups[i];
+	TAILQ_FOREACH(g, &groups, entry) {
 		size_t rate;
 
 		rate = g->bytes - g->obytes;
@@ -684,6 +677,7 @@ static char *progname(char *arg0)
 int main(int argc, char *argv[])
 {
 	struct rlimit rlim;
+	struct gr *g;
 	int deadline = 0;
 	int wait = 0;
 	int i, c, rc;
@@ -773,8 +767,17 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	if (optind == argc)
-		groups[group_num++].group = strdup(DEFAULT_GROUP);
+	TAILQ_INIT(&groups);
+	if (optind == argc) {
+		struct gr *g = malloc(sizeof *g);
+		if (g == NULL) {
+			printf("malloc: %s", strerror(errno));
+			_exit(1);
+		}
+		g->group = strdup(DEFAULT_GROUP);
+		TAILQ_INSERT_TAIL(&groups, g, entry);
+		group_num++;
+	}
 
 	if (!foreground) {
 		if (daemonize()) {
@@ -837,12 +840,12 @@ int main(int argc, char *argv[])
 			group  = pos;
 		}
 
-		if (num < 1 || (num + group_num) >= NELEMS(groups)) {
-			ERROR("Invalid number of groups given (%d), or max (%zd) reached.", num, NELEMS(groups));
+		if (num < 1) {
+			ERROR("Invalid number of groups given (%d).", num);
 			return usage(1);
 		}
 
-		for (j = 0; j < num && group_num < NELEMS(groups); j++) {
+		for (j = 0; j < num; j++) {
 #ifdef AF_INET6
 			struct sockaddr_in6 *sin6;
 #endif
@@ -873,8 +876,14 @@ int main(int argc, char *argv[])
 			}
 
 			DEBUG("Adding (S,G) %s,%s to list ...", source ?: "*", group);
-			groups[group_num].source  = source;
-			groups[group_num++].group = strdup(group);
+			if ((g = malloc(sizeof *g)) == NULL) {
+				printf("malloc: %s", strerror(errno));
+				_exit(1);
+			}
+			g->source = source;
+			g->group = strdup(group);
+			TAILQ_INSERT_TAIL(&groups, g, entry);
+			group_num++;
 
 			/* Next group ... */
 #ifdef AF_INET6
@@ -899,57 +908,57 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	for (i = 0; i < (int)group_num; i++) {
+	TAILQ_FOREACH(g, &groups, entry) {
 #ifdef AF_INET6
-		if (inet_ip6(groups[i].group)) {
-			struct sockaddr_in6 *grp = (struct sockaddr_in6 *)&groups[i].grp;
-			struct sockaddr_in6 *src = (struct sockaddr_in6 *)&groups[i].src;
+		if (inet_ip6(g->group)) {
+			struct sockaddr_in6 *grp = (struct sockaddr_in6 *)&g->grp;
+			struct sockaddr_in6 *src = (struct sockaddr_in6 *)&g->src;
 			char buf[INET_ADDRSTR_LEN + 1] = {0};
 			int t_port;
 
-			inet_pton_port(AF_INET6, groups[i].group, &grp->sin6_addr, &t_port, port);
+			inet_pton_port(AF_INET6, g->group, &grp->sin6_addr, &t_port, port);
 			grp->sin6_family = AF_INET6;
 			grp->sin6_port   = htons(t_port);
 
-			if (groups[i].source) {
-				inet_pton_port(AF_INET6, groups[i].source, &src->sin6_addr, &t_port, 0);
+			if (g->source) {
+				inet_pton_port(AF_INET6, g->source, &src->sin6_addr, &t_port, 0);
 				src->sin6_family = AF_INET6;
 				src->sin6_port   = htons(t_port);
 			}
 
-			DEBUG("IP6: <%s> grp: %s:%u", groups[i].group, inet_ntop(AF_INET6, &grp->sin6_addr, buf, sizeof(buf)), ntohs(grp->sin6_port));
-			DEBUG("IP6: <%s> src: %s:%u", groups[i].source?groups[i].source:"", inet_ntop(AF_INET6, &src->sin6_addr, buf, sizeof(buf)), ntohs(src->sin6_port));
+			DEBUG("IP6: <%s> grp: %s:%u", g->group, inet_ntop(AF_INET6, &grp->sin6_addr, buf, sizeof(buf)), ntohs(grp->sin6_port));
+			DEBUG("IP6: <%s> src: %s:%u", g->source?g->source:"", inet_ntop(AF_INET6, &src->sin6_addr, buf, sizeof(buf)), ntohs(src->sin6_port));
 			need6++;
 		} else
 #endif
 		{
-			struct sockaddr_in *grp = (struct sockaddr_in *)&groups[i].grp;
-			struct sockaddr_in *src = (struct sockaddr_in *)&groups[i].src;
+			struct sockaddr_in *grp = (struct sockaddr_in *)&g->grp;
+			struct sockaddr_in *src = (struct sockaddr_in *)&g->src;
 			char buf[INET_ADDRSTR_LEN + 1] = {0};
 			int t_port;
 
-			inet_pton_port(AF_INET, groups[i].group, &grp->sin_addr, &t_port, port);
+			inet_pton_port(AF_INET, g->group, &grp->sin_addr, &t_port, port);
 			grp->sin_family = AF_INET;
 			grp->sin_port   = htons(t_port);
 
-			if (groups[i].source) {
-				inet_pton_port(AF_INET, groups[i].source, &src->sin_addr, &t_port, 0);
+			if (g->source) {
+				inet_pton_port(AF_INET, g->source, &src->sin_addr, &t_port, 0);
 				src->sin_family = AF_INET;
 				src->sin_port   = htons(t_port);
 			}
 
-			DEBUG("IP4: <%s> grp: %s:%u", groups[i].group, inet_ntop(AF_INET, &grp->sin_addr, buf, sizeof(buf)), ntohs(grp->sin_port));
-			DEBUG("IP4: <%s> src: %s:%u", groups[i].source?groups[i].source:"", inet_ntop(AF_INET, &src->sin_addr, buf, sizeof(buf)), ntohs(src->sin_port));
+			DEBUG("IP4: <%s> grp: %s:%u", g->group, inet_ntop(AF_INET, &grp->sin_addr, buf, sizeof(buf)), ntohs(grp->sin_port));
+			DEBUG("IP4: <%s> src: %s:%u", g->source?g->source:"", inet_ntop(AF_INET, &src->sin_addr, buf, sizeof(buf)), ntohs(src->sin_port));
 			need4++;
 		}
 #ifdef HAVE_STRUCT_SOCKADDR_STORAGE_SS_LEN
-		groups[i].grp.ss_len = inet_addrlen(&groups[i].grp);
-		if (groups[i].source)
-			groups[i].src.ss_len = inet_addrlen(&groups[i].src);
+		g->grp.ss_len = inet_addrlen(&g->grp);
+		if (g->source)
+			g->src.ss_len = inet_addrlen(&g->src);
 #endif
 
-		memset(groups[i].status, ' ', STATUS_HISTORY - 1);
-		groups[i].spin  = groups[i].group[strlen(groups[i].group) - 1];
+		memset(g->status, ' ', STATUS_HISTORY - 1);
+		g->spin  = g->group[strlen(g->group) - 1];
 	}
 
 	pev_init();
