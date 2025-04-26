@@ -771,20 +771,17 @@ int main(int argc, char *argv[])
 
 	if (optind == argc) {
 		g = calloc(1, sizeof(*g));
-		if (!g) {
-			ERROR("failed allocating group: %s", strerror(errno));
-			_exit(1);
-		}
+		if (!g)
+			FATAL("failed allocating group: %s", strerror(errno));
+
 		g->group = strdup(DEFAULT_GROUP);
 		TAILQ_INSERT_TAIL(&groups, g, entry);
 		group_num++;
 	}
 
 	if (!foreground) {
-		if (daemonize()) {
-			printf("Failed backgrounding: %s", strerror(errno));
-			_exit(1);
-		}
+		if (daemonize())
+			FATAL("Failed backgrounding: %s", strerror(errno));
 		pres = 0;
 	} else if (pres > 1) {
 		if (isatty(STDOUT_FILENO)) {
@@ -878,10 +875,9 @@ int main(int argc, char *argv[])
 
 			DEBUG("Adding (S,G) %s,%s to list ...", source ?: "*", group);
 			g = calloc(1, sizeof(*g));
-			if (!g) {
-				ERROR("failed allocating group: %s", strerror(errno));
-				_exit(1);
-			}
+			if (!g)
+				FATAL("failed allocating group: %s", strerror(errno));
+
 			g->source = source;
 			g->group = strdup(group);
 			TAILQ_INSERT_TAIL(&groups, g, entry);

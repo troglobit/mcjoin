@@ -90,7 +90,7 @@ static int alloc_socket(inet_addr_t group)
 		case EPERM:
 		case EACCES:
 			if (ntohs(port) < 1024)
-				PANIC("Not root, or no capabilities, binding to privileged port %d.", ntohs(port));
+				FATAL("Not root, or no capabilities, binding to privileged port %d.", ntohs(port));
 			/* fallthrough */
 		default:
 			ERROR("Failed binding to socket: %s", strerror(errno));

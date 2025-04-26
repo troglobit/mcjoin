@@ -23,7 +23,7 @@
 #define LOG_MAX  (height - (int)LOG_ROW < 1 ? 1 : height - (int)LOG_ROW)
 #define LOG_POS  (log_max - 1)
 
-#define PANIC(fmt, args...) do { logit(LOG_CRIT,   fmt "\n", ##args); } while (0)
+#define FATAL(fmt, args...) do { logit(LOG_CRIT,   fmt "\n", ##args); } while (0)
 #define ERROR(fmt, args...) do { logit(LOG_ERR,    fmt "\n", ##args); } while (0)
 #define DEBUG(fmt, args...) do { logit(LOG_DEBUG,  fmt "\n", ##args); } while (0)
 #define PRINT(fmt, args...) do { logit(LOG_NOTICE, fmt "\n", ##args); } while (0)
