@@ -25,7 +25,6 @@
 #include "queue.h"
 
 #define BUFSZ           1606	/* +42 => 1648 */
-#define MAX_NUM_GROUPS  2048
 #define DEFAULT_GROUP   "225.1.2.3"
 #define DEFAULT_PORT    1234
 #define MAGIC_KEY       "Sender PID "

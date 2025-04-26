@@ -801,19 +801,6 @@ int main(int argc, char *argv[])
 	if (!iface[0])
 		ifdefault(iface, sizeof(iface));
 
-	if (getrlimit(RLIMIT_NOFILE, &rlim)) {
-		ERROR("Failed reading RLIMIT_NOFILE");
-		return 1;
-	}
-
-	DEBUG("NOFILE: current %ld max %ld", rlim.rlim_cur, rlim.rlim_max);
-	rlim.rlim_cur = MAX_NUM_GROUPS + 10; /* Need stdio + pollfd, etc. */
-	if (setrlimit(RLIMIT_NOFILE, &rlim)) {
-		ERROR("Failed setting RLIMIT_NOFILE soft limit to %d", MAX_NUM_GROUPS);
-		return 1;
-	}
-	DEBUG("NOFILE: set new current %ld max %ld", rlim.rlim_cur, rlim.rlim_max);
-
 	/*
 	 * mcjoin group+num
 	 * mcjoin group0 group1 group2
@@ -905,6 +892,19 @@ int main(int argc, char *argv[])
 			group = buf;
 		}
 	}
+
+	if (getrlimit(RLIMIT_NOFILE, &rlim)) {
+		ERROR("Failed reading RLIMIT_NOFILE");
+		return 1;
+	}
+
+	DEBUG("NOFILE: current %ld max %ld", rlim.rlim_cur, rlim.rlim_max);
+	rlim.rlim_cur = group_num + 10; /* Need stdio + pollfd, etc. */
+	if (setrlimit(RLIMIT_NOFILE, &rlim)) {
+		ERROR("Failed setting RLIMIT_NOFILE soft limit to %d", rlim.rlim_cur);
+		return 1;
+	}
+	DEBUG("NOFILE: set new current %ld max %ld", rlim.rlim_cur, rlim.rlim_max);
 
 	TAILQ_FOREACH(g, &groups, entry) {
 #ifdef AF_INET6
