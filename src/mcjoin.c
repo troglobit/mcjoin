@@ -64,10 +64,11 @@ time_t start;
 int need4 = 0;
 int need6 = 0;
 
+struct gr_list groups = TAILQ_HEAD_INITIALIZER(groups);
 size_t group_num = 0;
-TAILQ_HEAD(tailhead, gr) groups;
 
 char iface[IFNAMSIZ];
+
 
 static char spin(struct gr *g)
 {
@@ -768,11 +769,10 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	TAILQ_INIT(&groups);
 	if (optind == argc) {
-		struct gr *g = malloc(sizeof *g);
-		if (g == NULL) {
-			printf("malloc: %s", strerror(errno));
+		g = calloc(1, sizeof(*g));
+		if (!g) {
+			ERROR("failed allocating group: %s", strerror(errno));
 			_exit(1);
 		}
 		g->group = strdup(DEFAULT_GROUP);
@@ -877,8 +877,9 @@ int main(int argc, char *argv[])
 			}
 
 			DEBUG("Adding (S,G) %s,%s to list ...", source ?: "*", group);
-			if ((g = malloc(sizeof *g)) == NULL) {
-				printf("malloc: %s", strerror(errno));
+			g = calloc(1, sizeof(*g));
+			if (!g) {
+				ERROR("failed allocating group: %s", strerror(errno));
 				_exit(1);
 			}
 			g->source = source;

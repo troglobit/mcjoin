@@ -25,7 +25,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-extern TAILQ_HEAD(, gr) groups;
 
 static int send_socket(int family)
 {
@@ -132,9 +131,9 @@ static void send_mcast(int sd, struct gr *g)
 
 static void send_cb(int id, void *arg)
 {
-	struct gr *g;
 	static int sd4 = -1;
 	static int sd6 = -1;
+	struct gr *g;
 
 	(void)id;
 	(void)arg;

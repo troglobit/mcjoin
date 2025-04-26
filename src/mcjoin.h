@@ -17,12 +17,12 @@
 #ifndef MCJOIN_H_
 #define MCJOIN_H_
 
-#include <sys/queue.h>
-
 #include "config.h"
+
 #include "addr.h"
 #include "log.h"
 #include "pev.h"
+#include "queue.h"
 
 #define BUFSZ           1606	/* +42 => 1648 */
 #define MAX_NUM_GROUPS  2048
@@ -51,6 +51,8 @@
 
 /* Group info */
 struct gr {
+	TAILQ_ENTRY(gr) entry;
+
 	int          sd;
 	uint64_t     bytes;
 	uint64_t     obytes;
@@ -69,8 +71,10 @@ struct gr {
 	size_t       seqnos[STATUS_HISTORY]; /* for dup detection */
 	char         status[STATUS_HISTORY];
 	size_t       spin;
-	TAILQ_ENTRY(gr) entry;
 };
+
+TAILQ_HEAD(gr_list, gr);
+extern struct gr_list groups;
 
 extern int help;
 extern int pres;

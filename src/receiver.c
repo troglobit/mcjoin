@@ -26,8 +26,6 @@
 
 #include "mcjoin.h"
 
-int num_joins = 0;
-extern TAILQ_HEAD(, gr) groups;
 
 static int alloc_socket(inet_addr_t group)
 {
