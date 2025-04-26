@@ -60,9 +60,8 @@ an IPv4 ASM join (*,G) of group `225.1.2.3`, UDP port `1234`.  to act as
 a sender of the same group and port, add `-s` to the command line.
 
     $ mcjoin -h
-    
-    Usage: mcjoin [-dhjosv] [-c COUNT] [-f MSEC] [-i IFACE] [-l LEVEL]
-                  [-p PORT] [-t TTL] [-w SEC]
+    Usage: mcjoin [-dhjosv] [-b BYTES] [-c COUNT] [-f MSEC ][-i IFACE] [-l LEVEL]
+                  [-p PORT] [-t TTL] [-w SEC] [-W SEC]
                   [[SOURCE,]GROUP0 .. [SOURCE,]GROUPN | [SOURCE,]GROUP+NUM]
     
     Options:
