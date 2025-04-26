@@ -4,6 +4,15 @@ ChangeLog
 All notable changes to the project are documented in this file.
 
 
+[v2.12][UNRELEASED]
+----------------------
+
+- Drop previously removed `-r` option from usage message, by Jan Klemkow
+- Refactor fixed group array to dynamic allocation, by Jan Klemkow
+- Fix #28: too small buffer for IPv6 SSM
+- Fix #32: high RAM/RSS usage
+
+
 [v2.11][] - 2022-08-23
 ----------------------
 
@@ -181,6 +190,7 @@ and developed further by Joachim Nilsson, on his spare time.
 
 
 [UNRELEASED]: https://github.com/troglobit/mcjoin/compare/v2.11...HEAD
+[v2.12]:      https://github.com/troglobit/mcjoin/compare/v2.11...v2.12
 [v2.11]:      https://github.com/troglobit/mcjoin/compare/v2.10...v2.11
 [v2.10]:      https://github.com/troglobit/mcjoin/compare/v2.9...v2.10
 [v2.9]:       https://github.com/troglobit/mcjoin/compare/v2.8...v2.9
