@@ -774,7 +774,7 @@ int main(int argc, char *argv[])
 		if (!g)
 			FATAL("failed allocating group: %s", strerror(errno));
 
-		g->group = strdup(DEFAULT_GROUP);
+		g->group = DEFAULT_GROUP;
 		TAILQ_INSERT_TAIL(&groups, g, entry);
 		group_num++;
 	}

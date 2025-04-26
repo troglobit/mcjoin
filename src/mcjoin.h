@@ -63,8 +63,8 @@ struct gr {
 	size_t       order;
 	size_t       delayed;
 	size_t       invalid;
-	char        *source;
-	char        *group;
+	const char  *source;
+	const char  *group;
 	inet_addr_t  src;
 	inet_addr_t  grp;	/* to */
 	size_t       seqnos[STATUS_HISTORY]; /* for dup detection */
