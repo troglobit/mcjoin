@@ -5,11 +5,11 @@ Source: https://github.com/troglobit/mcjoin
 
 Files: *
 Copyright: 2004 David Stevens <dlstevens()us!ibm!com>
-   2008-2021 Joachim Wiberg <troglobit()gmail!com>
+   2008-2025 Joachim Wiberg <troglobit()gmail!com>
 License: ISC
 
 Files: debian/*
-Copyright: 2008-2021 Joachim Wiberg <troglobit()gmail!com>
+Copyright: 2008-2025 Joachim Wiberg <troglobit()gmail!com>
 License: ISC
 
 License: ISC

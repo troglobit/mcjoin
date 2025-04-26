@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2021  Joachim Wiberg <troglobit()gmail!com>
+ * Copyright (c) 2008-2025  Joachim Wiberg <troglobit()gmail!com>
  * Copyright (C) 2021       Adam Young <adamyg()gmail!com>
  *
  * Permission to use, copy, modify, and/or distribute this software for any
