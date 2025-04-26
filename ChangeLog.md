@@ -4,11 +4,12 @@ ChangeLog
 All notable changes to the project are documented in this file.
 
 
-[v2.12][UNRELEASED]
+[v2.12][] - 2025-04-26
 ----------------------
 
 - Drop previously removed `-r` option from usage message, by Jan Klemkow
 - Refactor fixed group array to dynamic allocation, by Jan Klemkow
+- Update usage message, add missing -b and -W options
 - Fix #28: too small buffer for IPv6 SSM
 - Fix #32: high RAM/RSS usage
 

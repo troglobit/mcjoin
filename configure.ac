@@ -1,4 +1,4 @@
-AC_INIT(mcjoin, 2.12-pre, https://github.com/troglobit/mcjoin/issues,, https://github.com/troglobit/mcjoin/)
+AC_INIT(mcjoin, 2.12, https://github.com/troglobit/mcjoin/issues,, https://github.com/troglobit/mcjoin/)
 AC_CONFIG_AUX_DIR(aux)
 AM_INIT_AUTOMAKE([1.11 foreign])
 
