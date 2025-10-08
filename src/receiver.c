@@ -23,6 +23,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <linux/ipv6.h>
 
 #include "mcjoin.h"
 
