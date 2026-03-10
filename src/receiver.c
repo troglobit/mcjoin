@@ -235,6 +235,7 @@ static ssize_t recv_mcast(int sd, struct gr *g)
 	size_t seq = 0;
 	ssize_t bytes;
 	int pid = 0;
+	int grp_eq = 0;
 
 	iov[0].iov_base = buf;
 	iov[0].iov_len  = sizeof(buf);
@@ -252,19 +253,27 @@ static ssize_t recv_mcast(int sd, struct gr *g)
 		return -1;
 
 	dstaddr = find_dstaddr(&msgh);
-	if (dstaddr)
+	if (dstaddr) {
+		struct sockaddr_in *grp = (struct sockaddr_in *)&g->grp;
 		dst = inet_ntop(AF_INET, dstaddr, addr, sizeof(addr));
+		grp_eq = !memcmp(&dstaddr->s_addr, &grp->sin_addr.s_addr,
+		                 sizeof(dstaddr->s_addr));
+	} else {
 #ifdef AF_INET6
-	else {
 		struct in6_addr *dstaddr6;
+		struct sockaddr_in6 *grp = (struct sockaddr_in6 *)&g->grp;
 
 		dstaddr6 = find_dstaddr6(&msgh);
 		if (!dstaddr6)
 			return -1;
 
 		dst = inet_ntop(AF_INET6, dstaddr6, addr, sizeof(addr));
-	}
+		grp_eq = !memcmp(&dstaddr6->s6_addr, &grp->sin6_addr.s6_addr,
+		                 sizeof(dstaddr6->s6_addr));
+#else
+		return -1;
 #endif
+	}
 
 	buf[bytes] = 0;
 	ptr = strstr(buf, MAGIC_KEY);
@@ -282,7 +291,7 @@ static ssize_t recv_mcast(int sd, struct gr *g)
 	DEBUG("Count %5zu, our PID %d, sender PID %d, group %s, exp. seq: %zu, recv. seq: %zu, msg: %s",
 	      g->count, getpid(), pid, g->group, g->seq, seq, buf);
 
-	if (strcmp(dst, g->group)) {
+	if (!grp_eq) {
 		ERROR("Packet for group %s received on wrong socket, expected group %s.",
 		      dst, g->group);
 		return -1;
