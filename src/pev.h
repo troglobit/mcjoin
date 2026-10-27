@@ -17,6 +17,7 @@
 #define PEV_H_
 
 #include <stdarg.h>
+#include <stdint.h>
 #include <string.h>
 #include <sys/time.h>
 
@@ -100,7 +101,7 @@ int pev_sock_set_cb_del  (int id, void (*cb)(void *));
  * be after period microseconds.  The timeout value is only used for
  * the first call.
  */
-int pev_timer_add  (int timeout, int period, void (*cb)(int, void *), void *arg);
+int pev_timer_add  (int64_t timeout, int64_t period, void (*cb)(int, void *), void *arg);
 int pev_timer_del  (int id);
 
 /*
@@ -114,8 +115,8 @@ int pev_timer_del  (int id);
  * with the exception of the first initial timeout, the call always
  * returns the period value.
  */
-int pev_timer_set  (int id, int timeout);
-int pev_timer_get  (int id);
+int pev_timer_set  (int id, int64_t timeout);
+int64_t pev_timer_get (int id);
 
 /*
  * Destructor callback, called when deleting a timer (pev_timer_del).

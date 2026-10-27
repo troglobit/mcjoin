@@ -608,7 +608,7 @@ static void clock_cb(int id, void *arg)
 
 static void rate_cb(int id, void *arg)
 {
-	int freq = pev_timer_get(id);
+	int64_t freq = pev_timer_get(id);
 	struct gr *g;
 
 	freq /= 1000000;	/* /sec */
@@ -977,7 +977,7 @@ int main(int argc, char *argv[])
 		pev_sock_add(STDIN_FILENO, key_cb, NULL);
 	}
 	if (deadline)
-		pev_timer_add(0, deadline * 1000000, deadline_cb, NULL);
+		pev_timer_add(0, (int64_t)deadline * 1000000, deadline_cb, NULL);
 
 	if (!join) {
 		if ((rc = sender_init())) {
