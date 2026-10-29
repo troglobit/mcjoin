@@ -11,3 +11,8 @@ mcjoin_SOURCES	  = mcjoin.c mcjoin.h		\
 		    screen.c screen.h
 mcjoin_LDADD      = $(LIBS) $(LIBOBJS)
 mcjoin_CFLAGS     = -W -Wall -Wextra
+
+check_PROGRAMS         = pev-timer-test
+TESTS                  = $(check_PROGRAMS)
+pev_timer_test_SOURCES = pev_timer_test.c pev.c pev.h
+pev_timer_test_CFLAGS  = -W -Wall -Wextra
